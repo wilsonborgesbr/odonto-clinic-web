@@ -18,6 +18,13 @@ export const fetchApi = async <T>(
   });
 
   if (!response.ok) {
+    // 5. Tratar token expirado ou inválido (401 e 403)
+    if (response.status === 401 || response.status === 403) {
+      localStorage.removeItem('@OdontoClinic:token');
+      // Redireciona para o login globalmente
+      window.location.href = '/login';
+    }
+
     const errorText = await response.text();
     throw new Error(errorText || `Erro HTTP: ${response.status}`);
   }

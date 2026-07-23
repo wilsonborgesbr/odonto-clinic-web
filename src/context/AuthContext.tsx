@@ -1,7 +1,8 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { User, LoginRequestDTO, AuthResponseDTO } from '../types';
 import { fetchApi } from '../services/api';
+import { jwtDecode } from 'jwt-decode';
 
 interface AuthContextType {
   user: User | null;
@@ -13,11 +14,26 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(() => {
     return localStorage.getItem('@OdontoClinic:token');
   });
   const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    if (token) {
+      try {
+        const decoded = jwtDecode<{ sub: string }>(token);
+        // O JWT do Spring Security usa o email (ou username) no campo 'sub'
+        setUser({ email: decoded.sub }); 
+      } catch (error) {
+        console.error("Token inválido ou malformado:", error);
+        logout();
+      }
+    } else {
+      setUser(null);
+    }
+  }, [token]);
 
   const login = async (credentials: LoginRequestDTO) => {
     const response = await fetchApi<AuthResponseDTO>('/auth/login', {
