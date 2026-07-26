@@ -1,8 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ToastProvider } from './components/ui/Toast';
 import { AppLayout } from './components/AppLayout';
 import { Dashboard } from './pages/Dashboard';
 import { Placeholder } from './pages/Placeholder';
+import { PacientesPage } from './pages/pacientes/PacientesPage';
 import { Login } from './pages/Login';
 import { Registro } from './pages/Registro';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -16,10 +18,7 @@ function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route path="/" element={<Dashboard />} />
-          <Route
-            path="/pacientes"
-            element={<Placeholder title="Pacientes" descricao="Cadastro e gerenciamento de pacientes" />}
-          />
+          <Route path="/pacientes" element={<PacientesPage />} />
           <Route
             path="/agenda"
             element={<Placeholder title="Agenda" descricao="Agendamentos e consultas" />}
@@ -60,7 +59,9 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <ToastProvider>
+          <AppRoutes />
+        </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
   );

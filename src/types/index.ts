@@ -432,6 +432,17 @@ export interface PacienteListagemDTO {
   ativo: boolean;
 }
 
+// Erro padronizado do backend (GlobalExceptionHandler.ErroPadrao)
+// - Em validação (400 MethodArgumentNotValidException) `mensagem` vem como { campo: msg }
+// - Em ResponseStatusException / RuntimeException `mensagem` vem como string
+export interface ApiErrorResponse {
+  timestamp: string;
+  status: number;
+  erro: string;
+  mensagem: string | Record<string, string>;
+  path: string;
+}
+
 // Resposta de Paginação do Spring Boot Data
 export interface PageResponse<T> {
   content: T[];
