@@ -5,6 +5,7 @@ import { AppLayout } from './components/AppLayout';
 import { Dashboard } from './pages/Dashboard';
 import { Placeholder } from './pages/Placeholder';
 import { PacientesPage } from './pages/pacientes/PacientesPage';
+import { AgendaPage } from './pages/agenda/AgendaPage';
 import { Login } from './pages/Login';
 import { Registro } from './pages/Registro';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -19,10 +20,7 @@ function AppRoutes() {
         <Route element={<AppLayout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/pacientes" element={<PacientesPage />} />
-          <Route
-            path="/agenda"
-            element={<Placeholder title="Agenda" descricao="Agendamentos e consultas" />}
-          />
+          <Route path="/agenda" element={<AgendaPage />} />
           <Route
             path="/dentistas"
             element={<Placeholder title="Dentistas" descricao="Cadastro e gerenciamento de dentistas" />}
