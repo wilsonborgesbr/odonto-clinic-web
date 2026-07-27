@@ -1,15 +1,37 @@
-import { fetchApi } from './api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { api } from '../lib/api';
 import type { Odontograma } from '../types';
 
 export const odontogramaService = {
-  listarPorPaciente: (pacienteId: string) =>
-    fetchApi<Odontograma[]>(`/api/odontogramas/paciente/${pacienteId}`),
+  listarPorPaciente: async (pacienteId: string) =>
+    (await api.get<Odontograma[]>(`/api/odontogramas/paciente/${pacienteId}`)).data,
+  buscarRecentePorPaciente: async (pacienteId: string) =>
+    (await api.get<Odontograma>(`/api/odontogramas/paciente/${pacienteId}/recente`)).data,
+  buscarPorId: async (id: string) => (await api.get<Odontograma>(`/api/odontogramas/${id}`)).data,
+  criar: async (o: Odontograma) => (await api.post<Odontograma>('/api/odontogramas', o)).data,
+};
 
-  buscarRecente: (pacienteId: string) =>
-    fetchApi<Odontograma>(`/api/odontogramas/paciente/${pacienteId}/recente`),
+export const odontogramaKeys = {
+  all: ['odontogramas'] as const,
+  byPaciente: (pid: string) => [...odontogramaKeys.all, 'byPaciente', pid] as const,
+  detail: (id: string) => [...odontogramaKeys.all, 'detail', id] as const,
+};
 
-  buscarPorId: (id: string) => fetchApi<Odontograma>(`/api/odontogramas/${id}`),
+export const useOdontogramasPorPaciente = (pacienteId: string | undefined) =>
+  useQuery({
+    queryKey: odontogramaKeys.byPaciente(pacienteId ?? ''),
+    queryFn: () => odontogramaService.listarPorPaciente(pacienteId!),
+    enabled: !!pacienteId,
+  });
 
-  criar: (o: Odontograma) =>
-    fetchApi<Odontograma>('/api/odontogramas', { method: 'POST', body: JSON.stringify(o) }),
+export const useCriarOdontograma = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: odontogramaService.criar,
+    onSuccess: (_d, vars) => {
+      if (vars.pacienteId) {
+        qc.invalidateQueries({ queryKey: odontogramaKeys.byPaciente(vars.pacienteId) });
+      }
+    },
+  });
 };

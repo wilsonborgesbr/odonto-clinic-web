@@ -1,9 +1,6 @@
-import { fetchApi } from './api';
-import type {
-  Paciente,
-  PacienteListagemDTO,
-  PageResponse,
-} from '../types';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { api } from '../lib/api';
+import type { Paciente, PacienteListagemDTO, PageResponse } from '../types';
 
 export interface ListarPacientesParams {
   pagina?: number;
@@ -12,37 +9,86 @@ export interface ListarPacientesParams {
   nome?: string;
 }
 
-const buildQuery = (params: ListarPacientesParams): string => {
-  const q = new URLSearchParams();
-  if (params.pagina != null) q.set('pagina', String(params.pagina));
-  if (params.tamanho != null) q.set('tamanho', String(params.tamanho));
-  if (params.ordem) q.set('ordem', params.ordem);
-  if (params.nome && params.nome.trim()) q.set('nome', params.nome.trim());
-  const s = q.toString();
-  return s ? `?${s}` : '';
+export const pacienteService = {
+  listar: async (params: ListarPacientesParams = {}) => {
+    const { data } = await api.get<PageResponse<PacienteListagemDTO>>('/api/pacientes', {
+      params: {
+        pagina: params.pagina,
+        tamanho: params.tamanho,
+        ordem: params.ordem,
+        nome: params.nome?.trim() || undefined,
+      },
+    });
+    return data;
+  },
+  buscarPorId: async (id: string) => {
+    const { data } = await api.get<Paciente>(`/api/pacientes/${id}`);
+    return data;
+  },
+  criar: async (p: Paciente) => (await api.post<Paciente>('/api/pacientes', p)).data,
+  atualizar: async (id: string, p: Paciente) =>
+    (await api.put<Paciente>(`/api/pacientes/${id}`, p)).data,
+  inativar: async (id: string) => {
+    await api.delete(`/api/pacientes/${id}`);
+  },
+  reativar: async (id: string) =>
+    (await api.patch<Paciente>(`/api/pacientes/${id}/reativar`)).data,
 };
 
-export const pacienteService = {
-  listar: (params: ListarPacientesParams = {}) =>
-    fetchApi<PageResponse<PacienteListagemDTO>>(`/api/pacientes${buildQuery(params)}`),
+export const pacienteKeys = {
+  all: ['pacientes'] as const,
+  lists: () => [...pacienteKeys.all, 'list'] as const,
+  list: (p: ListarPacientesParams) => [...pacienteKeys.lists(), p] as const,
+  details: () => [...pacienteKeys.all, 'detail'] as const,
+  detail: (id: string) => [...pacienteKeys.details(), id] as const,
+};
 
-  buscarPorId: (id: string) => fetchApi<Paciente>(`/api/pacientes/${id}`),
+export const usePacientes = (params: ListarPacientesParams) =>
+  useQuery({
+    queryKey: pacienteKeys.list(params),
+    queryFn: () => pacienteService.listar(params),
+    placeholderData: (prev) => prev,
+  });
 
-  criar: (paciente: Paciente) =>
-    fetchApi<Paciente>('/api/pacientes', {
-      method: 'POST',
-      body: JSON.stringify(paciente),
-    }),
+export const usePaciente = (id: string | undefined) =>
+  useQuery({
+    queryKey: pacienteKeys.detail(id ?? ''),
+    queryFn: () => pacienteService.buscarPorId(id!),
+    enabled: !!id,
+  });
 
-  atualizar: (id: string, paciente: Paciente) =>
-    fetchApi<Paciente>(`/api/pacientes/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(paciente),
-    }),
+export const useCriarPaciente = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: pacienteService.criar,
+    onSuccess: () => qc.invalidateQueries({ queryKey: pacienteKeys.lists() }),
+  });
+};
 
-  inativar: (id: string) =>
-    fetchApi<void>(`/api/pacientes/${id}`, { method: 'DELETE' }),
+export const useAtualizarPaciente = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, paciente }: { id: string; paciente: Paciente }) =>
+      pacienteService.atualizar(id, paciente),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: pacienteKeys.lists() });
+      qc.invalidateQueries({ queryKey: pacienteKeys.detail(vars.id) });
+    },
+  });
+};
 
-  reativar: (id: string) =>
-    fetchApi<Paciente>(`/api/pacientes/${id}/reativar`, { method: 'PATCH' }),
+export const useInativarPaciente = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: pacienteService.inativar,
+    onSuccess: () => qc.invalidateQueries({ queryKey: pacienteKeys.lists() }),
+  });
+};
+
+export const useReativarPaciente = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: pacienteService.reativar,
+    onSuccess: () => qc.invalidateQueries({ queryKey: pacienteKeys.lists() }),
+  });
 };

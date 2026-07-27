@@ -1,4 +1,5 @@
-import { fetchApi } from './api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { api } from '../lib/api';
 import type { Funcionario, FuncionarioListagemDTO, PageResponse } from '../types';
 
 export interface ListarFuncionariosParams {
@@ -7,30 +8,78 @@ export interface ListarFuncionariosParams {
   ordem?: string;
 }
 
-const buildQuery = (p: ListarFuncionariosParams): string => {
-  const q = new URLSearchParams();
-  if (p.pagina != null) q.set('pagina', String(p.pagina));
-  if (p.tamanho != null) q.set('tamanho', String(p.tamanho));
-  if (p.ordem) q.set('ordem', p.ordem);
-  const s = q.toString();
-  return s ? `?${s}` : '';
+export const funcionarioService = {
+  listar: async (params: ListarFuncionariosParams = {}) => {
+    const { data } = await api.get<PageResponse<FuncionarioListagemDTO>>('/api/funcionarios', {
+      params: { pagina: params.pagina, tamanho: params.tamanho, ordem: params.ordem },
+    });
+    return data;
+  },
+  buscarPorId: async (id: string) =>
+    (await api.get<Funcionario>(`/api/funcionarios/${id}`)).data,
+  criar: async (f: Funcionario) => (await api.post<Funcionario>('/api/funcionarios', f)).data,
+  atualizar: async (id: string, f: Funcionario) =>
+    (await api.put<Funcionario>(`/api/funcionarios/${id}`, f)).data,
+  inativar: async (id: string) => {
+    await api.delete(`/api/funcionarios/${id}`);
+  },
+  reativar: async (id: string) =>
+    (await api.patch<Funcionario>(`/api/funcionarios/${id}/reativar`)).data,
 };
 
-export const funcionarioService = {
-  listar: (params: ListarFuncionariosParams = {}) =>
-    fetchApi<PageResponse<FuncionarioListagemDTO>>(`/api/funcionarios${buildQuery(params)}`),
+export const funcionarioKeys = {
+  all: ['funcionarios'] as const,
+  lists: () => [...funcionarioKeys.all, 'list'] as const,
+  list: (p: ListarFuncionariosParams) => [...funcionarioKeys.lists(), p] as const,
+  detail: (id: string) => [...funcionarioKeys.all, 'detail', id] as const,
+};
 
-  buscarPorId: (id: string) => fetchApi<Funcionario>(`/api/funcionarios/${id}`),
+export const useFuncionarios = (params: ListarFuncionariosParams) =>
+  useQuery({
+    queryKey: funcionarioKeys.list(params),
+    queryFn: () => funcionarioService.listar(params),
+    placeholderData: (prev) => prev,
+  });
 
-  criar: (f: Funcionario) =>
-    fetchApi<Funcionario>('/api/funcionarios', { method: 'POST', body: JSON.stringify(f) }),
+export const useFuncionario = (id: string | undefined) =>
+  useQuery({
+    queryKey: funcionarioKeys.detail(id ?? ''),
+    queryFn: () => funcionarioService.buscarPorId(id!),
+    enabled: !!id,
+  });
 
-  atualizar: (id: string, f: Funcionario) =>
-    fetchApi<Funcionario>(`/api/funcionarios/${id}`, { method: 'PUT', body: JSON.stringify(f) }),
+export const useCriarFuncionario = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: funcionarioService.criar,
+    onSuccess: () => qc.invalidateQueries({ queryKey: funcionarioKeys.all }),
+  });
+};
 
-  inativar: (id: string) =>
-    fetchApi<void>(`/api/funcionarios/${id}`, { method: 'DELETE' }),
+export const useAtualizarFuncionario = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, funcionario }: { id: string; funcionario: Funcionario }) =>
+      funcionarioService.atualizar(id, funcionario),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: funcionarioKeys.all });
+      qc.invalidateQueries({ queryKey: funcionarioKeys.detail(vars.id) });
+    },
+  });
+};
 
-  reativar: (id: string) =>
-    fetchApi<Funcionario>(`/api/funcionarios/${id}/reativar`, { method: 'PATCH' }),
+export const useInativarFuncionario = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: funcionarioService.inativar,
+    onSuccess: () => qc.invalidateQueries({ queryKey: funcionarioKeys.all }),
+  });
+};
+
+export const useReativarFuncionario = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: funcionarioService.reativar,
+    onSuccess: () => qc.invalidateQueries({ queryKey: funcionarioKeys.all }),
+  });
 };

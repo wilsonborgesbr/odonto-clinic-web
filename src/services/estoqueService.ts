@@ -1,21 +1,58 @@
-import { fetchApi } from './api';
-import type { Estoque } from '../types';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { api } from '../lib/api';
+import type { CategoriaEstoqueEnum, Estoque } from '../types';
 
 export const estoqueService = {
-  listar: () => fetchApi<Estoque[]>('/api/estoque'),
+  listar: async () => (await api.get<Estoque[]>('/api/estoque')).data,
+  listarAbaixoMinimo: async () => (await api.get<Estoque[]>('/api/estoque/abaixo-minimo')).data,
+  listarPorCategoria: async (cat: CategoriaEstoqueEnum) =>
+    (await api.get<Estoque[]>(`/api/estoque/categoria/${cat}`)).data,
+  buscarPorId: async (id: string) => (await api.get<Estoque>(`/api/estoque/${id}`)).data,
+  criar: async (e: Estoque) => (await api.post<Estoque>('/api/estoque', e)).data,
+  atualizar: async (id: string, e: Estoque) =>
+    (await api.put<Estoque>(`/api/estoque/${id}`, e)).data,
+  excluir: async (id: string) => {
+    await api.delete(`/api/estoque/${id}`);
+  },
+};
 
-  buscarPorId: (id: string) => fetchApi<Estoque>(`/api/estoque/${id}`),
+export const estoqueKeys = {
+  all: ['estoque'] as const,
+  lists: () => [...estoqueKeys.all, 'list'] as const,
+  abaixoMinimo: () => [...estoqueKeys.all, 'abaixo-minimo'] as const,
+  detail: (id: string) => [...estoqueKeys.all, 'detail', id] as const,
+};
 
-  listarAbaixoMinimo: () => fetchApi<Estoque[]>('/api/estoque/abaixo-minimo'),
+export const useEstoque = () =>
+  useQuery({ queryKey: estoqueKeys.lists(), queryFn: estoqueService.listar });
 
-  listarPorCategoria: (cat: string) => fetchApi<Estoque[]>(`/api/estoque/categoria/${cat}`),
+export const useEstoqueAbaixoMinimo = () =>
+  useQuery({
+    queryKey: estoqueKeys.abaixoMinimo(),
+    queryFn: estoqueService.listarAbaixoMinimo,
+  });
 
-  criar: (e: Estoque) =>
-    fetchApi<Estoque>('/api/estoque', { method: 'POST', body: JSON.stringify(e) }),
+export const useCriarEstoque = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: estoqueService.criar,
+    onSuccess: () => qc.invalidateQueries({ queryKey: estoqueKeys.all }),
+  });
+};
 
-  atualizar: (id: string, e: Estoque) =>
-    fetchApi<Estoque>(`/api/estoque/${id}`, { method: 'PUT', body: JSON.stringify(e) }),
+export const useAtualizarEstoque = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, estoque }: { id: string; estoque: Estoque }) =>
+      estoqueService.atualizar(id, estoque),
+    onSuccess: () => qc.invalidateQueries({ queryKey: estoqueKeys.all }),
+  });
+};
 
-  excluir: (id: string) =>
-    fetchApi<void>(`/api/estoque/${id}`, { method: 'DELETE' }),
+export const useExcluirEstoque = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: estoqueService.excluir,
+    onSuccess: () => qc.invalidateQueries({ queryKey: estoqueKeys.all }),
+  });
 };
