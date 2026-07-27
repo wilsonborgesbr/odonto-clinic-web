@@ -6,6 +6,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Placeholder } from './pages/Placeholder';
 import { PacientesPage } from './pages/pacientes/PacientesPage';
 import { AgendaPage } from './pages/agenda/AgendaPage';
+import { FinanceiroPage } from './pages/financeiro/FinanceiroPage';
 import { Login } from './pages/Login';
 import { Registro } from './pages/Registro';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -29,10 +30,7 @@ function AppRoutes() {
             path="/funcionarios"
             element={<Placeholder title="Funcionários" descricao="Cadastro e gerenciamento de funcionários" />}
           />
-          <Route
-            path="/financeiro"
-            element={<Placeholder title="Financeiro" descricao="Contas a pagar e a receber" />}
-          />
+          <Route path="/financeiro" element={<FinanceiroPage />} />
           <Route
             path="/estoque"
             element={<Placeholder title="Estoque" descricao="Controle de materiais e insumos" />}
