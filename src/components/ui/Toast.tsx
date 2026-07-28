@@ -1,92 +1,62 @@
-import { createContext, useCallback, useContext, useState } from 'react';
+import toast from 'react-hot-toast';
+import { CheckCircle2, XCircle, Info, AlertCircle } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-type ToastType = 'success' | 'error' | 'info';
-
-interface Toast {
-  id: number;
-  type: ToastType;
-  message: string;
+interface ToastOptions {
   actionLabel?: string;
   onAction?: () => void;
+  duration?: number;
 }
 
-interface ToastContextValue {
-  show: (t: Omit<Toast, 'id'>) => void;
-  success: (message: string, opts?: Partial<Toast>) => void;
-  error: (message: string, opts?: Partial<Toast>) => void;
-  info: (message: string, opts?: Partial<Toast>) => void;
-}
-
-const ToastContext = createContext<ToastContextValue | null>(null);
-
-const typeStyles: Record<ToastType, string> = {
-  success: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  error: 'border-red-200 bg-red-50 text-red-800',
-  info: 'border-sky-200 bg-sky-50 text-sky-800',
+const iconMap: Record<'success' | 'error' | 'info' | 'warning', ReactNode> = {
+  success: <CheckCircle2 className="w-5 h-5 text-bokka-success" />,
+  error: <XCircle className="w-5 h-5 text-bokka-danger" />,
+  info: <Info className="w-5 h-5 text-bokka-primary" />,
+  warning: <AlertCircle className="w-5 h-5 text-bokka-warning" />,
 };
 
-export const ToastProvider = ({ children }: { children: ReactNode }) => {
-  const [toasts, setToasts] = useState<Toast[]>([]);
-
-  const dismiss = useCallback((id: number) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
-
-  const show = useCallback(
-    (t: Omit<Toast, 'id'>) => {
-      const id = Date.now() + Math.random();
-      setToasts((prev) => [...prev, { id, ...t }]);
-      const timeout = t.actionLabel ? 8000 : 4000;
-      setTimeout(() => dismiss(id), timeout);
-    },
-    [dismiss],
-  );
-
-  const value: ToastContextValue = {
-    show,
-    success: (m, o) => show({ type: 'success', message: m, ...o }),
-    error: (m, o) => show({ type: 'error', message: m, ...o }),
-    info: (m, o) => show({ type: 'info', message: m, ...o }),
-  };
-
-  return (
-    <ToastContext.Provider value={value}>
-      {children}
-      <div className="fixed top-4 right-4 z-[70] flex flex-col gap-2 max-w-sm">
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            className={`border rounded-lg shadow-sm px-4 py-3 text-sm flex items-start gap-3 ${typeStyles[t.type]}`}
+const buildCustom = (
+  type: 'success' | 'error' | 'info' | 'warning',
+  message: string,
+  opts?: ToastOptions,
+) =>
+  toast.custom(
+    (t) => (
+      <div
+        className={`bg-bokka-surface border border-bokka-border rounded-xl shadow-md px-4 py-3 flex items-start gap-3 min-w-[280px] max-w-md transition-all ${
+          t.visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1'
+        }`}
+      >
+        <span className="shrink-0 pt-0.5">{iconMap[type]}</span>
+        <span className="text-sm text-bokka-ink flex-1 font-medium leading-relaxed">
+          {message}
+        </span>
+        {opts?.actionLabel && opts.onAction && (
+          <button
+            type="button"
+            className="text-sm font-semibold text-bokka-primary hover:text-bokka-primary-hover px-2 py-1 -mr-1 rounded-md whitespace-nowrap"
+            onClick={() => {
+              opts.onAction!();
+              toast.dismiss(t.id);
+            }}
           >
-            <span className="flex-1">{t.message}</span>
-            {t.actionLabel && t.onAction && (
-              <button
-                onClick={() => {
-                  t.onAction!();
-                  dismiss(t.id);
-                }}
-                className="font-semibold underline underline-offset-2 hover:opacity-80"
-              >
-                {t.actionLabel}
-              </button>
-            )}
-            <button
-              onClick={() => dismiss(t.id)}
-              className="text-current opacity-50 hover:opacity-100"
-              aria-label="Fechar"
-            >
-              ×
-            </button>
-          </div>
-        ))}
+            {opts.actionLabel}
+          </button>
+        )}
       </div>
-    </ToastContext.Provider>
+    ),
+    { duration: opts?.duration ?? (opts?.actionLabel ? 8000 : 4000) },
   );
+
+export const bokkaToast = {
+  success: (message: string, opts?: ToastOptions) => buildCustom('success', message, opts),
+  error: (message: string, opts?: ToastOptions) => buildCustom('error', message, opts),
+  info: (message: string, opts?: ToastOptions) => buildCustom('info', message, opts),
+  warning: (message: string, opts?: ToastOptions) => buildCustom('warning', message, opts),
 };
 
-export const useToast = () => {
-  const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error('useToast deve ser usado dentro de ToastProvider');
-  return ctx;
-};
+// Compat com API antiga: useToast().success('...') etc.
+export const useToast = () => bokkaToast;
+
+// Provider vazio pra compat com App.tsx antigo; o Toaster real vem do main.tsx
+export const ToastProvider = ({ children }: { children: ReactNode }) => <>{children}</>;

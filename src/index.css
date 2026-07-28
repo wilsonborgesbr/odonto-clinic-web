@@ -1,1 +1,143 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap");
 @import "tailwindcss";
+
+@theme {
+  /* Bokka palette — see DESIGN.md */
+  --color-bokka-primary: #2A6BF2;
+  --color-bokka-primary-hover: #1E56D6;
+  --color-bokka-primary-soft: #EAF1FF;
+  --color-bokka-primary-ring: #93B8FC;
+
+  --color-bokka-ink: #0B1220;
+  --color-bokka-ink-2: #334155;
+  --color-bokka-ink-3: #64748B;
+
+  --color-bokka-surface: #FFFFFF;
+  --color-bokka-surface-2: #F8FAFC;
+  --color-bokka-surface-3: #F1F5F9;
+
+  --color-bokka-border: #E2E8F0;
+  --color-bokka-border-strong: #CBD5E1;
+
+  --color-bokka-success: #10B981;
+  --color-bokka-success-soft: #D1FAE5;
+  --color-bokka-success-ink: #047857;
+
+  --color-bokka-warning: #F59E0B;
+  --color-bokka-warning-soft: #FEF3C7;
+  --color-bokka-warning-ink: #B45309;
+
+  --color-bokka-danger: #EF4444;
+  --color-bokka-danger-soft: #FEE2E2;
+  --color-bokka-danger-ink: #B91C1C;
+
+  --color-bokka-info: #2A6BF2;
+  --color-bokka-info-soft: #EAF1FF;
+  --color-bokka-info-ink: #1E4FBE;
+
+  --color-bokka-neutral-soft: #F1F5F9;
+  --color-bokka-neutral-ink: #475569;
+
+  /* DM Sans — fonte principal (estilo Moru) */
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+
+  --shadow-sm: 0 1px 2px 0 rgb(11 18 32 / 0.04);
+  --shadow-md: 0 4px 12px -2px rgb(11 18 32 / 0.08), 0 2px 4px -2px rgb(11 18 32 / 0.04);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--color-bokka-ink);
+  background: var(--color-bokka-surface-2);
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.005em;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+/* Background pattern acinzentado — vibe wireframe do Moru, bem sutil */
+.bokka-bg-pattern {
+  background-color: #F1F4F9;
+  background-image:
+    radial-gradient(circle at 12% 20%, rgba(148, 163, 184, 0.12) 0%, transparent 45%),
+    radial-gradient(circle at 88% 82%, rgba(148, 163, 184, 0.14) 0%, transparent 50%),
+    radial-gradient(circle at 78% 12%, rgba(203, 213, 225, 0.15) 0%, transparent 40%),
+    repeating-linear-gradient(
+      45deg,
+      transparent 0px,
+      transparent 22px,
+      rgba(148, 163, 184, 0.05) 22px,
+      rgba(148, 163, 184, 0.05) 23px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0px,
+      transparent 22px,
+      rgba(148, 163, 184, 0.04) 22px,
+      rgba(148, 163, 184, 0.04) 23px
+    );
+}
+
+/* Native form controls follow the theme */
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* Focus visible ring — consistent across the app */
+*:focus-visible {
+  outline: 2px solid var(--color-bokka-primary-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Scrollbar suave */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-bokka-border-strong) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--color-bokka-border-strong);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-bokka-ink-3);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}

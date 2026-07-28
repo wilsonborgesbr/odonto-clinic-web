@@ -1,51 +1,82 @@
+import { forwardRef } from 'react';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { Loader2 } from 'lucide-react';
+import { cn } from '../../lib/utils';
 
-type Variant = 'primary' | 'secondary' | 'danger' | 'ghost';
-type Size = 'sm' | 'md';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
+type Size = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
   loading?: boolean;
   icon?: ReactNode;
+  iconRight?: ReactNode;
+  fullWidth?: boolean;
 }
 
-const variants: Record<Variant, string> = {
-  primary: 'bg-sky-600 text-white hover:bg-sky-700 disabled:bg-sky-300',
+const variantClasses: Record<Variant, string> = {
+  primary:
+    'bg-bokka-primary text-white hover:bg-bokka-primary-hover active:bg-bokka-primary-hover shadow-sm',
   secondary:
-    'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 disabled:opacity-60',
-  danger: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300',
-  ghost: 'text-slate-600 hover:bg-slate-100 disabled:opacity-60',
+    'bg-bokka-surface text-bokka-ink border border-bokka-border-strong hover:bg-bokka-surface-3 active:bg-bokka-surface-3',
+  ghost:
+    'bg-transparent text-bokka-ink-2 hover:bg-bokka-surface-3 hover:text-bokka-ink',
+  danger:
+    'bg-bokka-danger text-white hover:bg-red-600 active:bg-red-700 shadow-sm',
 };
 
-const sizes: Record<Size, string> = {
-  sm: 'text-xs px-2.5 py-1.5',
-  md: 'text-sm px-4 py-2',
+const sizeClasses: Record<Size, string> = {
+  sm: 'h-8 px-3 text-sm gap-1.5 rounded-md',
+  md: 'h-10 px-4 text-sm gap-2 rounded-md',
+  lg: 'h-12 px-5 text-base gap-2 rounded-lg',
 };
 
-export const Button = ({
-  variant = 'primary',
-  size = 'md',
-  loading,
-  icon,
-  children,
-  className = '',
-  disabled,
-  ...rest
-}: ButtonProps) => (
-  <button
-    {...rest}
-    disabled={disabled || loading}
-    className={`inline-flex items-center gap-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-1 ${variants[variant]} ${sizes[size]} ${className}`}
-  >
-    {loading ? (
-      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25" />
-        <path fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z" />
-      </svg>
-    ) : (
-      icon
-    )}
-    {children}
-  </button>
-);
+const iconSizeMap: Record<Size, string> = {
+  sm: 'w-4 h-4',
+  md: 'w-4 h-4',
+  lg: 'w-5 h-5',
+};
+
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  {
+    variant = 'primary',
+    size = 'md',
+    loading,
+    icon,
+    iconRight,
+    fullWidth,
+    disabled,
+    className,
+    children,
+    ...rest
+  },
+  ref,
+) {
+  return (
+    <button
+      ref={ref}
+      disabled={disabled || loading}
+      className={cn(
+        'inline-flex items-center justify-center font-semibold whitespace-nowrap',
+        'transition-colors duration-150 ease-out',
+        'disabled:opacity-50 disabled:pointer-events-none',
+        variantClasses[variant],
+        sizeClasses[size],
+        fullWidth && 'w-full',
+        className,
+      )}
+      {...rest}
+    >
+      {loading ? (
+        <Loader2 className={cn(iconSizeMap[size], 'animate-spin')} />
+      ) : (
+        icon && <span className={cn(iconSizeMap[size], 'shrink-0 inline-flex items-center justify-center')}>{icon}</span>
+      )}
+      {children}
+      {!loading && iconRight && (
+        <span className={cn(iconSizeMap[size], 'shrink-0 inline-flex items-center justify-center')}>{iconRight}</span>
+      )}
+    </button>
+  );
+});
