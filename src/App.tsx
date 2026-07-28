@@ -3,10 +3,16 @@ import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './components/ui/Toast';
 import { AppLayout } from './components/AppLayout';
 import { Dashboard } from './pages/Dashboard';
-import { Placeholder } from './pages/Placeholder';
 import { PacientesPage } from './pages/pacientes/PacientesPage';
 import { AgendaPage } from './pages/agenda/AgendaPage';
 import { FinanceiroPage } from './pages/financeiro/FinanceiroPage';
+import { DentistasPage } from './pages/dentistas/DentistasPage';
+import { FuncionariosPage } from './pages/funcionarios/FuncionariosPage';
+import { ConveniosPage } from './pages/convenios/ConveniosPage';
+import { EstoquePage } from './pages/estoque/EstoquePage';
+import { DocumentosPage } from './pages/documentos/DocumentosPage';
+import { AnamnesePage } from './pages/anamnese/AnamnesePage';
+import { OdontogramaPage } from './pages/odontograma/OdontogramaPage';
 import { Login } from './pages/Login';
 import { Registro } from './pages/Registro';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -22,27 +28,14 @@ function AppRoutes() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/pacientes" element={<PacientesPage />} />
           <Route path="/agenda" element={<AgendaPage />} />
-          <Route
-            path="/dentistas"
-            element={<Placeholder title="Dentistas" descricao="Cadastro e gerenciamento de dentistas" />}
-          />
-          <Route
-            path="/funcionarios"
-            element={<Placeholder title="Funcionários" descricao="Cadastro e gerenciamento de funcionários" />}
-          />
+          <Route path="/dentistas" element={<DentistasPage />} />
+          <Route path="/funcionarios" element={<FuncionariosPage />} />
           <Route path="/financeiro" element={<FinanceiroPage />} />
-          <Route
-            path="/estoque"
-            element={<Placeholder title="Estoque" descricao="Controle de materiais e insumos" />}
-          />
-          <Route
-            path="/convenios"
-            element={<Placeholder title="Convênios" descricao="Convênios e tabelas de preços" />}
-          />
-          <Route
-            path="/documentos"
-            element={<Placeholder title="Documentos" descricao="Documentos e anexos dos pacientes" />}
-          />
+          <Route path="/estoque" element={<EstoquePage />} />
+          <Route path="/convenios" element={<ConveniosPage />} />
+          <Route path="/documentos" element={<DocumentosPage />} />
+          <Route path="/anamnese" element={<AnamnesePage />} />
+          <Route path="/odontograma" element={<OdontogramaPage />} />
         </Route>
       </Route>
 

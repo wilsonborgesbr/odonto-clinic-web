@@ -107,6 +107,26 @@ const navItems: NavItem[] = [
       </svg>
     ),
   },
+  {
+    to: '/anamnese',
+    label: 'Anamnese',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+        <path d="M9 12h6M9 16h6" />
+        <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7l-5-5Z" />
+        <path d="M15 2v5h5" />
+      </svg>
+    ),
+  },
+  {
+    to: '/odontograma',
+    label: 'Odontograma',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+        <path d="M12 5.5c-1.5-1-3-1.5-4.5-1.5C5 4 3 5.5 3 8c0 3 2 5.5 3 7.5S8 20 9 20c.8 0 1.2-.5 1.5-1.5L12 14l1.5 4.5c.3 1 .7 1.5 1.5 1.5 1 0 1-1 3-4.5s3-4.5 3-7.5c0-2.5-2-4-4.5-4-1.5 0-3 .5-4.5 1.5Z" />
+      </svg>
+    ),
+  },
 ];
 
 interface SidebarProps {
