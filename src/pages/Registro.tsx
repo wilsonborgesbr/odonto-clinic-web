@@ -1,91 +1,115 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { fetchApi } from '../services/api';
+import { Mail, Lock, User } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { BokkaMark } from '../components/BokkaMark';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Field';
+import { ApiError } from '../lib/api';
+import { bokkaToast } from '../components/ui/Toast';
 
 export const Registro = () => {
+  const { register } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError(null);
+    setFieldErrors({});
     setLoading(true);
-    
     try {
-      await fetchApi('/auth/register', {
-        method: 'POST',
-        body: JSON.stringify({ name, email, password }),
-      });
-      alert('Cadastro realizado com sucesso! Faça login para continuar.');
-      navigate('/login');
-    } catch (err: any) {
-      setError(err.message || 'Falha ao realizar cadastro.');
+      await register({ name, email, password });
+      bokkaToast.success('Conta criada. Bem-vinda ao Bokka!');
+      navigate('/', { replace: true });
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const fe = err.fieldErrors();
+        if (Object.keys(fe).length) setFieldErrors(fe);
+        else setError(err.friendlyMessage());
+      } else {
+        setError('Não foi possível criar a conta.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-100 dark:bg-slate-900">
-      <div className="w-full max-w-md p-8 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
-        <h2 className="text-3xl font-bold text-center text-slate-800 dark:text-white mb-6">Registro</h2>
-        
-        {error && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
-            {error}
-          </div>
-        )}
+    <div className="min-h-screen bg-bokka-surface-2 flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-[400px]">
+        <div className="flex flex-col items-center mb-8">
+          <BokkaMark size={44} />
+          <h1 className="text-2xl font-bold tracking-tight text-bokka-ink mt-4">
+            Criar conta no Bokka
+          </h1>
+          <p className="text-sm text-bokka-ink-3 mt-1">Comece a organizar a clínica hoje.</p>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nome Completo</label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-slate-700 dark:text-white"
-              placeholder="Seu Nome"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">E-mail</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-slate-700 dark:text-white"
-              placeholder="seu@email.com"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Senha</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-slate-700 dark:text-white"
-              placeholder="••••••••"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2 px-4 mt-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
-          >
-            {loading ? 'Registrando...' : 'Criar Conta'}
-          </button>
+        <form
+          onSubmit={handleSubmit}
+          className="bg-bokka-surface border border-bokka-border rounded-2xl p-6 shadow-sm space-y-5"
+        >
+          {error && (
+            <div className="text-sm text-bokka-danger-ink bg-bokka-danger-soft border border-bokka-danger/20 rounded-md px-3 py-2">
+              {error}
+            </div>
+          )}
+
+          <Input
+            label="Nome completo"
+            type="text"
+            required
+            autoComplete="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Dra. Tainah Borges"
+            leadingIcon={<User className="w-4 h-4" strokeWidth={1.75} />}
+            error={fieldErrors.name}
+          />
+          <Input
+            label="E-mail"
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="voce@clinica.com"
+            leadingIcon={<Mail className="w-4 h-4" strokeWidth={1.75} />}
+            error={fieldErrors.email}
+          />
+          <Input
+            label="Senha"
+            type="password"
+            required
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Mínimo 6 caracteres"
+            leadingIcon={<Lock className="w-4 h-4" strokeWidth={1.75} />}
+            error={fieldErrors.password}
+            minLength={6}
+          />
+
+          <Button type="submit" loading={loading} fullWidth size="lg">
+            Criar conta
+          </Button>
+
+          <p className="text-sm text-bokka-ink-3 text-center">
+            Já tem conta?{' '}
+            <Link
+              to="/login"
+              className="text-bokka-primary font-semibold hover:text-bokka-primary-hover"
+            >
+              Entrar
+            </Link>
+          </p>
         </form>
-        
-        <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
-          Já tem uma conta? <Link to="/login" className="text-blue-600 hover:underline">Faça login</Link>
-        </p>
       </div>
     </div>
   );

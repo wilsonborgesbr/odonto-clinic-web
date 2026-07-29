@@ -1,85 +1,158 @@
-import { useState, useRef, useEffect } from 'react';
+import { Fragment, useMemo } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu as MenuIcon, Search, Bell, User as UserIcon, LogOut, ChevronDown } from 'lucide-react';
+import { Menu, Transition } from '@headlessui/react';
 import { useAuth } from '../context/AuthContext';
+import { formatDateLong } from '../lib/utils';
+import { Avatar } from './ui/Avatar';
+import { photoKeys } from '../lib/profilePhotos';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
 }
 
+const pageTitles: Record<string, string> = {
+  '/': 'Início',
+  '/perfil': 'Meu perfil',
+  '/pacientes': 'Pacientes',
+  '/dentistas': 'Dentistas',
+  '/agenda': 'Agendamentos',
+  '/procedimentos': 'Procedimentos',
+  '/anamnese': 'Anamnese',
+  '/odontograma': 'Odontograma',
+  '/contas-receber': 'Contas a Receber',
+  '/contas-pagar': 'Contas a Pagar',
+  '/convenios': 'Convênios',
+  '/funcionarios': 'Funcionários',
+  '/estoque': 'Estoque',
+  '/documentos': 'Documentos',
+};
+
+const resolveTitle = (pathname: string): string => {
+  if (pageTitles[pathname]) return pageTitles[pathname];
+  const segments = pathname.split('/').filter(Boolean);
+  if (segments.length > 0) {
+    const base = `/${segments[0]}`;
+    return pageTitles[base] ?? 'Bokka';
+  }
+  return 'Bokka';
+};
+
 export const Header = ({ onToggleSidebar }: HeaderProps) => {
   const { user, logout } = useAuth();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const email = user?.email || '';
-  const initials = email ? email.charAt(0).toUpperCase() : '?';
+  const location = useLocation();
+  const navigate = useNavigate();
+  const title = resolveTitle(location.pathname);
+  const dateStr = formatDateLong(new Date());
+  const photoKey = useMemo(() => photoKeys.user(user?.email), [user?.email]);
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20">
-      <button
-        onClick={onToggleSidebar}
-        className="lg:hidden p-2 -ml-2 rounded-md text-slate-600 hover:bg-slate-100"
-        aria-label="Abrir menu"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-          <line x1="3" y1="6" x2="21" y2="6" />
-          <line x1="3" y1="12" x2="21" y2="12" />
-          <line x1="3" y1="18" x2="21" y2="18" />
-        </svg>
-      </button>
-
-      <div className="flex-1" />
-
-      <div className="relative" ref={menuRef}>
+    <header className="h-16 bg-bokka-surface/85 backdrop-blur border-b border-bokka-border sticky top-0 z-20 shrink-0">
+      <div className="h-full px-4 lg:px-8 flex items-center gap-4">
         <button
-          onClick={() => setMenuOpen((v) => !v)}
-          className="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+          type="button"
+          onClick={onToggleSidebar}
+          className="lg:hidden p-2 -ml-2 rounded-md text-bokka-ink-2 hover:bg-bokka-surface-3"
+          aria-label="Abrir menu"
         >
-          <div className="w-8 h-8 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-sm font-semibold">
-            {initials}
-          </div>
-          <div className="hidden sm:flex flex-col items-start leading-tight">
-            <span className="text-sm font-medium text-slate-800 max-w-[200px] truncate">
-              {email || 'Usuário'}
-            </span>
-            <span className="text-xs text-slate-500">Logado</span>
-          </div>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-slate-500">
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
+          <MenuIcon className="w-5 h-5" />
         </button>
 
-        {menuOpen && (
-          <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-40">
-            <div className="px-4 py-2 border-b border-slate-100">
-              <div className="text-xs text-slate-500">Sessão iniciada como</div>
-              <div className="text-sm font-medium text-slate-800 truncate">{email}</div>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-base font-semibold text-bokka-ink truncate">{title}</h1>
+          <p className="text-xs text-bokka-ink-3 capitalize hidden sm:block">{dateStr}</p>
+        </div>
+
+        <div className="hidden md:flex items-center bg-bokka-surface-2 border border-bokka-border rounded-full px-4 h-10 gap-2 w-64 lg:w-80 focus-within:border-bokka-primary-ring focus-within:bg-bokka-surface transition-colors">
+          <Search className="w-4 h-4 text-bokka-ink-3 shrink-0" strokeWidth={2} />
+          <input
+            type="text"
+            placeholder="Buscar pacientes, agendamentos..."
+            className="bg-transparent border-0 outline-none text-sm text-bokka-ink placeholder:text-bokka-ink-3 flex-1 min-w-0"
+          />
+        </div>
+
+        <button
+          type="button"
+          aria-label="Notificações"
+          className="relative w-10 h-10 rounded-full bg-bokka-surface border border-bokka-border hover:bg-bokka-surface-3 text-bokka-ink-2 flex items-center justify-center"
+        >
+          <Bell className="w-4 h-4" strokeWidth={2} />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-bokka-danger ring-2 ring-bokka-surface" />
+        </button>
+
+        {/* Menu do perfil */}
+        <Menu as="div" className="relative">
+          <Menu.Button className="flex items-center gap-2 bg-bokka-surface border border-bokka-border rounded-full pl-1 pr-3 py-1 hover:shadow-sm transition-shadow">
+            <Avatar photoKey={photoKey} name={user?.name || user?.email} size="sm" />
+            <div className="hidden sm:block text-left leading-tight">
+              <div className="text-xs font-semibold text-bokka-ink max-w-[140px] truncate">
+                {user?.name?.split(' ').slice(0, 2).join(' ') || 'Usuária'}
+              </div>
+              <div className="text-[10px] text-bokka-ink-3">Proprietária</div>
             </div>
-            <button
-              onClick={() => {
-                setMenuOpen(false);
-                logout();
-              }}
-              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-              Sair
-            </button>
-          </div>
-        )}
+            <ChevronDown className="w-4 h-4 text-bokka-ink-3 hidden sm:block" strokeWidth={2} />
+          </Menu.Button>
+          <Transition
+            as={Fragment}
+            enter="transition ease-out duration-150"
+            enterFrom="opacity-0 translate-y-1"
+            enterTo="opacity-100 translate-y-0"
+            leave="transition ease-in duration-100"
+            leaveFrom="opacity-100 translate-y-0"
+            leaveTo="opacity-0 translate-y-1"
+          >
+            <Menu.Items className="absolute right-0 mt-2 w-64 origin-top-right rounded-xl bg-bokka-surface border border-bokka-border shadow-md focus:outline-none overflow-hidden">
+              <div className="p-4 flex items-center gap-3 border-b border-bokka-border bg-bokka-surface-2">
+                <Avatar
+                  photoKey={photoKey}
+                  name={user?.name || user?.email}
+                  size="md"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold text-bokka-ink truncate">
+                    {user?.name || 'Usuária'}
+                  </div>
+                  <div className="text-xs text-bokka-ink-3 truncate">{user?.email}</div>
+                </div>
+              </div>
+              <div className="p-1.5">
+                <Menu.Item>
+                  {({ active }) => (
+                    <Link
+                      to="/perfil"
+                      className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md ${
+                        active
+                          ? 'bg-bokka-primary-soft text-bokka-primary'
+                          : 'text-bokka-ink-2'
+                      }`}
+                    >
+                      <UserIcon className="w-4 h-4" strokeWidth={1.75} /> Meu perfil
+                    </Link>
+                  )}
+                </Menu.Item>
+                <Menu.Item>
+                  {({ active }) => (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        logout();
+                        navigate('/login', { replace: true });
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md ${
+                        active
+                          ? 'bg-bokka-danger-soft text-bokka-danger-ink'
+                          : 'text-bokka-ink-2'
+                      }`}
+                    >
+                      <LogOut className="w-4 h-4" strokeWidth={1.75} /> Sair
+                    </button>
+                  )}
+                </Menu.Item>
+              </div>
+            </Menu.Items>
+          </Transition>
+        </Menu>
       </div>
     </header>
   );
