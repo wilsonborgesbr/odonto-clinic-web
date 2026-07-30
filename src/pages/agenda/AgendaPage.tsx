@@ -1,453 +1,282 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { Agendamento, DentistaListagemDTO, StatusAgendamentoEnum } from '../../types';
-import { agendamentoService } from '../../services/agendamentoService';
-import { dentistaService } from '../../services/dentistaService';
-import { pacienteService } from '../../services/pacienteService';
-import { ApiError } from '../../services/api';
+import { useMemo, useState } from 'react';
+import { Plus, CalendarDays, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
-import { Select } from '../../components/ui/Select';
+import { Input, Select } from '../../components/ui/Field';
 import { Modal, ConfirmModal } from '../../components/ui/Modal';
-import { useToast } from '../../components/ui/Toast';
+import { AgendamentoStatusBadge } from '../../components/ui/Badge';
+import { SkeletonTableRows } from '../../components/ui/Skeleton';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { Card } from '../../components/ui/Card';
+import { bokkaToast } from '../../components/ui/Toast';
 import { AgendamentoForm } from './AgendamentoForm';
+import {
+  useAgendamentos,
+  useAtualizarAgendamento,
+  useCriarAgendamento,
+  useExcluirAgendamento,
+} from '../../services/agendamentoService';
+import { useDentistasAtivos } from '../../services/dentistaService';
+import { ApiError } from '../../lib/api';
+import { formatDateLong, formatTime } from '../../lib/utils';
+import type { Agendamento } from '../../types';
 
-const HORA_INICIO = 7;
-const HORA_FIM = 20;
-const TOTAL_HORAS = HORA_FIM - HORA_INICIO;
-
-const STATUS_LABELS: Record<StatusAgendamentoEnum, string> = {
-  AGENDADO: 'Agendado',
-  CONFIRMADO: 'Confirmado',
-  REALIZADO: 'Realizado',
-  FALTOU: 'Faltou',
-  CANCELADO: 'Cancelado',
+const todayIso = () => {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 };
 
-const STATUS_COLORS: Record<StatusAgendamentoEnum, string> = {
-  AGENDADO: 'bg-sky-100 border-sky-300 text-sky-800',
-  CONFIRMADO: 'bg-emerald-100 border-emerald-300 text-emerald-800',
-  REALIZADO: 'bg-slate-100 border-slate-300 text-slate-600',
-  FALTOU: 'bg-amber-100 border-amber-300 text-amber-800',
-  CANCELADO: 'bg-red-50 border-red-200 text-red-400 line-through',
+const shiftDay = (dateStr: string, delta: number) => {
+  const d = new Date(`${dateStr}T00:00:00`);
+  d.setDate(d.getDate() + delta);
+  return d.toISOString().slice(0, 10);
 };
-
-const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-
-const getInicioSemana = (date: Date): Date => {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  const diff = d.getDay();
-  d.setDate(d.getDate() - diff);
-  return d;
-};
-
-const addDays = (date: Date, days: number): Date => {
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  return d;
-};
-
-const formatDateShort = (date: Date): string =>
-  `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
-
-const formatDateISO = (date: Date): string => {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-};
-
-const isSameDay = (dateStr: string, target: Date): boolean => {
-  const d = new Date(dateStr);
-  return d.getFullYear() === target.getFullYear()
-    && d.getMonth() === target.getMonth()
-    && d.getDate() === target.getDate();
-};
-
-const isToday = (date: Date): boolean => {
-  const now = new Date();
-  return date.getFullYear() === now.getFullYear()
-    && date.getMonth() === now.getMonth()
-    && date.getDate() === now.getDate();
-};
-
-const getMinutesFromMidnight = (dateStr: string): number => {
-  const d = new Date(dateStr);
-  return d.getHours() * 60 + d.getMinutes();
-};
-
-const STATUS_FILTER_OPTIONS = [
-  { value: '', label: 'Todos os status' },
-  ...Object.entries(STATUS_LABELS).map(([v, l]) => ({ value: v, label: l })),
-];
 
 export const AgendaPage = () => {
-  const toast = useToast();
-
-  const [inicioSemana, setInicioSemana] = useState(() => getInicioSemana(new Date()));
-  const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const [dentistas, setDentistas] = useState<DentistaListagemDTO[]>([]);
-  const [pacienteMap, setPacienteMap] = useState<Record<string, string>>({});
-
-  const [filtroDentista, setFiltroDentista] = useState('');
-  const [filtroStatus, setFiltroStatus] = useState('');
+  const [selectedDate, setSelectedDate] = useState<string>(todayIso());
+  const [dentistaFilter, setDentistaFilter] = useState<string>('');
 
   const [formOpen, setFormOpen] = useState(false);
   const [formInitial, setFormInitial] = useState<Agendamento | null>(null);
-  const [formDefaultStart, setFormDefaultStart] = useState<string | undefined>();
+  const [confirmar, setConfirmar] = useState<Agendamento | null>(null);
 
-  const [statusModalOpen, setStatusModalOpen] = useState(false);
-  const [statusTarget, setStatusTarget] = useState<Agendamento | null>(null);
-  const [novoStatus, setNovoStatus] = useState<StatusAgendamentoEnum>('AGENDADO');
-  const [salvandoStatus, setSalvandoStatus] = useState(false);
+  const listQuery = useAgendamentos({ pagina: 0, tamanho: 500, ordem: 'dataHoraInicio' });
+  const dentistasQ = useDentistasAtivos();
 
-  const [confirmarExcluir, setConfirmarExcluir] = useState<Agendamento | null>(null);
-  const [excluindo, setExcluindo] = useState(false);
+  const criarM = useCriarAgendamento();
+  const atualizarM = useAtualizarAgendamento();
+  const excluirM = useExcluirAgendamento();
 
-  const diasSemana = useMemo(
-    () => Array.from({ length: 7 }, (_, i) => addDays(inicioSemana, i)),
-    [inicioSemana],
-  );
+  const agendamentos = listQuery.data?.content ?? [];
 
-  const carregar = useCallback(async () => {
-    setLoading(true);
-    try {
-      const resp = await agendamentoService.listar({ tamanho: 500, ordem: 'dataHoraInicio' });
-      setAgendamentos(resp.content);
-
-      const ids = new Set(resp.content.map((a) => a.pacienteId));
-      if (ids.size > 0) {
-        const pacResp = await pacienteService.listar({ tamanho: 500 });
-        const map: Record<string, string> = {};
-        pacResp.content.forEach((p) => { map[p.id] = p.nomeCompleto; });
-        setPacienteMap(map);
-      }
-    } catch (err) {
-      const msg = err instanceof ApiError ? err.friendlyMessage() : 'Erro ao carregar agendamentos';
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => { carregar(); }, [carregar]);
-  useEffect(() => {
-    dentistaService.listarAtivos().then((r) => setDentistas(r.content)).catch(() => {});
-  }, []);
+  const doDia = useMemo(() => {
+    return agendamentos
+      .filter((a) => a.dataHoraInicio?.slice(0, 10) === selectedDate)
+      .filter((a) => !dentistaFilter || a.dentistaId === dentistaFilter)
+      .sort((a, b) => (a.dataHoraInicio || '').localeCompare(b.dataHoraInicio || ''));
+  }, [agendamentos, selectedDate, dentistaFilter]);
 
   const dentistaMap = useMemo(() => {
-    const m: Record<string, string> = {};
-    dentistas.forEach((d) => { m[d.id] = d.nomeCompleto; });
+    const m = new Map<string, string>();
+    dentistasQ.data?.forEach((d) => m.set(d.id, d.nomeCompleto));
     return m;
-  }, [dentistas]);
+  }, [dentistasQ.data]);
 
-  const dentistaFilterOptions = useMemo(() => [
+  const dentistaOptions = [
     { value: '', label: 'Todos os dentistas' },
-    ...dentistas.map((d) => ({ value: d.id, label: d.nomeCompleto })),
-  ], [dentistas]);
+    ...(dentistasQ.data?.map((d) => ({ value: d.id, label: `Dr(a). ${d.nomeCompleto}` })) ?? []),
+  ];
 
-  const agendamentosFiltrados = useMemo(() => {
-    let list = agendamentos;
-    if (filtroDentista) list = list.filter((a) => a.dentistaId === filtroDentista);
-    if (filtroStatus) list = list.filter((a) => a.status === filtroStatus);
-    return list;
-  }, [agendamentos, filtroDentista, filtroStatus]);
-
-  const getAgendamentosDia = useCallback(
-    (dia: Date) => agendamentosFiltrados.filter((a) => isSameDay(a.dataHoraInicio, dia)),
-    [agendamentosFiltrados],
-  );
-
-  const irParaHoje = () => setInicioSemana(getInicioSemana(new Date()));
-  const semanaAnterior = () => setInicioSemana((s) => addDays(s, -7));
-  const proximaSemana = () => setInicioSemana((s) => addDays(s, 7));
-
-  const abrirNovoAgendamento = (dia?: Date, hora?: number) => {
+  const abrirNovo = () => {
     setFormInitial(null);
-    if (dia && hora != null) {
-      const isoDate = formatDateISO(dia);
-      const h = String(hora).padStart(2, '0');
-      setFormDefaultStart(`${isoDate}T${h}:00`);
-    } else {
-      setFormDefaultStart(undefined);
-    }
     setFormOpen(true);
   };
 
-  const abrirEdicao = (ag: Agendamento) => {
-    setFormInitial(ag);
-    setFormDefaultStart(undefined);
-    setFormOpen(true);
-  };
-
-  const handleSubmitForm = async (payload: Agendamento) => {
+  const handleSubmit = async (ag: Agendamento) => {
     if (formInitial?.id) {
-      await agendamentoService.atualizar(formInitial.id, payload);
-      toast.success('Agendamento atualizado.');
+      await atualizarM.mutateAsync({ id: formInitial.id, agendamento: ag });
+      bokkaToast.success('Agendamento atualizado.');
     } else {
-      await agendamentoService.criar(payload);
-      toast.success('Agendamento criado.');
+      await criarM.mutateAsync(ag);
+      bokkaToast.success('Agendamento criado.');
     }
     setFormOpen(false);
-    carregar();
-  };
-
-  const abrirAlterarStatus = (ag: Agendamento) => {
-    setStatusTarget(ag);
-    setNovoStatus(ag.status);
-    setStatusModalOpen(true);
-  };
-
-  const handleSalvarStatus = async () => {
-    if (!statusTarget?.id) return;
-    setSalvandoStatus(true);
-    try {
-      await agendamentoService.atualizar(statusTarget.id, { ...statusTarget, status: novoStatus });
-      toast.success(`Status alterado para ${STATUS_LABELS[novoStatus]}.`);
-      setStatusModalOpen(false);
-      carregar();
-    } catch (err) {
-      const msg = err instanceof ApiError ? err.friendlyMessage() : 'Erro ao alterar status';
-      toast.error(msg);
-    } finally {
-      setSalvandoStatus(false);
-    }
   };
 
   const handleExcluir = async () => {
-    if (!confirmarExcluir?.id) return;
-    setExcluindo(true);
+    if (!confirmar?.id) return;
     try {
-      await agendamentoService.excluir(confirmarExcluir.id);
-      toast.success('Agendamento excluído.');
-      setConfirmarExcluir(null);
-      carregar();
+      await excluirM.mutateAsync(confirmar.id);
+      setConfirmar(null);
+      bokkaToast.success('Agendamento excluído.');
     } catch (err) {
-      const msg = err instanceof ApiError ? err.friendlyMessage() : 'Erro ao excluir';
-      toast.error(msg);
-    } finally {
-      setExcluindo(false);
+      bokkaToast.error(
+        err instanceof ApiError ? err.friendlyMessage() : 'Erro ao excluir agendamento',
+      );
     }
   };
 
-  const labelSemana = `${formatDateShort(diasSemana[0])} — ${formatDateShort(diasSemana[6])}`;
+  const loading = listQuery.isLoading;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-800">Agenda</h1>
-          <p className="text-sm text-slate-500">
-            {loading ? 'Carregando...' : `${agendamentosFiltrados.length} agendamento(s) visível(is)`}
+          <h1 className="text-2xl font-semibold text-bokka-ink">Agendamentos</h1>
+          <p className="text-sm text-bokka-ink-3 mt-1">
+            {doDia.length} {doDia.length === 1 ? 'consulta' : 'consultas'} para o dia selecionado
           </p>
         </div>
-        <Button onClick={() => abrirNovoAgendamento()} icon={<span className="text-lg leading-none">＋</span>}>
+        <Button onClick={abrirNovo} icon={<Plus />}>
           Novo agendamento
         </Button>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl">
-        <div className="flex items-center justify-between gap-4 p-4 border-b border-slate-100 flex-wrap">
+      <Card padded={false}>
+        {/* Barra de filtros */}
+        <div className="p-4 border-b border-bokka-border flex flex-wrap items-end gap-3">
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="secondary" onClick={semanaAnterior}>‹</Button>
-            <Button size="sm" variant="ghost" onClick={irParaHoje}>Hoje</Button>
-            <Button size="sm" variant="secondary" onClick={proximaSemana}>›</Button>
-            <span className="text-sm font-medium text-slate-700 ml-2">{labelSemana}</span>
+            <button
+              type="button"
+              onClick={() => setSelectedDate((d) => shiftDay(d, -1))}
+              className="p-2 rounded-md text-bokka-ink-2 hover:bg-bokka-surface-3 hover:text-bokka-ink border border-bokka-border-strong"
+              aria-label="Dia anterior"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              fullWidth={false}
+              containerClassName="w-44"
+              leadingIcon={<CalendarDays className="w-4 h-4" strokeWidth={1.75} />}
+            />
+            <button
+              type="button"
+              onClick={() => setSelectedDate((d) => shiftDay(d, 1))}
+              className="p-2 rounded-md text-bokka-ink-2 hover:bg-bokka-surface-3 hover:text-bokka-ink border border-bokka-border-strong"
+              aria-label="Próximo dia"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSelectedDate(todayIso())}
+              className="ml-1"
+            >
+              Hoje
+            </Button>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="w-full sm:w-64">
             <Select
-              label=""
-              options={dentistaFilterOptions}
-              value={filtroDentista}
-              onChange={(e) => setFiltroDentista(e.target.value)}
-              containerClassName="min-w-[180px]"
+              value={dentistaFilter}
+              onChange={(e) => setDentistaFilter(e.target.value)}
+              options={dentistaOptions}
             />
-            <Select
-              label=""
-              options={STATUS_FILTER_OPTIONS}
-              value={filtroStatus}
-              onChange={(e) => setFiltroStatus(e.target.value)}
-              containerClassName="min-w-[160px]"
-            />
+          </div>
+          <div className="flex-1 min-w-0 text-sm text-bokka-ink-3 capitalize text-right hidden lg:block">
+            {formatDateLong(new Date(`${selectedDate}T00:00:00`))}
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <div className="min-w-[800px]">
-            {/* Header dos dias */}
-            <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-slate-100">
-              <div className="p-2" />
-              {diasSemana.map((dia, i) => (
-                <div
-                  key={i}
-                  className={`p-2 text-center border-l border-slate-100 ${
-                    isToday(dia) ? 'bg-sky-50' : ''
-                  }`}
-                >
-                  <div className="text-xs text-slate-500 uppercase">{DIAS_SEMANA[dia.getDay()]}</div>
-                  <div className={`text-sm font-semibold ${
-                    isToday(dia) ? 'text-sky-600' : 'text-slate-700'
-                  }`}>
-                    {dia.getDate()}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Grid de horários */}
-            <div className="grid grid-cols-[60px_repeat(7,1fr)]">
-              {Array.from({ length: TOTAL_HORAS }, (_, hi) => {
-                const hora = HORA_INICIO + hi;
-                return (
-                  <div key={hora} className="contents">
-                    <div className="h-16 px-2 flex items-start justify-end pt-1 text-[10px] text-slate-400 border-t border-slate-50">
-                      {String(hora).padStart(2, '0')}:00
-                    </div>
-                    {diasSemana.map((dia, di) => {
-                      const agDia = getAgendamentosDia(dia);
-                      const agHora = agDia.filter((a) => {
-                        const m = getMinutesFromMidnight(a.dataHoraInicio);
-                        return m >= hora * 60 && m < (hora + 1) * 60;
-                      });
-                      return (
-                        <div
-                          key={di}
-                          className={`h-16 border-t border-l border-slate-50 relative cursor-pointer hover:bg-slate-25 ${
-                            isToday(dia) ? 'bg-sky-50/30' : ''
-                          }`}
-                          onClick={() => abrirNovoAgendamento(dia, hora)}
+        {loading ? (
+          <SkeletonTableRows rows={5} />
+        ) : listQuery.isError ? (
+          <div className="px-4 py-3 text-sm text-bokka-danger-ink bg-bokka-danger-soft">
+            {listQuery.error instanceof ApiError
+              ? listQuery.error.friendlyMessage()
+              : 'Erro ao carregar agendamentos'}
+          </div>
+        ) : doDia.length === 0 ? (
+          <EmptyState
+            icon={<CalendarDays className="w-6 h-6" strokeWidth={1.75} />}
+            title="Nenhum agendamento para esta data"
+            description="Escolha outro dia ou crie um novo agendamento."
+            action={
+              <Button onClick={abrirNovo} icon={<Plus />}>
+                Novo agendamento
+              </Button>
+            }
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-[11px] uppercase tracking-wider text-bokka-ink-3 bg-bokka-surface-3">
+                  <th className="px-4 py-3 font-semibold w-32">Horário</th>
+                  <th className="px-4 py-3 font-semibold">Paciente</th>
+                  <th className="px-4 py-3 font-semibold">Dentista</th>
+                  <th className="px-4 py-3 font-semibold">Observações</th>
+                  <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3 font-semibold text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-bokka-border">
+                {doDia.map((ag) => (
+                  <tr key={ag.id} className="hover:bg-bokka-surface-3">
+                    <td className="px-4 py-3 font-semibold text-bokka-ink tabular-nums">
+                      {formatTime(ag.dataHoraInicio)}
+                      <span className="text-bokka-ink-3 font-normal">
+                        {' – '}
+                        {formatTime(ag.dataHoraFim)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-bokka-ink">
+                      Paciente #{ag.pacienteId?.slice(-6) || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-bokka-ink-2">
+                      {dentistaMap.get(ag.dentistaId ?? '') ??
+                        (ag.dentistaId ? `#${ag.dentistaId.slice(-6)}` : '—')}
+                    </td>
+                    <td className="px-4 py-3 text-bokka-ink-2 max-w-xs truncate">
+                      {ag.observacoes || '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <AgendamentoStatusBadge status={ag.status} />
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormInitial(ag);
+                            setFormOpen(true);
+                          }}
+                          className="p-2 rounded-md text-bokka-ink-2 hover:bg-bokka-surface hover:text-bokka-primary"
+                          title="Editar"
                         >
-                          {agHora.map((ag) => {
-                            const startMin = getMinutesFromMidnight(ag.dataHoraInicio);
-                            const endMin = getMinutesFromMidnight(ag.dataHoraFim);
-                            const top = ((startMin - hora * 60) / 60) * 64;
-                            const height = Math.max(((endMin - startMin) / 60) * 64, 20);
-                            return (
-                              <div
-                                key={ag.id}
-                                className={`absolute left-0.5 right-0.5 rounded border text-[10px] leading-tight px-1 py-0.5 overflow-hidden cursor-pointer z-10 ${
-                                  STATUS_COLORS[ag.status]
-                                }`}
-                                style={{ top: `${top}px`, height: `${height}px` }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  abrirEdicao(ag);
-                                }}
-                                title={`${pacienteMap[ag.pacienteId] ?? ag.pacienteId}\n${dentistaMap[ag.dentistaId] ?? ag.dentistaId}\n${STATUS_LABELS[ag.status]}`}
-                              >
-                                <div className="font-medium truncate">
-                                  {pacienteMap[ag.pacienteId] ?? 'Paciente'}
-                                </div>
-                                <div className="truncate opacity-75">
-                                  {dentistaMap[ag.dentistaId] ?? 'Dentista'}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
+                          <Pencil className="w-4 h-4" strokeWidth={1.75} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmar(ag)}
+                          className="p-2 rounded-md text-bokka-ink-2 hover:bg-bokka-danger-soft hover:text-bokka-danger-ink"
+                          title="Excluir"
+                        >
+                          <Trash2 className="w-4 h-4" strokeWidth={1.75} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
-      </div>
+        )}
+      </Card>
 
-      {/* Modal de formulário (criar/editar) */}
       <Modal
         open={formOpen}
         onClose={() => setFormOpen(false)}
         title={formInitial?.id ? 'Editar agendamento' : 'Novo agendamento'}
+        subtitle={
+          formInitial?.id
+            ? 'Ajuste horários, dentista ou status.'
+            : 'Reserve um horário na agenda da clínica.'
+        }
         size="lg"
       >
         <AgendamentoForm
           initial={formInitial}
-          defaultStart={formDefaultStart}
           onCancel={() => setFormOpen(false)}
-          onSubmit={handleSubmitForm}
+          onSubmit={handleSubmit}
         />
-        {formInitial?.id && (
-          <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                setFormOpen(false);
-                abrirAlterarStatus(formInitial);
-              }}
-            >
-              Alterar status
-            </Button>
-            <Button
-              size="sm"
-              variant="danger"
-              onClick={() => {
-                setFormOpen(false);
-                setConfirmarExcluir(formInitial);
-              }}
-            >
-              Excluir
-            </Button>
-          </div>
-        )}
       </Modal>
 
-      {/* Modal de alteração de status */}
-      <Modal
-        open={statusModalOpen}
-        onClose={() => setStatusModalOpen(false)}
-        title="Alterar status"
-        size="md"
-      >
-        {statusTarget && (
-          <div className="space-y-4">
-            <p className="text-sm text-slate-600">
-              {pacienteMap[statusTarget.pacienteId] ?? 'Paciente'} — {dentistaMap[statusTarget.dentistaId] ?? 'Dentista'}
-            </p>
-            <Select
-              label="Novo status"
-              options={STATUS_OPTIONS_ALL}
-              value={novoStatus}
-              onChange={(e) => setNovoStatus(e.target.value as StatusAgendamentoEnum)}
-            />
-            <div className="flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => setStatusModalOpen(false)} disabled={salvandoStatus}>
-                Cancelar
-              </Button>
-              <Button onClick={handleSalvarStatus} loading={salvandoStatus}>
-                Salvar
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      {/* Modal de confirmação de exclusão */}
       <ConfirmModal
-        open={!!confirmarExcluir}
+        open={!!confirmar}
+        onClose={() => setConfirmar(null)}
+        onConfirm={handleExcluir}
         title="Excluir agendamento?"
-        message={
-          confirmarExcluir
-            ? `O agendamento de ${pacienteMap[confirmarExcluir.pacienteId] ?? 'paciente'} será excluído permanentemente.`
-            : ''
-        }
+        message="Esta ação não pode ser desfeita. O agendamento será removido definitivamente."
         confirmLabel="Excluir"
         danger
-        loading={excluindo}
-        onClose={() => setConfirmarExcluir(null)}
-        onConfirm={handleExcluir}
+        loading={excluirM.isPending}
       />
     </div>
   );
 };
-
-const STATUS_OPTIONS_ALL = [
-  { value: 'AGENDADO', label: 'Agendado' },
-  { value: 'CONFIRMADO', label: 'Confirmado' },
-  { value: 'REALIZADO', label: 'Realizado' },
-  { value: 'FALTOU', label: 'Faltou' },
-  { value: 'CANCELADO', label: 'Cancelado' },
-];
