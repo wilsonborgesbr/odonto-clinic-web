@@ -1,59 +1,147 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { ToastProvider } from './components/ui/Toast';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { AppLayout } from './components/AppLayout';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { Dashboard } from './pages/Dashboard';
-import { PacientesPage } from './pages/pacientes/PacientesPage';
-import { AgendaPage } from './pages/agenda/AgendaPage';
-import { FinanceiroPage } from './pages/financeiro/FinanceiroPage';
-import { DentistasPage } from './pages/dentistas/DentistasPage';
-import { FuncionariosPage } from './pages/funcionarios/FuncionariosPage';
-import { ConveniosPage } from './pages/convenios/ConveniosPage';
-import { EstoquePage } from './pages/estoque/EstoquePage';
-import { DocumentosPage } from './pages/documentos/DocumentosPage';
-import { AnamnesePage } from './pages/anamnese/AnamnesePage';
-import { OdontogramaPage } from './pages/odontograma/OdontogramaPage';
 import { Login } from './pages/Login';
 import { Registro } from './pages/Registro';
-import { ProtectedRoute } from './components/ProtectedRoute';
+import { Placeholder } from './pages/Placeholder';
+import { PacientesPage } from './pages/pacientes/PacientesPage';
+import { PacienteDetalhePage } from './pages/pacientes/PacienteDetalhePage';
+import { AgendaPage } from './pages/agenda/AgendaPage';
+import { ContasReceberPage } from './pages/financeiro/ContasReceberPage';
+import { OdontogramaPacientePage } from './pages/odontograma/OdontogramaPacientePage';
+import { Perfil } from './pages/Perfil';
 
-function AppRoutes() {
-  return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/registro" element={<Registro />} />
+const RedirectIfAuthed = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated } = useAuth();
+  if (isAuthenticated) return <Navigate to="/" replace />;
+  return <>{children}</>;
+};
 
-      <Route element={<ProtectedRoute />}>
-        <Route element={<AppLayout />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/pacientes" element={<PacientesPage />} />
-          <Route path="/agenda" element={<AgendaPage />} />
-          <Route path="/dentistas" element={<DentistasPage />} />
-          <Route path="/funcionarios" element={<FuncionariosPage />} />
-          <Route path="/financeiro" element={<FinanceiroPage />} />
-          <Route path="/estoque" element={<EstoquePage />} />
-          <Route path="/convenios" element={<ConveniosPage />} />
-          <Route path="/documentos" element={<DocumentosPage />} />
-          <Route path="/anamnese" element={<AnamnesePage />} />
-          <Route path="/odontograma" element={<OdontogramaPage />} />
-        </Route>
+const AppRoutes = () => (
+  <Routes>
+    <Route
+      path="/login"
+      element={
+        <RedirectIfAuthed>
+          <Login />
+        </RedirectIfAuthed>
+      }
+    />
+    <Route
+      path="/registro"
+      element={
+        <RedirectIfAuthed>
+          <Registro />
+        </RedirectIfAuthed>
+      }
+    />
+
+    <Route element={<ProtectedRoute />}>
+      <Route element={<AppLayout />}>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/perfil" element={<Perfil />} />
+        <Route path="/pacientes" element={<PacientesPage />} />
+        <Route path="/pacientes/:id" element={<PacienteDetalhePage />} />
+        <Route path="/pacientes/:id/odontograma" element={<OdontogramaPacientePage />} />
+        <Route path="/agenda" element={<AgendaPage />} />
+        <Route path="/contas-receber" element={<ContasReceberPage />} />
+
+        <Route
+          path="/dentistas"
+          element={
+            <Placeholder
+              title="Dentistas"
+              descricao="Cadastro e gerenciamento do quadro de dentistas."
+            />
+          }
+        />
+        <Route
+          path="/procedimentos"
+          element={
+            <Placeholder
+              title="Procedimentos"
+              descricao="Registro dos procedimentos realizados nos pacientes."
+            />
+          }
+        />
+        <Route
+          path="/anamnese"
+          element={
+            <Placeholder
+              title="Anamnese"
+              descricao="Histórico clínico dos pacientes. Consulte pela ficha do paciente."
+            />
+          }
+        />
+        <Route
+          path="/odontograma"
+          element={
+            <Placeholder
+              title="Odontograma"
+              descricao="Mapeamento dental dos pacientes. Consulte pela ficha do paciente."
+            />
+          }
+        />
+        <Route
+          path="/contas-pagar"
+          element={
+            <Placeholder
+              title="Contas a Pagar"
+              descricao="Controle das despesas e obrigações da clínica."
+            />
+          }
+        />
+        <Route
+          path="/convenios"
+          element={
+            <Placeholder
+              title="Convênios"
+              descricao="Cadastro dos convênios odontológicos parceiros."
+            />
+          }
+        />
+        <Route
+          path="/funcionarios"
+          element={
+            <Placeholder
+              title="Funcionários"
+              descricao="Cadastro da equipe administrativa e auxiliar."
+            />
+          }
+        />
+        <Route
+          path="/estoque"
+          element={
+            <Placeholder
+              title="Estoque"
+              descricao="Controle de insumos, materiais e medicamentos."
+            />
+          }
+        />
+        <Route
+          path="/documentos"
+          element={
+            <Placeholder
+              title="Documentos"
+              descricao="Arquivos vinculados aos pacientes."
+            />
+          }
+        />
       </Route>
+    </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
-}
+    <Route path="*" element={<Navigate to="/" replace />} />
+  </Routes>
+);
 
-function App() {
-  return (
-    <BrowserRouter>
-      <AuthProvider>
-        <ToastProvider>
-          <AppRoutes />
-        </ToastProvider>
-      </AuthProvider>
-    </BrowserRouter>
-  );
-}
+const App = () => (
+  <BrowserRouter>
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
+  </BrowserRouter>
+);
 
 export default App;
