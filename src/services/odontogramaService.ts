@@ -24,6 +24,15 @@ export const useOdontogramasPorPaciente = (pacienteId: string | undefined) =>
     enabled: !!pacienteId,
   });
 
+/** Devolve o odontograma mais recente da paciente ou undefined se ainda não houver. */
+export const useOdontogramaRecente = (pacienteId: string | undefined) => {
+  const q = useOdontogramasPorPaciente(pacienteId);
+  return {
+    ...q,
+    data: q.data && q.data.length > 0 ? q.data[0] : undefined,
+  };
+};
+
 export const useCriarOdontograma = () => {
   const qc = useQueryClient();
   return useMutation({

@@ -97,3 +97,26 @@ export const initials = (name?: string | null): string => {
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
+
+/**
+ * Backend Endereco tem @NotBlank em cep/logradouro/bairro/cidade/estado com @Valid no owner.
+ * Se qualquer required estiver vazio, o payload precisa vir sem o campo endereco (que é opcional
+ * como um todo). Esta helper devolve o objeto sem endereco quando incompleto.
+ */
+export const sanitizeEnderecoPayload = <T extends { endereco?: unknown }>(values: T): T => {
+  const end = values.endereco as
+    | { cep?: string; logradouro?: string; bairro?: string; cidade?: string; estado?: string }
+    | null
+    | undefined;
+  const incompleto =
+    !end ||
+    !end.cep?.trim() ||
+    !end.logradouro?.trim() ||
+    !end.bairro?.trim() ||
+    !end.cidade?.trim() ||
+    !end.estado?.trim();
+  if (!incompleto) return values;
+  const { endereco: _skip, ...rest } = values as { endereco?: unknown } & Record<string, unknown>;
+  void _skip;
+  return rest as T;
+};

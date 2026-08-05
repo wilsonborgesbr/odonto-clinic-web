@@ -4,10 +4,24 @@
 
 export type CargoFuncionarioEnum =
   | 'RECEPCIONISTA'
+  | 'SECRETARIA'
+  | 'AUXILIAR_SAUDE_BUCAL'
   | 'AUXILIAR_DENTARIO'
+  | 'TECNICO_SAUDE_BUCAL'
+  | 'TECNICO_PROTESE_DENTARIA'
   | 'TECNICO_RADIOLOGIA'
+  | 'AUXILIAR_ADMINISTRATIVO'
   | 'ADMINISTRATIVO'
-  | 'GERENTE';
+  | 'SOCIO'
+  | 'COORDENADOR_CLINICO'
+  | 'GERENTE'
+  | 'FINANCEIRO'
+  | 'MARKETING'
+  | 'COMERCIAL'
+  | 'SERVICOS_GERAIS'
+  | 'SEGURANCA'
+  | 'ESTAGIARIO'
+  | 'OUTRO';
 
 export type CategoriaContaPagarEnum =
   | 'ALUGUEL'
@@ -127,6 +141,15 @@ export type StatusAgendamentoEnum =
   | 'FALTOU'
   | 'CANCELADO';
 
+export type TipoAgendamentoEnum =
+  | 'AVALIACAO'
+  | 'CONSULTA'
+  | 'RETORNO'
+  | 'PROCEDIMENTO'
+  | 'MANUTENCAO'
+  | 'URGENCIA'
+  | 'DOCUMENTACAO';
+
 export type StatusFinanceiroEnum =
   | 'PENDENTE'
   | 'PAGO'
@@ -188,9 +211,20 @@ export interface Endereco {
   estado?: string;
 }
 
+export type FaceDenteEnum =
+  | 'MESIAL'
+  | 'DISTAL'
+  | 'OCLUSAL'
+  | 'VESTIBULAR'
+  | 'PALATINA'
+  | 'LINGUAL'
+  | 'INCISAL'
+  | 'CERVICAL';
+
 export interface DenteStatus {
   numeroDente?: string;
   condicao?: CondicaoDenteEnum;
+  faces?: FaceDenteEnum[];
   observacao?: string;
 }
 
@@ -198,11 +232,65 @@ export interface DenteStatus {
 // MODELS / ENTITIES
 // ==========================================
 
+export type RoleEnum =
+  | 'PROPRIETARIO'
+  | 'SOCIO'
+  | 'ADMINISTRADOR'
+  | 'DENTISTA'
+  | 'RECEPCIONISTA'
+  | 'FINANCEIRO'
+  | 'ESTOQUISTA'
+  | 'AUXILIAR_CLINICO';
+
+export type PermissaoEnum =
+  | 'DASHBOARD'
+  | 'PACIENTES'
+  | 'DENTISTAS'
+  | 'AGENDAMENTOS'
+  | 'PROCEDIMENTOS'
+  | 'ODONTOGRAMA'
+  | 'ANAMNESE'
+  | 'DOCUMENTOS'
+  | 'FUNCIONARIOS'
+  | 'ESTOQUE'
+  | 'CONVENIOS'
+  | 'AUDITORIA_FINANCEIRA'
+  | 'USUARIOS_E_PERMISSOES'
+  | 'CONFIGURACOES';
+
 export interface User {
   id?: string;
   name?: string;
   email?: string;
   password?: string;
+  /** Código legível da clínica (ex.: "odontosocorro") — vem do JWT. */
+  clinicaCodigo?: string;
+  /** ID interno da clínica (ObjectId Mongo). */
+  clinicaId?: string;
+  role?: RoleEnum;
+  permissoes?: PermissaoEnum[];
+}
+
+export interface Clinica {
+  id?: string;
+  codigo: string;
+  nome: string;
+  cnpj?: string;
+  telefone?: string;
+  emailContato?: string;
+  endereco?: Endereco;
+  ativo?: boolean;
+  createdAt?: string;
+}
+
+export interface UsuarioDTO {
+  id: string;
+  name: string;
+  email: string;
+  role: RoleEnum;
+  permissoes: PermissaoEnum[];
+  ativo: boolean;
+  createdAt?: string;
 }
 
 export interface Agendamento {
@@ -210,6 +298,12 @@ export interface Agendamento {
   pacienteId: string;
   dentistaId: string;
   procedimentoId?: string;
+  tipoAgendamento?: TipoAgendamentoEnum;
+  nomeProcedimento?: NomeProcedimentoEnum;
+  valor?: number;
+  tipoPagamento?: TipoPagamentoProcedimentoEnum;
+  numeroParcelas?: number;
+  dataPrimeiroPagamento?: string;
   dataHoraInicio: string;
   dataHoraFim: string;
   status: StatusAgendamentoEnum;
@@ -244,6 +338,9 @@ export interface ContaPagar {
   categoria: CategoriaContaPagarEnum;
   fornecedor?: string;
   valor: number;
+  tipoPagamento?: TipoPagamentoProcedimentoEnum;
+  numeroParcelas?: number;
+  parcelaAtual?: number;
   dataVencimento: string;
   dataPagamento?: string;
   status: StatusFinanceiroEnum;
@@ -260,7 +357,9 @@ export interface ContaReceber {
   valorTotal: number;
   valorPago?: number;
   formaPagamento: FormaPagamentoEnum;
+  tipoPagamento?: TipoPagamentoProcedimentoEnum;
   numeroParcelas?: number;
+  parcelaAtual?: number;
   dataVencimento: string;
   dataPagamento?: string;
   status: StatusFinanceiroEnum;
@@ -273,9 +372,20 @@ export interface Convenio {
   id?: string;
   nome?: string;
   cnpj?: string;
+  registroANS?: string;
   telefone?: string;
   email?: string;
+  website?: string;
+  nomeContato?: string;
+  endereco?: Endereco;
   tabelaDePrecos?: string;
+  coberturas?: NomeProcedimentoEnum[];
+  percentualCobertura?: number;
+  carenciaDias?: number;
+  dataInicioContrato?: string;
+  dataFimContrato?: string;
+  limiteConsultasMes?: number;
+  observacoes?: string;
   ativo?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -313,6 +423,7 @@ export interface Estoque {
   unidadeMedida?: string;
   fornecedor?: string;
   dataValidade?: string;
+  valorCompra?: number;
   observacoes?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -360,6 +471,7 @@ export interface Paciente {
   tipoSanguineo?: string;
   numeroProntuario?: string;
   tipoPaciente: TipoPaciente;
+  convenioId?: string;
   tipoPagamento?: TipoPagamentoPaciente;
   comoConheceu?: ComoConheceu;
   ativo?: boolean;
@@ -367,9 +479,13 @@ export interface Paciente {
   updatedAt?: string;
 }
 
+export type TipoPagamentoProcedimentoEnum = 'A_VISTA' | 'PARCELADO';
+
 export interface Procedimento {
   id?: string;
   pacienteId?: string;
+  /** Vínculo opcional a um odontograma específico. */
+  odontogramaId?: string;
   nomeProcedimento?: NomeProcedimentoEnum;
   descricao?: string;
   dente?: string;
@@ -377,6 +493,9 @@ export interface Procedimento {
   status?: StatusProcedimentoEnum;
   dataRealizacao?: string;
   valor?: number;
+  tipoPagamento?: TipoPagamentoProcedimentoEnum;
+  numeroParcelas?: number;
+  dataPrimeiroPagamento?: string;
   numeroDeSessoes?: number;
   sessaoAtual?: number;
   observacoesTecnicas?: string;
@@ -389,14 +508,21 @@ export interface Procedimento {
 // ==========================================
 
 export interface LoginRequestDTO {
+  clinicaCodigo: string;
   email: string;
   password: string;
 }
 
-export interface RegisterRequestDTO {
-  name: string;
-  email: string;
-  password: string;
+export interface RegisterClinicaRequestDTO {
+  clinicaCodigo: string;
+  clinicaNome: string;
+  cnpj?: string;
+  telefone?: string;
+  emailContato?: string;
+  endereco?: Endereco;
+  adminNome: string;
+  adminEmail: string;
+  adminPassword: string;
 }
 
 export interface AuthResponseDTO {

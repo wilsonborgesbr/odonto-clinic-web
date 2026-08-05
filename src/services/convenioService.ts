@@ -11,6 +11,8 @@ export const convenioService = {
   inativar: async (id: string) => {
     await api.delete(`/api/convenios/${id}`);
   },
+  reativar: async (id: string) =>
+    (await api.patch<Convenio>(`/api/convenios/${id}/reativar`)).data,
 };
 
 export const convenioKeys = {
@@ -21,6 +23,13 @@ export const convenioKeys = {
 
 export const useConvenios = () =>
   useQuery({ queryKey: convenioKeys.lists(), queryFn: convenioService.listar });
+
+export const useConvenio = (id: string | undefined) =>
+  useQuery({
+    queryKey: convenioKeys.detail(id ?? ''),
+    queryFn: () => convenioService.buscarPorId(id!),
+    enabled: !!id,
+  });
 
 export const useCriarConvenio = () => {
   const qc = useQueryClient();
@@ -43,6 +52,14 @@ export const useInativarConvenio = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: convenioService.inativar,
+    onSuccess: () => qc.invalidateQueries({ queryKey: convenioKeys.all }),
+  });
+};
+
+export const useReativarConvenio = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: convenioService.reativar,
     onSuccess: () => qc.invalidateQueries({ queryKey: convenioKeys.all }),
   });
 };

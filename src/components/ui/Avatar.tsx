@@ -69,6 +69,8 @@ interface AvatarProps {
   className?: string;
   editable?: boolean;
   ring?: boolean;
+  previewSrc?: string | null;
+  onFileSelect?: (file: File) => void;
 }
 
 export const Avatar = ({
@@ -78,13 +80,21 @@ export const Avatar = ({
   className,
   editable,
   ring,
+  previewSrc,
+  onFileSelect,
 }: AvatarProps) => {
   const photo = usePhoto(photoKey);
   const [uploading, setUploading] = useState(false);
 
   const tone = hashTone(name || photoKey || 'x');
 
+  const displaySrc = previewSrc ?? photo;
+
   const handleUpload = async (file: File) => {
+    if (onFileSelect) {
+      onFileSelect(file);
+      return;
+    }
     if (!photoKey) return;
     setUploading(true);
     try {
@@ -100,9 +110,9 @@ export const Avatar = ({
 
   const inner = (
     <>
-      {photo ? (
+      {displaySrc ? (
         <img
-          src={photo}
+          src={displaySrc}
           alt={name || 'Avatar'}
           className={cn(
             'rounded-full object-cover shrink-0',

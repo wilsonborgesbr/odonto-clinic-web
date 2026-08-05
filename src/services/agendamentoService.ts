@@ -59,6 +59,13 @@ export const useAgendamentosPorPaciente = (pacienteId: string | undefined) =>
     enabled: !!pacienteId,
   });
 
+export const useAgendamentosPorDentista = (dentistaId: string | undefined) =>
+  useQuery({
+    queryKey: agendamentoKeys.byDentista(dentistaId ?? ''),
+    queryFn: () => agendamentoService.listarPorDentista(dentistaId!),
+    enabled: !!dentistaId,
+  });
+
 export const useCriarAgendamento = () => {
   const qc = useQueryClient();
   return useMutation({

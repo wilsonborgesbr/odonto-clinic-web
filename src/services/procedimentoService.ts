@@ -3,6 +3,8 @@ import { api } from '../lib/api';
 import type { Procedimento } from '../types';
 
 export const procedimentoService = {
+  listarTodos: async () =>
+    (await api.get<Procedimento[]>('/api/procedimentos')).data,
   listarPorPaciente: async (pacienteId: string) =>
     (await api.get<Procedimento[]>(`/api/procedimentos/paciente/${pacienteId}`)).data,
   buscarPorId: async (id: string) => (await api.get<Procedimento>(`/api/procedimentos/${id}`)).data,
@@ -16,9 +18,16 @@ export const procedimentoService = {
 
 export const procedimentoKeys = {
   all: ['procedimentos'] as const,
+  lists: () => [...procedimentoKeys.all, 'list'] as const,
   byPaciente: (pid: string) => [...procedimentoKeys.all, 'byPaciente', pid] as const,
   detail: (id: string) => [...procedimentoKeys.all, 'detail', id] as const,
 };
+
+export const useProcedimentos = () =>
+  useQuery({
+    queryKey: procedimentoKeys.lists(),
+    queryFn: procedimentoService.listarTodos,
+  });
 
 export const useProcedimentosPorPaciente = (pacienteId: string | undefined) =>
   useQuery({

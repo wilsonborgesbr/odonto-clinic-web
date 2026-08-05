@@ -3,6 +3,7 @@ import { api } from '../lib/api';
 import type { Documento } from '../types';
 
 export const documentoService = {
+  listarTodos: async () => (await api.get<Documento[]>('/api/documentos')).data,
   listarPorPaciente: async (pacienteId: string) =>
     (await api.get<Documento[]>(`/api/documentos/paciente/${pacienteId}`)).data,
   buscarPorId: async (id: string) => (await api.get<Documento>(`/api/documentos/${id}`)).data,
@@ -14,8 +15,15 @@ export const documentoService = {
 
 export const documentoKeys = {
   all: ['documentos'] as const,
+  lists: () => [...documentoKeys.all, 'list'] as const,
   byPaciente: (pid: string) => [...documentoKeys.all, 'byPaciente', pid] as const,
 };
+
+export const useDocumentos = () =>
+  useQuery({
+    queryKey: documentoKeys.lists(),
+    queryFn: documentoService.listarTodos,
+  });
 
 export const useDocumentosPorPaciente = (pacienteId: string | undefined) =>
   useQuery({

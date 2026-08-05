@@ -7,6 +7,9 @@ export const anamneseService = {
     (await api.get<Anamnese[]>(`/api/anamneses/paciente/${pacienteId}`)).data,
   buscarPorId: async (id: string) => (await api.get<Anamnese>(`/api/anamneses/${id}`)).data,
   criar: async (a: Anamnese) => (await api.post<Anamnese>('/api/anamneses', a)).data,
+  atualizar: async (id: string, a: Anamnese) =>
+    (await api.put<Anamnese>(`/api/anamneses/${id}`, a)).data,
+  excluir: async (id: string) => (await api.delete(`/api/anamneses/${id}`)).data,
 };
 
 export const anamneseKeys = {
@@ -30,6 +33,30 @@ export const useCriarAnamnese = () => {
       if (vars.pacienteId) {
         qc.invalidateQueries({ queryKey: anamneseKeys.byPaciente(vars.pacienteId) });
       }
+    },
+  });
+};
+
+export const useAtualizarAnamnese = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, anamnese }: { id: string; anamnese: Anamnese }) =>
+      anamneseService.atualizar(id, anamnese),
+    onSuccess: (_d, vars) => {
+      if (vars.anamnese.pacienteId) {
+        qc.invalidateQueries({ queryKey: anamneseKeys.byPaciente(vars.anamnese.pacienteId) });
+      }
+    },
+  });
+};
+
+export const useExcluirAnamnese = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, pacienteId }: { id: string; pacienteId: string }) =>
+      anamneseService.excluir(id),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: anamneseKeys.byPaciente(vars.pacienteId) });
     },
   });
 };

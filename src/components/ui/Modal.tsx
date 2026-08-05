@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Button } from './Button';
 
-type Size = 'sm' | 'md' | 'lg' | 'xl';
+type Size = 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 
 interface ModalProps {
   open: boolean;
@@ -22,6 +22,7 @@ const sizeMap: Record<Size, string> = {
   md: 'max-w-lg',
   lg: 'max-w-2xl',
   xl: 'max-w-4xl',
+  '2xl': 'max-w-6xl',
 };
 
 export const Modal = ({

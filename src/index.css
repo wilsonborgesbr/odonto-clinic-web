@@ -64,6 +64,7 @@ html {
   background: var(--color-bokka-surface-2);
   text-rendering: optimizeLegibility;
   letter-spacing: -0.005em;
+  color-scheme: light;
 }
 
 body {
@@ -101,6 +102,11 @@ textarea,
 select {
   font: inherit;
   color: inherit;
+}
+
+select option {
+  background-color: #FFFFFF;
+  color: var(--color-bokka-ink);
 }
 
 button {
