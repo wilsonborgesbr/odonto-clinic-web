@@ -1,27 +1,40 @@
 import { Fragment, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu as MenuIcon, Search, Bell, User as UserIcon, LogOut, ChevronDown } from 'lucide-react';
+import { Menu as MenuIcon, User as UserIcon, LogOut, ChevronDown, Settings } from 'lucide-react';
 import { Menu, Transition } from '@headlessui/react';
 import { useAuth } from '../context/AuthContext';
-import { formatDateLong } from '../lib/utils';
 import { Avatar } from './ui/Avatar';
+import { GlobalSearch } from './GlobalSearch';
+import { NotificationsPanel } from './NotificationsPanel';
 import { photoKeys } from '../lib/profilePhotos';
+import type { RoleEnum } from '../types';
+
+const roleLabel: Record<RoleEnum, string> = {
+  PROPRIETARIO: 'Proprietária',
+  SOCIO: 'Sócia',
+  ADMINISTRADOR: 'Administrador(a)',
+  DENTISTA: 'Dentista',
+  RECEPCIONISTA: 'Recepcionista',
+  FINANCEIRO: 'Financeiro',
+  ESTOQUISTA: 'Estoquista',
+  AUXILIAR_CLINICO: 'Aux. clínico',
+};
 
 interface HeaderProps {
   onToggleSidebar: () => void;
 }
 
 const pageTitles: Record<string, string> = {
-  '/': 'Início',
+  '/': '',
   '/perfil': 'Meu perfil',
+  '/configuracoes': 'Configurações',
   '/pacientes': 'Pacientes',
   '/dentistas': 'Dentistas',
   '/agenda': 'Agendamentos',
   '/procedimentos': 'Procedimentos',
   '/anamnese': 'Anamnese',
   '/odontograma': 'Odontograma',
-  '/contas-receber': 'Contas a Receber',
-  '/contas-pagar': 'Contas a Pagar',
+  '/financeiro/auditoria': 'Auditoria Financeira',
   '/convenios': 'Convênios',
   '/funcionarios': 'Funcionários',
   '/estoque': 'Estoque',
@@ -43,7 +56,6 @@ export const Header = ({ onToggleSidebar }: HeaderProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const title = resolveTitle(location.pathname);
-  const dateStr = formatDateLong(new Date());
   const photoKey = useMemo(() => photoKeys.user(user?.email), [user?.email]);
 
   return (
@@ -58,28 +70,11 @@ export const Header = ({ onToggleSidebar }: HeaderProps) => {
           <MenuIcon className="w-5 h-5" />
         </button>
 
-        <div className="min-w-0 flex-1">
-          <h1 className="text-base font-semibold text-bokka-ink truncate">{title}</h1>
-          <p className="text-xs text-bokka-ink-3 capitalize hidden sm:block">{dateStr}</p>
-        </div>
+        <div className="min-w-0 flex-1" />
 
-        <div className="hidden md:flex items-center bg-bokka-surface-2 border border-bokka-border rounded-full px-4 h-10 gap-2 w-64 lg:w-80 focus-within:border-bokka-primary-ring focus-within:bg-bokka-surface transition-colors">
-          <Search className="w-4 h-4 text-bokka-ink-3 shrink-0" strokeWidth={2} />
-          <input
-            type="text"
-            placeholder="Buscar pacientes, agendamentos..."
-            className="bg-transparent border-0 outline-none text-sm text-bokka-ink placeholder:text-bokka-ink-3 flex-1 min-w-0"
-          />
-        </div>
+        <GlobalSearch />
 
-        <button
-          type="button"
-          aria-label="Notificações"
-          className="relative w-10 h-10 rounded-full bg-bokka-surface border border-bokka-border hover:bg-bokka-surface-3 text-bokka-ink-2 flex items-center justify-center"
-        >
-          <Bell className="w-4 h-4" strokeWidth={2} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-bokka-danger ring-2 ring-bokka-surface" />
-        </button>
+        <NotificationsPanel />
 
         {/* Menu do perfil */}
         <Menu as="div" className="relative">
@@ -89,7 +84,9 @@ export const Header = ({ onToggleSidebar }: HeaderProps) => {
               <div className="text-xs font-semibold text-bokka-ink max-w-[140px] truncate">
                 {user?.name?.split(' ').slice(0, 2).join(' ') || 'Usuária'}
               </div>
-              <div className="text-[10px] text-bokka-ink-3">Proprietária</div>
+              <div className="text-[10px] text-bokka-ink-3">
+                {roleLabel[user?.role ?? 'DENTISTA'] ?? 'Usuário'}
+              </div>
             </div>
             <ChevronDown className="w-4 h-4 text-bokka-ink-3 hidden sm:block" strokeWidth={2} />
           </Menu.Button>
@@ -114,6 +111,11 @@ export const Header = ({ onToggleSidebar }: HeaderProps) => {
                     {user?.name || 'Usuária'}
                   </div>
                   <div className="text-xs text-bokka-ink-3 truncate">{user?.email}</div>
+                  {user?.clinicaCodigo && (
+                    <div className="text-[10px] text-bokka-ink-3 truncate mt-1">
+                      Clínica: <span className="font-semibold text-bokka-primary">{user.clinicaCodigo}</span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="p-1.5">
@@ -131,6 +133,21 @@ export const Header = ({ onToggleSidebar }: HeaderProps) => {
                     </Link>
                   )}
                 </Menu.Item>
+                <Menu.Item>
+                  {({ active }) => (
+                    <Link
+                      to="/configuracoes"
+                      className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md ${
+                        active
+                          ? 'bg-bokka-primary-soft text-bokka-primary'
+                          : 'text-bokka-ink-2'
+                      }`}
+                    >
+                      <Settings className="w-4 h-4" strokeWidth={1.75} /> Configurações
+                    </Link>
+                  )}
+                </Menu.Item>
+                <div className="h-px bg-bokka-border my-1" />
                 <Menu.Item>
                   {({ active }) => (
                     <button

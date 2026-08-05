@@ -1,31 +1,26 @@
-import { Link, NavLink } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
   Stethoscope,
   CalendarDays,
-  Syringe,
   ClipboardList,
-  Grid3X3,
-  Wallet,
-  Receipt,
   ShieldCheck,
   UserCog,
   Package,
-  FileText,
-  ChevronRight,
+  KeyRound,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
 import { BokkaMark } from './BokkaMark';
-import { Avatar } from './ui/Avatar';
-import { photoKeys } from '../lib/profilePhotos';
+import { useAuth } from '../context/AuthContext';
 import { cn } from '../lib/utils';
+import type { PermissaoEnum } from '../types';
 
 interface NavItem {
   to: string;
   label: string;
   icon: LucideIcon;
+  permissao: PermissaoEnum;
   end?: boolean;
 }
 
@@ -37,33 +32,31 @@ interface NavGroup {
 const groups: NavGroup[] = [
   {
     label: 'Principal',
-    items: [{ to: '/', label: 'Início', icon: LayoutDashboard, end: true }],
+    items: [
+      { to: '/', label: 'Início', icon: LayoutDashboard, permissao: 'DASHBOARD', end: true },
+    ],
   },
   {
     label: 'Clínico',
     items: [
-      { to: '/pacientes', label: 'Pacientes', icon: Users },
-      { to: '/dentistas', label: 'Dentistas', icon: Stethoscope },
-      { to: '/agenda', label: 'Agendamentos', icon: CalendarDays },
-      { to: '/procedimentos', label: 'Procedimentos', icon: Syringe },
-      { to: '/anamnese', label: 'Anamnese', icon: ClipboardList },
-      { to: '/odontograma', label: 'Odontograma', icon: Grid3X3 },
+      { to: '/pacientes', label: 'Pacientes', icon: Users, permissao: 'PACIENTES' },
+      { to: '/dentistas', label: 'Dentistas', icon: Stethoscope, permissao: 'DENTISTAS' },
+      { to: '/agenda', label: 'Agendamentos', icon: CalendarDays, permissao: 'AGENDAMENTOS' },
     ],
   },
   {
     label: 'Financeiro',
     items: [
-      { to: '/contas-receber', label: 'Contas a Receber', icon: Wallet },
-      { to: '/contas-pagar', label: 'Contas a Pagar', icon: Receipt },
-      { to: '/convenios', label: 'Convênios', icon: ShieldCheck },
+      { to: '/financeiro/auditoria', label: 'Auditoria', icon: ClipboardList, permissao: 'AUDITORIA_FINANCEIRA' },
     ],
   },
   {
     label: 'Administrativo',
     items: [
-      { to: '/funcionarios', label: 'Funcionários', icon: UserCog },
-      { to: '/estoque', label: 'Estoque', icon: Package },
-      { to: '/documentos', label: 'Documentos', icon: FileText },
+      { to: '/funcionarios', label: 'Funcionários', icon: UserCog, permissao: 'FUNCIONARIOS' },
+      { to: '/estoque', label: 'Estoque', icon: Package, permissao: 'ESTOQUE' },
+      { to: '/convenios', label: 'Convênios', icon: ShieldCheck, permissao: 'CONVENIOS' },
+      { to: '/usuarios', label: 'Usuários & Permissões', icon: KeyRound, permissao: 'USUARIOS_E_PERMISSOES' },
     ],
   },
 ];
@@ -74,8 +67,12 @@ interface SidebarProps {
 }
 
 export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
-  const { user } = useAuth();
-  const userPhotoKey = photoKeys.user(user?.email);
+  const { hasPermissao } = useAuth();
+
+  // Filtra items por permissão; grupos sem items visíveis são omitidos.
+  const visibleGroups = groups
+    .map((g) => ({ ...g, items: g.items.filter((i) => hasPermissao(i.permissao)) }))
+    .filter((g) => g.items.length > 0);
 
   return (
     <>
@@ -99,7 +96,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 px-3">
-          {groups.map((group) => (
+          {visibleGroups.map((group) => (
             <div key={group.label} className="mb-5">
               <div className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-bokka-ink-3">
                 {group.label}
@@ -136,23 +133,6 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             </div>
           ))}
         </nav>
-
-        <div className="border-t border-bokka-border p-3 shrink-0">
-          <Link
-            to="/perfil"
-            onClick={onClose}
-            className="flex items-center gap-3 p-2 rounded-xl hover:bg-bokka-surface-3 transition-colors group"
-          >
-            <Avatar photoKey={userPhotoKey} name={user?.name || user?.email} size="md" />
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold text-bokka-ink truncate">
-                {user?.name || 'Dra. Tainah'}
-              </div>
-              <div className="text-xs text-bokka-ink-3 truncate">Meu perfil</div>
-            </div>
-            <ChevronRight className="w-4 h-4 text-bokka-ink-3 group-hover:text-bokka-ink" />
-          </Link>
-        </div>
       </aside>
     </>
   );

@@ -1,15 +1,20 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock } from 'lucide-react';
+import { Mail, Lock, Building2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { BokkaMark } from '../components/BokkaMark';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Field';
 import { ApiError } from '../lib/api';
 
+const LAST_CLINICA_KEY = 'bokka:lastClinicaCodigo';
+
 export const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [clinicaCodigo, setClinicaCodigo] = useState<string>(() =>
+    localStorage.getItem(LAST_CLINICA_KEY) ?? '',
+  );
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +25,9 @@ export const Login = () => {
     setError(null);
     setLoading(true);
     try {
-      await login({ email, password });
+      const codigo = clinicaCodigo.trim().toLowerCase();
+      await login({ clinicaCodigo: codigo, email, password });
+      localStorage.setItem(LAST_CLINICA_KEY, codigo);
       navigate('/', { replace: true });
     } catch (err) {
       const msg =
@@ -57,6 +64,17 @@ export const Login = () => {
           )}
 
           <Input
+            label="Código da clínica"
+            required
+            autoComplete="organization"
+            value={clinicaCodigo}
+            onChange={(e) => setClinicaCodigo(e.target.value)}
+            placeholder="minhaclinica"
+            hint="Identificador único da clínica onde você trabalha."
+            leadingIcon={<Building2 className="w-4 h-4" strokeWidth={1.75} />}
+          />
+
+          <Input
             label="E-mail"
             type="email"
             required
@@ -83,12 +101,12 @@ export const Login = () => {
           </Button>
 
           <p className="text-sm text-bokka-ink-3 text-center">
-            Ainda não tem conta?{' '}
+            Ainda não tem clínica cadastrada?{' '}
             <Link
               to="/registro"
               className="text-bokka-primary font-semibold hover:text-bokka-primary-hover"
             >
-              Criar conta
+              Criar clínica
             </Link>
           </p>
         </form>

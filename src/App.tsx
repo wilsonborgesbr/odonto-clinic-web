@@ -2,16 +2,22 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AppLayout } from './components/AppLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { RequirePermission } from './components/RequirePermission';
 import { Dashboard } from './pages/Dashboard';
 import { Login } from './pages/Login';
 import { Registro } from './pages/Registro';
-import { Placeholder } from './pages/Placeholder';
 import { PacientesPage } from './pages/pacientes/PacientesPage';
 import { PacienteDetalhePage } from './pages/pacientes/PacienteDetalhePage';
+import { DentistasPage } from './pages/dentistas/DentistasPage';
 import { AgendaPage } from './pages/agenda/AgendaPage';
-import { ContasReceberPage } from './pages/financeiro/ContasReceberPage';
+import { AuditoriaPage } from './pages/financeiro/AuditoriaPage';
 import { OdontogramaPacientePage } from './pages/odontograma/OdontogramaPacientePage';
+import { FuncionariosPage } from './pages/funcionarios/FuncionariosPage';
+import { EstoquePage } from './pages/estoque/EstoquePage';
+import { ConveniosPage } from './pages/convenios/ConveniosPage';
+import { Usuarios } from './pages/Usuarios';
 import { Perfil } from './pages/Perfil';
+import { Configuracoes } from './pages/Configuracoes';
 
 const RedirectIfAuthed = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuth();
@@ -40,93 +46,99 @@ const AppRoutes = () => (
 
     <Route element={<ProtectedRoute />}>
       <Route element={<AppLayout />}>
-        <Route path="/" element={<Dashboard />} />
+        {/* Página de "Meu perfil" e "Configurações" são sempre acessíveis pra qualquer user logado */}
         <Route path="/perfil" element={<Perfil />} />
-        <Route path="/pacientes" element={<PacientesPage />} />
-        <Route path="/pacientes/:id" element={<PacienteDetalhePage />} />
-        <Route path="/pacientes/:id/odontograma" element={<OdontogramaPacientePage />} />
-        <Route path="/agenda" element={<AgendaPage />} />
-        <Route path="/contas-receber" element={<ContasReceberPage />} />
+        <Route path="/configuracoes" element={<Configuracoes />} />
+
+        <Route
+          path="/"
+          element={
+            <RequirePermission permissao="DASHBOARD">
+              <Dashboard />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="/pacientes"
+          element={
+            <RequirePermission permissao="PACIENTES">
+              <PacientesPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="/pacientes/:id"
+          element={
+            <RequirePermission permissao="PACIENTES">
+              <PacienteDetalhePage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="/pacientes/:id/odontograma"
+          element={
+            <RequirePermission permissao="ODONTOGRAMA">
+              <OdontogramaPacientePage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="/agenda"
+          element={
+            <RequirePermission permissao="AGENDAMENTOS">
+              <AgendaPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="/financeiro/auditoria"
+          element={
+            <RequirePermission permissao="AUDITORIA_FINANCEIRA">
+              <AuditoriaPage />
+            </RequirePermission>
+          }
+        />
+        <Route path="/contas-receber" element={<Navigate to="/financeiro/auditoria" replace />} />
+        <Route path="/contas-pagar" element={<Navigate to="/financeiro/auditoria" replace />} />
 
         <Route
           path="/dentistas"
           element={
-            <Placeholder
-              title="Dentistas"
-              descricao="Cadastro e gerenciamento do quadro de dentistas."
-            />
-          }
-        />
-        <Route
-          path="/procedimentos"
-          element={
-            <Placeholder
-              title="Procedimentos"
-              descricao="Registro dos procedimentos realizados nos pacientes."
-            />
-          }
-        />
-        <Route
-          path="/anamnese"
-          element={
-            <Placeholder
-              title="Anamnese"
-              descricao="Histórico clínico dos pacientes. Consulte pela ficha do paciente."
-            />
-          }
-        />
-        <Route
-          path="/odontograma"
-          element={
-            <Placeholder
-              title="Odontograma"
-              descricao="Mapeamento dental dos pacientes. Consulte pela ficha do paciente."
-            />
-          }
-        />
-        <Route
-          path="/contas-pagar"
-          element={
-            <Placeholder
-              title="Contas a Pagar"
-              descricao="Controle das despesas e obrigações da clínica."
-            />
+            <RequirePermission permissao="DENTISTAS">
+              <DentistasPage />
+            </RequirePermission>
           }
         />
         <Route
           path="/convenios"
           element={
-            <Placeholder
-              title="Convênios"
-              descricao="Cadastro dos convênios odontológicos parceiros."
-            />
+            <RequirePermission permissao="CONVENIOS">
+              <ConveniosPage />
+            </RequirePermission>
           }
         />
         <Route
           path="/funcionarios"
           element={
-            <Placeholder
-              title="Funcionários"
-              descricao="Cadastro da equipe administrativa e auxiliar."
-            />
+            <RequirePermission permissao="FUNCIONARIOS">
+              <FuncionariosPage />
+            </RequirePermission>
           }
         />
         <Route
           path="/estoque"
           element={
-            <Placeholder
-              title="Estoque"
-              descricao="Controle de insumos, materiais e medicamentos."
-            />
+            <RequirePermission permissao="ESTOQUE">
+              <EstoquePage />
+            </RequirePermission>
           }
         />
         <Route
-          path="/documentos"
+          path="/usuarios"
           element={
-            <Placeholder
-              title="Documentos"
-              descricao="Arquivos vinculados aos pacientes."
-            />
+            <RequirePermission permissao="USUARIOS_E_PERMISSOES">
+              <Usuarios />
+            </RequirePermission>
           }
         />
       </Route>
