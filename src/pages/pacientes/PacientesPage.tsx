@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Plus, Search, Eye, Pencil, UserX, Users as UsersIcon } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Field';
@@ -10,6 +9,7 @@ import { SkeletonTableRows } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { bokkaToast } from '../../components/ui/Toast';
 import { PacienteForm } from './PacienteForm';
+import { PacienteDetalheModal } from './PacienteDetalheModal';
 import {
   pacienteService,
   useAtualizarPaciente,
@@ -21,7 +21,7 @@ import {
 import { ApiError } from '../../lib/api';
 import { Avatar } from '../../components/ui/Avatar';
 import { photoKeys } from '../../lib/profilePhotos';
-import { cn, formatCpf, formatPhone } from '../../lib/utils';
+import { cn, formatCpf, formatPhone, sanitizeEnderecoPayload } from '../../lib/utils';
 import type { Paciente, PacienteListagemDTO } from '../../types';
 
 const PAGE_SIZE = 10;
@@ -44,6 +44,7 @@ export const PacientesPage = () => {
   const [formInitial, setFormInitial] = useState<Paciente | null>(null);
 
   const [confirmar, setConfirmar] = useState<PacienteListagemDTO | null>(null);
+  const [detalheId, setDetalheId] = useState<string | null>(null);
 
   useEffect(() => {
     setPagina(0);
@@ -84,11 +85,12 @@ export const PacientesPage = () => {
   };
 
   const handleSubmit = async (paciente: Paciente) => {
+    const payload = sanitizeEnderecoPayload(paciente);
     if (formInitial?.id) {
-      await atualizarM.mutateAsync({ id: formInitial.id, paciente });
+      await atualizarM.mutateAsync({ id: formInitial.id, paciente: payload });
       bokkaToast.success(`${paciente.nomeCompleto} atualizada.`);
     } else {
-      await criarM.mutateAsync(paciente);
+      await criarM.mutateAsync(payload);
       bokkaToast.success(`${paciente.nomeCompleto} cadastrada.`);
     }
     setFormOpen(false);
@@ -195,9 +197,10 @@ export const PacientesPage = () => {
                 {linhas.map((p) => (
                   <tr key={p.id} className="hover:bg-bokka-surface-3">
                     <td className="px-4 py-3">
-                      <Link
-                        to={`/pacientes/${p.id}`}
-                        className="flex items-center gap-3 group"
+                      <button
+                        type="button"
+                        onClick={() => setDetalheId(p.id)}
+                        className="flex items-center gap-3 group text-left"
                       >
                         <Avatar
                           photoKey={photoKeys.paciente(p.id)}
@@ -207,7 +210,7 @@ export const PacientesPage = () => {
                         <span className="font-semibold text-bokka-ink group-hover:text-bokka-primary">
                           {p.nomeCompleto}
                         </span>
-                      </Link>
+                      </button>
                     </td>
                     <td className="px-4 py-3 text-bokka-ink-2 tabular-nums">
                       {formatCpf(p.cpf)}
@@ -223,13 +226,14 @@ export const PacientesPage = () => {
                     </td>
                     <td className={cn('px-4 py-3 text-right')}>
                       <div className="inline-flex items-center gap-1">
-                        <Link
-                          to={`/pacientes/${p.id}`}
+                        <button
+                          type="button"
+                          onClick={() => setDetalheId(p.id)}
                           className="p-2 rounded-md text-bokka-ink-2 hover:bg-bokka-surface hover:text-bokka-primary"
                           title="Ver ficha"
                         >
                           <Eye className="w-4 h-4" strokeWidth={1.75} />
-                        </Link>
+                        </button>
                         <button
                           type="button"
                           onClick={() => abrirEdicao(p)}
@@ -274,6 +278,7 @@ export const PacientesPage = () => {
       >
         <PacienteForm
           initial={formInitial}
+          photoKey={formInitial?.id ? photoKeys.paciente(formInitial.id) : null}
           onCancel={() => setFormOpen(false)}
           onSubmit={handleSubmit}
         />
@@ -292,6 +297,12 @@ export const PacientesPage = () => {
         confirmLabel="Inativar"
         danger
         loading={inativarM.isPending}
+      />
+
+      <PacienteDetalheModal
+        pacienteId={detalheId}
+        open={!!detalheId}
+        onClose={() => setDetalheId(null)}
       />
     </div>
   );

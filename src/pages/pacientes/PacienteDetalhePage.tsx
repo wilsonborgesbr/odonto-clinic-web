@@ -10,7 +10,6 @@ import {
   MessageCircle,
   Cake,
   MapPin,
-  ClipboardList,
   Grid3X3,
   CalendarDays,
   User as UserIcon,
@@ -24,14 +23,17 @@ import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Modal } from '../../components/ui/Modal';
 import { PacienteForm } from './PacienteForm';
+import { PacienteAnamneses } from './PacienteAnamneses';
+import { PacienteDocumentos } from './PacienteDocumentos';
+import { PacienteProcedimentos } from './PacienteProcedimentos';
 import { bokkaToast } from '../../components/ui/Toast';
 import {
   usePaciente,
   usePacientes,
   useAtualizarPaciente,
 } from '../../services/pacienteService';
+import { useConvenio } from '../../services/convenioService';
 import { useAgendamentosPorPaciente } from '../../services/agendamentoService';
-import { useAnamnesesPorPaciente } from '../../services/anamneseService';
 import { useOdontogramasPorPaciente } from '../../services/odontogramaService';
 import { ApiError } from '../../lib/api';
 import { Avatar } from '../../components/ui/Avatar';
@@ -42,6 +44,7 @@ import {
   formatDate,
   formatPhone,
   formatTime,
+  sanitizeEnderecoPayload,
 } from '../../lib/utils';
 import type { Paciente } from '../../types';
 
@@ -54,7 +57,6 @@ export const PacienteDetalhePage = () => {
 
   const pacienteQ = usePaciente(id);
   const agendamentosQ = useAgendamentosPorPaciente(id);
-  const anamnesesQ = useAnamnesesPorPaciente(id);
   const odontogramasQ = useOdontogramasPorPaciente(id);
 
   const queueQ = usePacientes({
@@ -66,10 +68,13 @@ export const PacienteDetalhePage = () => {
 
   const atualizarM = useAtualizarPaciente();
   const paciente = pacienteQ.data;
+  const convenioQ = useConvenio(
+    (paciente?.tipoPaciente === 'CONVENIO' || paciente?.tipoPaciente === 'MISTO') ? paciente?.convenioId : undefined,
+  );
 
   const handleSubmit = async (values: Paciente) => {
     if (!id) return;
-    await atualizarM.mutateAsync({ id, paciente: values });
+    await atualizarM.mutateAsync({ id, paciente: sanitizeEnderecoPayload(values) });
     bokkaToast.success('Dados atualizados.');
     setEditing(false);
   };
@@ -180,7 +185,7 @@ export const PacienteDetalhePage = () => {
                   className={cn(
                     'px-3 py-1 rounded-full text-xs font-semibold transition-colors',
                     queueSort === t.v
-                      ? 'bg-bokka-ink text-white'
+                      ? 'bg-bokka-primary-soft text-bokka-primary'
                       : 'text-bokka-ink-3 hover:bg-bokka-surface-3',
                   )}
                 >
@@ -265,9 +270,9 @@ export const PacienteDetalhePage = () => {
                 {[
                   { icon: Mail, label: 'E-mail', href: paciente.email ? `mailto:${paciente.email}` : undefined },
                   { icon: Phone, label: 'Ligar', href: paciente.telefoneCelular ? `tel:${paciente.telefoneCelular}` : undefined },
-                  { icon: MessageCircle, label: 'WhatsApp', href: paciente.telefoneCelular ? `https://wa.me/${paciente.telefoneCelular.replace(/\D/g, '')}` : undefined },
-                  { icon: Smartphone, label: 'SMS' },
-                  { icon: Video, label: 'Chamada' },
+                  { icon: MessageCircle, label: 'WhatsApp', href: paciente.telefoneCelular ? `https://wa.me/55${paciente.telefoneCelular.replace(/\D/g, '')}` : undefined },
+                  { icon: Smartphone, label: 'SMS', href: paciente.telefoneCelular ? `sms:${paciente.telefoneCelular.replace(/\D/g, '')}` : undefined },
+                  { icon: Video, label: 'Chamada de vídeo', href: paciente.email ? `https://meet.google.com/new?email=${paciente.email}` : undefined },
                 ].map((btn, i) => {
                   const Icon = btn.icon;
                   const disabled = !btn.href;
@@ -297,7 +302,7 @@ export const PacienteDetalhePage = () => {
                 <button
                   type="button"
                   onClick={() => setEditing(true)}
-                  className="w-10 h-10 rounded-full bg-bokka-ink text-white hover:bg-bokka-ink-2 flex items-center justify-center transition-colors ml-1"
+                  className="w-10 h-10 rounded-full flex items-center justify-center transition-colors border border-bokka-border text-bokka-ink-2 bg-bokka-surface hover:bg-bokka-primary hover:text-white hover:border-bokka-primary ml-1"
                   title="Editar"
                 >
                   <Pencil className="w-4 h-4" strokeWidth={1.75} />
@@ -409,15 +414,20 @@ export const PacienteDetalhePage = () => {
               <div className="flex items-start justify-between mb-4">
                 <div className="min-w-0">
                   <p className="text-xs uppercase tracking-wider font-semibold text-white/70">
-                    Convênio
+                    Tipo de atendimento
                   </p>
                   <p className="text-base font-bold mt-1 truncate">
                     {paciente.tipoPaciente === 'CONVENIO'
-                      ? 'Coberto por convênio'
+                      ? 'Convênio'
                       : paciente.tipoPaciente === 'MISTO'
                         ? 'Atendimento misto'
                         : 'Particular'}
                   </p>
+                  {(paciente.tipoPaciente === 'CONVENIO' || paciente.tipoPaciente === 'MISTO') && convenioQ.data?.nome && (
+                    <p className="text-xs font-semibold text-white/80 mt-1 truncate">
+                      {convenioQ.data.nome}
+                    </p>
+                  )}
                 </div>
                 <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center shrink-0">
                   <ShieldCheck className="w-5 h-5" strokeWidth={1.75} />
@@ -449,70 +459,10 @@ export const PacienteDetalhePage = () => {
             </div>
           </div>
 
-          {/* Row 2: Historico dental (2/3) + Odontograma preview (1/3) */}
+          {/* Row 2: Anamneses + Odontograma preview */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-            {/* Historico dental */}
-            <div className="bg-bokka-surface border border-bokka-border rounded-2xl overflow-hidden xl:col-span-2">
-              <div className="p-5 pb-3 flex items-center justify-between">
-                <div>
-                  <h3 className="text-base font-semibold text-bokka-ink">
-                    Histórico clínico
-                  </h3>
-                  <p className="text-xs text-bokka-ink-3 mt-0.5">
-                    {anamnesesQ.data?.length ?? 0} anamneses · {odontogramasQ.data?.length ?? 0} odontogramas
-                  </p>
-                </div>
-              </div>
-              {anamnesesQ.isLoading ? (
-                <div className="px-5 pb-5 space-y-2">
-                  <Skeleton className="h-12 w-full" rounded="lg" />
-                  <Skeleton className="h-12 w-full" rounded="lg" />
-                </div>
-              ) : !anamnesesQ.data?.length ? (
-                <div className="px-5 pb-5">
-                  <EmptyState
-                    compact
-                    icon={<ClipboardList className="w-6 h-6" strokeWidth={1.75} />}
-                    title="Nenhuma anamnese"
-                    description="A anamnese é preenchida no momento do atendimento."
-                  />
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-[11px] uppercase tracking-wider text-bokka-ink-3 bg-bokka-surface-3">
-                        <th className="px-5 py-3 font-semibold">Data</th>
-                        <th className="px-3 py-3 font-semibold">Queixa</th>
-                        <th className="px-3 py-3 font-semibold">Alertas</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-bokka-border">
-                      {anamnesesQ.data.slice(0, 5).map((a) => (
-                        <tr key={a.id} className="hover:bg-bokka-surface-3">
-                          <td className="px-5 py-3 font-semibold text-bokka-ink tabular-nums">
-                            {formatDate(a.dataPreenchimento)}
-                          </td>
-                          <td className="px-3 py-3 text-bokka-ink-2 max-w-md truncate">
-                            {a.queixaPrincipal || '—'}
-                          </td>
-                          <td className="px-3 py-3">
-                            <div className="flex flex-wrap gap-1">
-                              {a.temAlergia && <Badge tone="warning">Alergia</Badge>}
-                              {a.usaMedicamentos && <Badge tone="info">Med.</Badge>}
-                              {a.fumante && <Badge tone="neutral">Fumante</Badge>}
-                              {a.gestante && <Badge tone="danger">Gestante</Badge>}
-                              {!a.temAlergia && !a.usaMedicamentos && !a.fumante && !a.gestante && (
-                                <span className="text-xs text-bokka-ink-3">—</span>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+            <div className="xl:col-span-2">
+              <PacienteAnamneses pacienteId={paciente.id!} />
             </div>
 
             {/* Odontograma preview */}
@@ -555,6 +505,12 @@ export const PacienteDetalhePage = () => {
               </div>
             </div>
           </div>
+
+          {/* Procedimentos do paciente */}
+          <PacienteProcedimentos pacienteId={paciente.id!} />
+
+          {/* Documentos do paciente */}
+          <PacienteDocumentos pacienteId={paciente.id!} />
 
           {/* Próxima consulta destaque, se houver */}
           {proximoAgendamento && (

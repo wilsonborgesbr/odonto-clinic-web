@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Button } from '../../components/ui/Button';
-import { Input, Select } from '../../components/ui/Field';
+import { CepInput, CpfInput, Input, PhoneInput, Select } from '../../components/ui/Field';
+import { Avatar } from '../../components/ui/Avatar';
+import { processImageFile, setPhoto } from '../../lib/profilePhotos';
 import { ApiError } from '../../lib/api';
+import { useConvenios } from '../../services/convenioService';
 import type { Paciente, SexoEnum, TipoPaciente } from '../../types';
 
 interface PacienteFormProps {
   initial: Paciente | null;
+  photoKey?: string | null;
   onSubmit: (paciente: Paciente) => Promise<void>;
   onCancel: () => void;
 }
@@ -51,11 +55,18 @@ const estadoCivilOptions = [
   { value: 'OUTRO', label: 'Outro' },
 ];
 
-export const PacienteForm = ({ initial, onSubmit, onCancel }: PacienteFormProps) => {
+export const PacienteForm = ({ initial, photoKey, onSubmit, onCancel }: PacienteFormProps) => {
   const [values, setValues] = useState<Paciente>(() => initial ?? emptyPaciente);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
+  const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
+
+  const conveniosQ = useConvenios();
+  const showConvenio = values.tipoPaciente === 'CONVENIO' || values.tipoPaciente === 'MISTO';
+  const convenioOptions = (conveniosQ.data ?? [])
+    .filter((c) => c.ativo)
+    .map((c) => ({ value: c.id!, label: c.nome ?? c.id! }));
 
   const set = <K extends keyof Paciente>(k: K, v: Paciente[K]) =>
     setValues((prev) => ({ ...prev, [k]: v }));
@@ -72,6 +83,7 @@ export const PacienteForm = ({ initial, onSubmit, onCancel }: PacienteFormProps)
     setErrors({});
     setGlobalError(null);
     try {
+      if (pendingPhoto && photoKey) setPhoto(photoKey, pendingPhoto);
       await onSubmit(values);
     } catch (err) {
       if (err instanceof ApiError) {
@@ -94,6 +106,38 @@ export const PacienteForm = ({ initial, onSubmit, onCancel }: PacienteFormProps)
         </div>
       )}
 
+      {photoKey && (
+        <section className="flex items-center gap-4">
+          <Avatar
+            photoKey={photoKey}
+            name={values.nomeCompleto}
+            size="xl"
+            editable
+            previewSrc={pendingPhoto}
+            onFileSelect={async (file) => {
+              const uri = await processImageFile(file);
+              setPendingPhoto(uri);
+            }}
+            ring
+          />
+          <div>
+            <p className="text-sm font-semibold text-bokka-ink">Foto de perfil</p>
+            <p className="text-xs text-bokka-ink-3 mt-0.5">
+              {pendingPhoto ? 'Nova foto selecionada — será salva ao confirmar.' : 'Clique no avatar para alterar.'}
+            </p>
+            {pendingPhoto && (
+              <button
+                type="button"
+                onClick={() => setPendingPhoto(null)}
+                className="text-xs text-bokka-danger-ink hover:underline mt-1"
+              >
+                Remover nova foto
+              </button>
+            )}
+          </div>
+        </section>
+      )}
+
       <section>
         <h3 className="text-sm font-semibold text-bokka-ink mb-3">Identificação</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -105,12 +149,11 @@ export const PacienteForm = ({ initial, onSubmit, onCancel }: PacienteFormProps)
             error={errors.nomeCompleto}
             containerClassName="sm:col-span-2"
           />
-          <Input
+          <CpfInput
             label="CPF"
             required
             value={values.cpf}
-            onChange={(e) => set('cpf', e.target.value)}
-            placeholder="000.000.000-00"
+            onChange={(v) => set('cpf', v)}
             error={errors.cpf}
           />
           <Input
@@ -133,10 +176,27 @@ export const PacienteForm = ({ initial, onSubmit, onCancel }: PacienteFormProps)
             label="Tipo de paciente"
             required
             value={values.tipoPaciente}
-            onChange={(e) => set('tipoPaciente', e.target.value as TipoPaciente)}
+            onChange={(e) => {
+              const v = e.target.value as TipoPaciente;
+              set('tipoPaciente', v);
+              if (v === 'PARTICULAR') set('convenioId', undefined);
+            }}
             options={tipoPacienteOptions}
             error={errors.tipoPaciente}
           />
+          {showConvenio && (
+            <Select
+              label="Convênio"
+              required
+              value={values.convenioId ?? ''}
+              onChange={(e) => set('convenioId', e.target.value || undefined)}
+              options={[
+                { value: '', label: 'Selecione o convênio' },
+                ...convenioOptions,
+              ]}
+              error={errors.convenioId}
+            />
+          )}
           <Select
             label="Estado civil"
             value={values.estadoCivil ?? ''}
@@ -161,27 +221,27 @@ export const PacienteForm = ({ initial, onSubmit, onCancel }: PacienteFormProps)
             onChange={(e) => set('email', e.target.value)}
             error={errors.email}
           />
-          <Input
+          <PhoneInput
             label="Celular"
             value={values.telefoneCelular ?? ''}
-            onChange={(e) => set('telefoneCelular', e.target.value)}
-            placeholder="(00) 00000-0000"
+            onChange={(v) => set('telefoneCelular', v)}
             error={errors.telefoneCelular}
           />
-          <Input
+          <PhoneInput
             label="Telefone fixo"
+            variant="fixo"
             value={values.telefoneFixo ?? ''}
-            onChange={(e) => set('telefoneFixo', e.target.value)}
+            onChange={(v) => set('telefoneFixo', v)}
           />
           <Input
             label="Contato de emergência"
             value={values.nomeContatoEmergencia ?? ''}
             onChange={(e) => set('nomeContatoEmergencia', e.target.value)}
           />
-          <Input
+          <PhoneInput
             label="Telefone de emergência"
             value={values.telefoneEmergencia ?? ''}
-            onChange={(e) => set('telefoneEmergencia', e.target.value)}
+            onChange={(v) => set('telefoneEmergencia', v)}
           />
         </div>
       </section>
@@ -189,10 +249,10 @@ export const PacienteForm = ({ initial, onSubmit, onCancel }: PacienteFormProps)
       <section>
         <h3 className="text-sm font-semibold text-bokka-ink mb-3">Endereço</h3>
         <div className="grid grid-cols-1 sm:grid-cols-6 gap-4">
-          <Input
+          <CepInput
             label="CEP"
             value={values.endereco?.cep ?? ''}
-            onChange={(e) => setEnd('cep', e.target.value)}
+            onChange={(v) => setEnd('cep', v)}
             containerClassName="sm:col-span-2"
           />
           <Input

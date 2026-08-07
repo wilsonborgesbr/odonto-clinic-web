@@ -3,11 +3,10 @@ import type { FormEvent } from 'react';
 import { Button } from '../../components/ui/Button';
 import { CurrencyInput, Input, Select, Textarea } from '../../components/ui/Field';
 import { ApiError } from '../../lib/api';
-import { usePacientes } from '../../services/pacienteService';
 import { formatCurrency } from '../../lib/utils';
 import type {
-  ContaReceber,
-  FormaPagamentoEnum,
+  CategoriaContaPagarEnum,
+  ContaPagar,
   StatusFinanceiroEnum,
   TipoPagamentoProcedimentoEnum,
 } from '../../types';
@@ -22,56 +21,57 @@ const parcelaOptions = Array.from({ length: 23 }, (_, i) => ({
   label: `${i + 2}x`,
 }));
 
-interface ContaReceberFormProps {
-  initial: ContaReceber | null;
-  onSubmit: (c: ContaReceber) => Promise<void>;
+interface ContaPagarFormProps {
+  initial: ContaPagar | null;
+  onSubmit: (c: ContaPagar) => Promise<void>;
   onCancel: () => void;
 }
 
-const empty: ContaReceber = {
-  pacienteId: '',
+const empty: ContaPagar = {
   descricao: '',
-  valorTotal: 0,
-  valorPago: 0,
-  formaPagamento: 'DINHEIRO' as FormaPagamentoEnum,
+  categoria: 'OUTRO',
+  fornecedor: '',
+  valor: 0,
   dataVencimento: '',
-  status: 'PENDENTE' as StatusFinanceiroEnum,
+  status: 'PENDENTE',
 };
 
-const formaOptions = [
-  { value: 'DINHEIRO', label: 'Dinheiro' },
-  { value: 'PIX', label: 'PIX' },
-  { value: 'CARTAO_CREDITO', label: 'Cartão de crédito' },
-  { value: 'CARTAO_DEBITO', label: 'Cartão de débito' },
-  { value: 'CONVENIO', label: 'Convênio' },
-  { value: 'BOLETO', label: 'Boleto' },
-  { value: 'TRANSFERENCIA', label: 'Transferência' },
-];
+export const categoriaPagarLabel: Record<CategoriaContaPagarEnum, string> = {
+  ALUGUEL: 'Aluguel',
+  MATERIAL_ODONTOLOGICO: 'Material odontológico',
+  EQUIPAMENTO: 'Equipamento',
+  SALARIO: 'Salário',
+  AGUA: 'Água',
+  LUZ: 'Luz',
+  INTERNET: 'Internet',
+  MANUTENCAO: 'Manutenção',
+  IMPOSTO: 'Imposto',
+  OUTRO: 'Outro',
+};
 
-const statusOptions = [
+const categoriaOptions = (Object.keys(categoriaPagarLabel) as CategoriaContaPagarEnum[]).map(
+  (v) => ({ value: v, label: categoriaPagarLabel[v] }),
+);
+
+const statusOptions: { value: StatusFinanceiroEnum; label: string }[] = [
   { value: 'PENDENTE', label: 'Pendente' },
   { value: 'PAGO', label: 'Pago' },
   { value: 'ATRASADO', label: 'Atrasado' },
   { value: 'CANCELADO', label: 'Cancelado' },
 ];
 
-export const ContaReceberForm = ({ initial, onSubmit, onCancel }: ContaReceberFormProps) => {
-  const [values, setValues] = useState<ContaReceber>(() => ({
+export const ContaPagarForm = ({ initial, onSubmit, onCancel }: ContaPagarFormProps) => {
+  const [values, setValues] = useState<ContaPagar>(() => ({
     ...empty,
     ...(initial ?? {}),
     dataVencimento: initial?.dataVencimento?.slice(0, 10) ?? '',
+    dataPagamento: initial?.dataPagamento?.slice(0, 10) ?? '',
   }));
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
 
-  const pacientesQ = usePacientes({ pagina: 0, tamanho: 200, ordem: 'nomeCompleto' });
-  const pacienteOptions = [
-    { value: '', label: '— Selecione a paciente —' },
-    ...(pacientesQ.data?.content.map((p) => ({ value: p.id, label: p.nomeCompleto })) ?? []),
-  ];
-
-  const set = <K extends keyof ContaReceber>(k: K, v: ContaReceber[K]) =>
+  const set = <K extends keyof ContaPagar>(k: K, v: ContaPagar[K]) =>
     setValues((prev) => ({ ...prev, [k]: v }));
 
   const handleSubmit = async (e: FormEvent) => {
@@ -80,14 +80,20 @@ export const ContaReceberForm = ({ initial, onSubmit, onCancel }: ContaReceberFo
     setGlobalError(null);
     setSubmitting(true);
     try {
-      await onSubmit(values);
+      const payload: ContaPagar = {
+        ...values,
+        dataPagamento: values.status === 'PAGO' && !values.dataPagamento
+          ? new Date().toISOString().slice(0, 10)
+          : values.dataPagamento || undefined,
+      };
+      await onSubmit(payload);
     } catch (err) {
       if (err instanceof ApiError) {
         const fe = err.fieldErrors();
         if (Object.keys(fe).length) setErrors(fe);
         else setGlobalError(err.friendlyMessage());
       } else {
-        setGlobalError('Não foi possível salvar a conta.');
+        setGlobalError('Não foi possível salvar a despesa.');
       }
     } finally {
       setSubmitting(false);
@@ -103,31 +109,36 @@ export const ContaReceberForm = ({ initial, onSubmit, onCancel }: ContaReceberFo
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Select
-          label="Paciente"
-          required
-          value={values.pacienteId}
-          onChange={(e) => set('pacienteId', e.target.value)}
-          options={pacienteOptions}
-          disabled={pacientesQ.isLoading}
-          error={errors.pacienteId}
-          containerClassName="sm:col-span-2"
-        />
         <Input
           label="Descrição"
           required
           value={values.descricao}
           onChange={(e) => set('descricao', e.target.value)}
-          placeholder="Ex.: Restauração dente 26"
+          placeholder="Ex.: Conta de energia elétrica — julho"
           error={errors.descricao}
           containerClassName="sm:col-span-2"
         />
-        <CurrencyInput
-          label="Valor total"
+        <Select
+          label="Categoria"
           required
-          value={values.valorTotal}
-          onChange={(v) => set('valorTotal', v ?? 0)}
-          error={errors.valorTotal}
+          value={values.categoria}
+          onChange={(e) => set('categoria', e.target.value as CategoriaContaPagarEnum)}
+          options={categoriaOptions}
+          error={errors.categoria}
+        />
+        <Input
+          label="Fornecedor"
+          value={values.fornecedor ?? ''}
+          onChange={(e) => set('fornecedor', e.target.value)}
+          placeholder="Ex.: Energisa Sergipe"
+          error={errors.fornecedor}
+        />
+        <CurrencyInput
+          label="Valor"
+          required
+          value={values.valor}
+          onChange={(v) => set('valor', v ?? 0)}
+          error={errors.valor}
         />
         <Input
           label="Dia de pagamento (1º vencimento)"
@@ -136,13 +147,6 @@ export const ContaReceberForm = ({ initial, onSubmit, onCancel }: ContaReceberFo
           value={values.dataVencimento}
           onChange={(e) => set('dataVencimento', e.target.value)}
           error={errors.dataVencimento}
-        />
-        <Select
-          label="Forma de pagamento"
-          required
-          value={values.formaPagamento}
-          onChange={(e) => set('formaPagamento', e.target.value as FormaPagamentoEnum)}
-          options={formaOptions}
         />
         <Select
           label="Tipo de pagamento"
@@ -160,20 +164,25 @@ export const ContaReceberForm = ({ initial, onSubmit, onCancel }: ContaReceberFo
             onChange={(e) => set('numeroParcelas', parseInt(e.target.value, 10))}
             options={parcelaOptions}
             hint={
-              values.valorTotal && values.numeroParcelas
-                ? `${values.numeroParcelas}x de ${formatCurrency(values.valorTotal / values.numeroParcelas)} — 1 cobrança por mês`
-                : 'Cria uma cobrança por mês a partir do dia de pagamento'
+              values.valor && values.numeroParcelas
+                ? `${values.numeroParcelas}x de ${formatCurrency(values.valor / values.numeroParcelas)} — 1 despesa por mês`
+                : 'Cria uma despesa por mês a partir do dia de pagamento'
             }
-            containerClassName="sm:col-span-2"
           />
         )}
         <Select
-          label="Status inicial"
+          label="Status"
           required
           value={values.status}
           onChange={(e) => set('status', e.target.value as StatusFinanceiroEnum)}
           options={statusOptions}
-          containerClassName={values.tipoPagamento === 'PARCELADO' ? 'sm:col-span-2' : ''}
+        />
+        <Input
+          label="Data de pagamento"
+          type="date"
+          value={values.dataPagamento ?? ''}
+          onChange={(e) => set('dataPagamento', e.target.value)}
+          hint={values.status === 'PAGO' ? 'Preencha para registrar quando pagou.' : undefined}
         />
         <Textarea
           label="Observações"
@@ -189,7 +198,7 @@ export const ContaReceberForm = ({ initial, onSubmit, onCancel }: ContaReceberFo
           Cancelar
         </Button>
         <Button type="submit" loading={submitting}>
-          {initial?.id ? 'Salvar alterações' : 'Criar conta'}
+          {initial?.id ? 'Salvar alterações' : 'Criar despesa'}
         </Button>
       </div>
     </form>
