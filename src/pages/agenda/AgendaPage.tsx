@@ -16,6 +16,7 @@ import {
   useExcluirAgendamento,
 } from '../../services/agendamentoService';
 import { useDentistasAtivos } from '../../services/dentistaService';
+import { usePacientes } from '../../services/pacienteService';
 import { ApiError } from '../../lib/api';
 import { formatDateLong, formatTime } from '../../lib/utils';
 import type { Agendamento } from '../../types';
@@ -44,6 +45,7 @@ export const AgendaPage = () => {
 
   const listQuery = useAgendamentos({ pagina: 0, tamanho: 500, ordem: 'dataHoraInicio' });
   const dentistasQ = useDentistasAtivos();
+  const pacientesQ = usePacientes({ pagina: 0, tamanho: 200 });
 
   const criarM = useCriarAgendamento();
   const atualizarM = useAtualizarAgendamento();
@@ -63,6 +65,12 @@ export const AgendaPage = () => {
     dentistasQ.data?.forEach((d) => m.set(d.id, d.nomeCompleto));
     return m;
   }, [dentistasQ.data]);
+
+  const pacienteMap = useMemo(() => {
+    const m = new Map<string, string>();
+    (pacientesQ.data?.content ?? []).forEach((p) => m.set(p.id, p.nomeCompleto));
+    return m;
+  }, [pacientesQ.data]);
 
   const dentistaOptions = [
     { value: '', label: 'Todos os dentistas' },
@@ -205,8 +213,9 @@ export const AgendaPage = () => {
                         {formatTime(ag.dataHoraFim)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-bokka-ink">
-                      Paciente #{ag.pacienteId?.slice(-6) || '—'}
+                    <td className="px-4 py-3 text-bokka-ink font-semibold">
+                      {pacienteMap.get(ag.pacienteId ?? '') ??
+                        (ag.pacienteId ? `Paciente #${ag.pacienteId.slice(-6)}` : '—')}
                     </td>
                     <td className="px-4 py-3 text-bokka-ink-2">
                       {dentistaMap.get(ag.dentistaId ?? '') ??

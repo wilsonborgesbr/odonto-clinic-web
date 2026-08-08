@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Bar,
@@ -13,14 +13,12 @@ import {
 import {
   CalendarDays,
   Wallet,
-  Users,
-  Plus,
   ArrowRight,
   Download,
   ChevronLeft,
   ChevronRight,
-  Play,
-  X as CloseIcon,
+  Package,
+  AlertTriangle,
 } from 'lucide-react';
 import { KpiCard, Card } from '../components/ui/Card';
 import { AgendamentoStatusBadge } from '../components/ui/Badge';
@@ -37,13 +35,13 @@ import {
 import { useContasReceber } from '../services/financeiroService';
 import { usePacientes } from '../services/pacienteService';
 import { useDentistasAtivos } from '../services/dentistaService';
+import { useEstoque } from '../services/estoqueService';
 import { useAuth } from '../context/AuthContext';
 import { photoKeys } from '../lib/profilePhotos';
 import {
   cn,
   formatCurrency,
   formatDateLong,
-  formatTime,
   getGreeting,
   isSameDay,
 } from '../lib/utils';
@@ -59,7 +57,7 @@ const inRange = (iso: string | undefined | null, from: Date, to: Date): boolean 
 
 const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 const semanaLabels = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
-const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 export const Dashboard = () => {
   const { user } = useAuth();
@@ -74,8 +72,9 @@ export const Dashboard = () => {
 
   const agendamentosQ = useAgendamentos({ pagina: 0, tamanho: 300, ordem: 'dataHoraInicio' });
   const contasQ = useContasReceber();
-  const pacientesQ = usePacientes({ pagina: 0, tamanho: 1 });
+  const pacientesQ = usePacientes({ pagina: 0, tamanho: 200 });
   const dentistasQ = useDentistasAtivos();
+  const estoqueQ = useEstoque();
   const criarM = useCriarAgendamento();
 
   const agendamentos = agendamentosQ.data?.content ?? [];
@@ -98,27 +97,6 @@ export const Dashboard = () => {
     [agendamentosHoje],
   );
 
-  const proximaConsulta = useMemo(() => {
-    const nowMs = now.getTime();
-    return (
-      agendamentos
-        .filter((a) => a.dataHoraInicio && new Date(a.dataHoraInicio).getTime() > nowMs)
-        .sort((a, b) =>
-          (a.dataHoraInicio || '').localeCompare(b.dataHoraInicio || ''),
-        )[0] ?? null
-    );
-  }, [agendamentos, now]);
-
-  const proximoPaciente = useMemo(() => {
-    if (!proximaConsulta || !pacientesQ.data) return null;
-    return pacientesQ.data.content.find((p) => p.id === proximaConsulta.pacienteId) ?? null;
-  }, [proximaConsulta, pacientesQ.data]);
-
-  const proximoDentista = useMemo(() => {
-    if (!proximaConsulta || !dentistasQ.data) return null;
-    return dentistasQ.data.find((d) => d.id === proximaConsulta.dentistaId) ?? null;
-  }, [proximaConsulta, dentistasQ.data]);
-
   const receitaMes = useMemo(() => {
     const from = startOfMonth(now);
     const to = endOfMonth(now);
@@ -135,7 +113,32 @@ export const Dashboard = () => {
     [contas],
   );
 
-  const totalPacientes = pacientesQ.data?.totalElements ?? 0;
+  const pacienteMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (pacientesQ.data?.content ?? []).forEach((p) => map.set(p.id, p.nomeCompleto));
+    return map;
+  }, [pacientesQ.data]);
+
+  const [estoquePage, setEstoquePage] = useState(0);
+  const ESTOQUE_PER_PAGE = 6;
+  const estoqueOrdenado = useMemo(() => {
+    const itens = [...(estoqueQ.data ?? [])];
+    itens.sort((a, b) => {
+      const ratioA = (a.quantidadeMinima ?? 0) > 0 ? (a.quantidadeAtual ?? 0) / (a.quantidadeMinima ?? 0) : 999;
+      const ratioB = (b.quantidadeMinima ?? 0) > 0 ? (b.quantidadeAtual ?? 0) / (b.quantidadeMinima ?? 0) : 999;
+      return ratioA - ratioB;
+    });
+    return itens;
+  }, [estoqueQ.data]);
+  const estoqueTotalPages = Math.max(1, Math.ceil(estoqueOrdenado.length / ESTOQUE_PER_PAGE));
+  const estoquePaginado = useMemo(
+    () => estoqueOrdenado.slice(estoquePage * ESTOQUE_PER_PAGE, (estoquePage + 1) * ESTOQUE_PER_PAGE),
+    [estoqueOrdenado, estoquePage],
+  );
+  const estoqueAlertaCount = useMemo(
+    () => estoqueOrdenado.filter((e) => (e.quantidadeAtual ?? 0) <= (e.quantidadeMinima ?? 0)).length,
+    [estoqueOrdenado],
+  );
 
   // Produtividade: consultas por mês nos últimos 12 meses
   const produtividade = useMemo(() => {
@@ -154,6 +157,25 @@ export const Dashboard = () => {
     });
     return arr;
   }, [agendamentos, now]);
+
+  const exportProdutividadeCSV = () => {
+    const year = now.getFullYear();
+    const rows = [
+      ['Mês', String(year), String(year - 1)],
+      ...produtividade.map((r) => [r.mes, String(r.anoAtual), String(r.anoAnterior)]),
+    ];
+    const csv = rows.map((r) => r.join(';')).join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `bokka-produtividade-${year}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    bokkaToast.success('CSV de produtividade baixado.');
+  };
 
   // Timeline horária de hoje
   const nowHour = now.getHours();
@@ -221,26 +243,26 @@ export const Dashboard = () => {
   };
 
   const loading =
-    agendamentosQ.isLoading || contasQ.isLoading || pacientesQ.isLoading || dentistasQ.isLoading;
+    agendamentosQ.isLoading || contasQ.isLoading || pacientesQ.isLoading || dentistasQ.isLoading || estoqueQ.isLoading;
   const dentistasAtivos = dentistasQ.data ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Cabeçalho + Perfil compacto */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex items-center gap-4">
           <Avatar photoKey={userPhotoKey} name={user?.name || user?.email} size="lg" />
           <div>
             <h1 className="text-2xl font-bold text-bokka-ink tracking-tight">
-              {getGreeting()}, {user?.name?.split(' ')[0] || 'Dra. Tainah'}
+              {getGreeting()}, {user?.name || 'Dra. Tainah'}
             </h1>
             <p className="text-sm text-bokka-ink-3 capitalize mt-1">{formatDateLong(now)}</p>
           </div>
         </div>
       </div>
 
-      {/* KPIs — 4 cards heterogêneos estilo Moru */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* KPIs */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         <KpiCard
           label="Agendamentos hoje"
           value={loading ? '—' : agendamentosHoje.length}
@@ -256,10 +278,20 @@ export const Dashboard = () => {
           icon={<CalendarDays className="w-5 h-5" strokeWidth={2} />}
           loading={loading}
         />
-        <CtaHatchedCard
-          title="Novo agendamento"
-          to="/agenda"
-          icon={<Plus className="w-5 h-5" strokeWidth={2.25} />}
+        <KpiCard
+          label="Receita mês"
+          value={loading ? '—' : formatCurrency(receitaMes)}
+          icon={<Wallet className="w-5 h-5" strokeWidth={1.75} />}
+          tone="success"
+          loading={loading}
+        />
+        <KpiCard
+          label="Pendente"
+          value={loading ? '—' : formatCurrency(saldoPendente)}
+          hint={saldoPendente > 0 ? 'A receber' : 'Sem pendências'}
+          icon={<Wallet className="w-5 h-5" strokeWidth={1.75} />}
+          tone="warning"
+          loading={loading}
         />
         <TeamCard
           label="Equipe clínica"
@@ -269,119 +301,57 @@ export const Dashboard = () => {
         />
       </div>
 
-      {/* Painel duplo */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Coluna principal */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* Painel PRETO — Produtividade */}
-          <div className="bg-bokka-ink rounded-2xl p-5 lg:p-6 text-white">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-base font-semibold">Produtividade</h2>
-                <p className="text-xs text-white/60 mt-0.5">Consultas por mês</p>
-              </div>
-              <button
-                type="button"
-                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition-colors"
-                aria-label="Exportar"
-                title="Exportar"
-              >
-                <Download className="w-4 h-4" strokeWidth={2} />
-              </button>
+      {/* Grid principal — 2 linhas × pares balanceados */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 auto-rows-fr">
+        {/* ═══════ LINHA 1 ═══════ */}
+        {/* Agenda de hoje — HERO (2/3) */}
+        <Card padded={false} className="lg:col-span-2 flex flex-col min-h-[440px] overflow-hidden">
+          <div className="px-5 pt-5 pb-3 flex items-center justify-between shrink-0">
+            <div>
+              <h2 className="text-base font-semibold text-bokka-ink">Agenda de hoje</h2>
+              <p className="text-xs text-bokka-ink-3 mt-0.5 capitalize">
+                {now.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })} · {agendamentosHoje.length} {agendamentosHoje.length === 1 ? 'consulta' : 'consultas'}
+              </p>
             </div>
-            <div className="h-56">
-              {loading ? (
-                <div className="w-full h-full bg-white/5 rounded-lg animate-pulse" />
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={produtividade} margin={{ top: 12, right: 8, bottom: 0, left: -22 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
-                    <XAxis
-                      dataKey="mes"
-                      tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 500 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 11 }}
-                      axisLine={false}
-                      tickLine={false}
-                      allowDecimals={false}
-                      width={30}
-                    />
-                    <Tooltip
-                      cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                      contentStyle={{
-                        background: '#0B1220',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        borderRadius: '10px',
-                        fontSize: '12px',
-                        color: 'white',
-                      }}
-                      labelStyle={{ color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}
-                    />
-                    <Bar dataKey="anoAtual" radius={[999, 999, 999, 999]} fill="white" maxBarSize={22} name="Este ano" />
-                    <Line
-                      type="monotone"
-                      dataKey="anoAnterior"
-                      stroke="#93B8FC"
-                      strokeWidth={2.5}
-                      dot={false}
-                      name="Ano anterior"
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-            <div className="flex items-center gap-5 mt-4 text-xs">
-              <span className="inline-flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-white" />
-                <span className="text-white/70">Este ano</span>
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full border border-white/60 border-dashed" />
-                <span className="text-white/70">Ano anterior</span>
-              </span>
-            </div>
+            <Link
+              to="/agenda"
+              className="text-sm font-semibold text-bokka-primary hover:text-bokka-primary-hover inline-flex items-center gap-1"
+            >
+              Ver agenda <ArrowRight className="w-4 h-4" strokeWidth={2} />
+            </Link>
           </div>
-
-          {/* Timeline horizontal do dia */}
-          <Card padded={false}>
-            <div className="px-5 pt-5 pb-3 flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-semibold text-bokka-ink">Agenda de hoje</h2>
-                <p className="text-xs text-bokka-ink-3 mt-0.5 capitalize">
-                  {now.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })} · {agendamentosHoje.length} {agendamentosHoje.length === 1 ? 'consulta' : 'consultas'}
-                </p>
+          {loading ? (
+            <div className="px-5 pb-5 flex-1">
+              <Skeleton className="h-full min-h-[340px] w-full" rounded="lg" />
+            </div>
+          ) : agendamentosHoje.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center px-6 pb-6 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-bokka-primary-soft text-bokka-primary flex items-center justify-center mb-4">
+                <CalendarDays className="w-7 h-7" strokeWidth={1.75} />
               </div>
+              <h3 className="text-base font-semibold text-bokka-ink">
+                Nenhum agendamento para hoje
+              </h3>
+              <p className="text-sm text-bokka-ink-3 mt-1.5 max-w-sm">
+                Sua agenda de hoje está livre. Clique em qualquer dia do calendário ao lado para marcar uma consulta.
+              </p>
               <Link
                 to="/agenda"
-                className="text-sm font-semibold text-bokka-primary hover:text-bokka-primary-hover inline-flex items-center gap-1"
+                className="mt-5 inline-flex items-center gap-1.5 px-4 h-9 rounded-lg bg-bokka-primary text-white text-sm font-semibold hover:bg-bokka-primary-hover transition-colors"
               >
-                Ver agenda <ArrowRight className="w-4 h-4" strokeWidth={2} />
+                Abrir agenda completa
+                <ArrowRight className="w-4 h-4" strokeWidth={2} />
               </Link>
             </div>
-            {loading ? (
-              <div className="px-5 pb-5">
-                <Skeleton className="h-40 w-full" rounded="lg" />
-              </div>
-            ) : agendamentosHoje.length === 0 ? (
-              <EmptyState
-                compact
-                icon={<CalendarDays className="w-6 h-6" strokeWidth={1.75} />}
-                title="Nenhum agendamento para hoje"
-                description="Clique num dia no calendário ao lado pra agendar."
-              />
-            ) : (
-              <TimelineDia byHour={timelineByHour} nowSlotIdx={nowSlotIdx} nowMin={nowMin} />
-            )}
-          </Card>
-        </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto">
+              <TimelineDia byHour={timelineByHour} nowSlotIdx={nowSlotIdx} nowMin={nowMin} pacienteMap={pacienteMap} />
+            </div>
+          )}
+        </Card>
 
-        {/* Coluna direita */}
-        <div className="space-y-4">
-          {/* Mini calendar AZUL — clicável */}
-          <div className="bg-bokka-primary-soft rounded-2xl p-5">
+        {/* Mini calendar AZUL — clicável (1/3) */}
+        <div className="bg-bokka-primary-soft rounded-2xl p-5 flex flex-col justify-center min-h-[440px]">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-base font-semibold text-bokka-ink capitalize">
@@ -438,66 +408,237 @@ export const Dashboard = () => {
                     type="button"
                     onClick={() => abrirNovoAgendamento(n)}
                     className={cn(
-                      'aspect-square rounded-full flex items-center justify-center text-[13px] tabular-nums transition-all cursor-pointer',
+                      'aspect-square rounded-full flex flex-col items-center justify-center text-[13px] tabular-nums transition-all cursor-pointer relative',
                       'hover:ring-2 hover:ring-bokka-primary hover:scale-105',
                       isToday
                         ? 'bg-bokka-primary text-white font-bold ring-2 ring-white'
-                        : hasEvent
-                          ? 'bg-bokka-ink text-white font-semibold'
-                          : 'bg-white/60 text-bokka-ink font-medium hover:bg-white',
+                        : 'bg-white/60 text-bokka-ink font-medium hover:bg-white',
                     )}
-                    aria-label={`Agendar dia ${n}`}
+                    aria-label={
+                      hasEvent
+                        ? `Dia ${n} — clínica atendendo. Clique para agendar.`
+                        : `Agendar dia ${n}`
+                    }
                   >
-                    {n}
+                    <span className={cn(hasEvent && 'leading-none')}>{n}</span>
+                    {hasEvent && (
+                      <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                        className={cn('w-3 h-3 mt-0.5 shrink-0', isToday && 'text-white')}
+                      >
+                        <defs>
+                          <linearGradient id="starGold" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="#FFE066" />
+                            <stop offset="45%" stopColor="#FFC300" />
+                            <stop offset="100%" stopColor="#D68F00" />
+                          </linearGradient>
+                        </defs>
+                        <path
+                          d="M12 1.7l2.85 6.52 7.03.6-5.34 4.7 1.62 6.86L12 16.86l-6.16 3.52 1.62-6.86L2.12 8.82l7.03-.6L12 1.7z"
+                          fill={isToday ? 'currentColor' : 'url(#starGold)'}
+                          stroke={isToday ? 'rgba(255,255,255,0.9)' : '#B37800'}
+                          strokeWidth="0.5"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Card PRETO — Próxima consulta com countdown REAL */}
-          <ProximaConsultaCard
-            proxima={proximaConsulta}
-            pacienteNome={proximoPaciente?.nomeCompleto}
-            dentistaNome={proximoDentista?.nomeCompleto}
-            now={now}
-          />
-
-          {/* Financeiros compactos */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-bokka-surface border border-bokka-border rounded-2xl p-4">
-              <div className="flex items-center gap-2 text-bokka-ink-3">
-                <Wallet className="w-4 h-4" strokeWidth={2} />
-                <span className="text-xs font-semibold">Receita mês</span>
+          {/* ═══════ LINHA 2 ═══════ */}
+          {/* Produtividade PRETO — chart (2/3) */}
+          <div className="bg-bokka-ink rounded-2xl p-5 lg:p-6 text-white lg:col-span-2 flex flex-col min-h-[440px]">
+            <div className="flex items-center justify-between mb-4 shrink-0">
+              <div>
+                <h2 className="text-base font-semibold">Produtividade</h2>
+                <p className="text-xs text-white/60 mt-0.5">Consultas por mês · este ano vs anterior</p>
               </div>
-              <p className="text-lg font-bold text-bokka-success-ink mt-2 tabular-nums">
-                {formatCurrency(receitaMes)}
-              </p>
+              <button
+                type="button"
+                onClick={exportProdutividadeCSV}
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition-colors"
+                aria-label="Exportar CSV"
+                title="Exportar CSV (planilha)"
+              >
+                <Download className="w-4 h-4" strokeWidth={2} />
+              </button>
             </div>
-            <div className="bg-bokka-surface border border-bokka-border rounded-2xl p-4">
-              <div className="flex items-center gap-2 text-bokka-ink-3">
-                <Wallet className="w-4 h-4" strokeWidth={2} />
-                <span className="text-xs font-semibold">Pendente</span>
-              </div>
-              <p className="text-lg font-bold text-bokka-warning-ink mt-2 tabular-nums">
-                {formatCurrency(saldoPendente)}
-              </p>
+            <div className="flex-1 min-h-0">
+              {loading ? (
+                <div className="w-full h-full bg-white/5 rounded-lg animate-pulse" />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={produtividade} margin={{ top: 12, right: 8, bottom: 0, left: -22 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
+                    <XAxis
+                      dataKey="mes"
+                      tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 500 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 11 }}
+                      axisLine={false}
+                      tickLine={false}
+                      allowDecimals={false}
+                      width={30}
+                    />
+                    <Tooltip
+                      cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                      contentStyle={{
+                        background: '#0B1220',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        borderRadius: '10px',
+                        fontSize: '12px',
+                        color: 'white',
+                      }}
+                      labelStyle={{ color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}
+                    />
+                    <Bar dataKey="anoAtual" radius={[999, 999, 999, 999]} fill="white" maxBarSize={22} name="Este ano" />
+                    <Line
+                      type="monotone"
+                      dataKey="anoAnterior"
+                      stroke="#93B8FC"
+                      strokeWidth={2.5}
+                      dot={false}
+                      name="Ano anterior"
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+            <div className="flex items-center gap-5 mt-4 text-xs shrink-0">
+              <span className="inline-flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-white" />
+                <span className="text-white/70">Este ano</span>
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full border border-white/60 border-dashed" />
+                <span className="text-white/70">Ano anterior</span>
+              </span>
             </div>
           </div>
 
-          <Link
-            to="/pacientes"
-            className="block bg-bokka-surface border border-bokka-border rounded-2xl p-4 hover:border-bokka-primary/40 hover:bg-bokka-surface transition-colors"
-          >
-            <div className="flex items-center gap-2 text-bokka-ink-3">
-              <Users className="w-4 h-4" strokeWidth={2} />
-              <span className="text-xs font-semibold">Pacientes cadastrados</span>
+          {/* Estoque — card expandido paginado (1/3) */}
+          <div className="bg-bokka-surface border border-bokka-border rounded-2xl overflow-hidden flex flex-col min-h-[440px]">
+            <div className="px-5 pt-5 pb-3 flex items-center justify-between shrink-0">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Package className="w-4.5 h-4.5 text-bokka-ink-3" strokeWidth={1.75} />
+                  <h2 className="text-base font-semibold text-bokka-ink">Estoque</h2>
+                </div>
+                <p className="text-xs text-bokka-ink-3 mt-1">
+                  {estoqueOrdenado.length} {estoqueOrdenado.length === 1 ? 'item' : 'itens'}
+                  {estoqueAlertaCount > 0 && (
+                    <span className="text-bokka-danger-ink font-semibold"> · {estoqueAlertaCount} em falta</span>
+                  )}
+                </p>
+              </div>
+              <Link
+                to="/estoque"
+                className="text-xs font-semibold text-bokka-primary hover:text-bokka-primary-hover inline-flex items-center gap-1"
+              >
+                Ver tudo <ArrowRight className="w-3.5 h-3.5" strokeWidth={2} />
+              </Link>
             </div>
-            <p className="text-lg font-bold text-bokka-ink mt-2 tabular-nums">
-              {totalPacientes}
-            </p>
-          </Link>
-        </div>
+            {estoqueOrdenado.length === 0 ? (
+              <div className="px-5 pb-5">
+                <p className="text-sm font-semibold text-bokka-success-ink">Tudo em dia</p>
+                <p className="text-xs text-bokka-ink-3 mt-0.5">
+                  Nenhum item cadastrado no estoque.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="divide-y divide-bokka-border flex-1 overflow-y-auto">
+                  {estoquePaginado.map((item) => {
+                    // Ratio atual/mínimo determina o nível de saúde do item:
+                    // < 1   → abaixo do mínimo (vermelho)
+                    // 1..2  → moderado (laranja)
+                    // >= 2  → acima do recomendado (verde)
+                    const ratio = (item.quantidadeMinima ?? 0) > 0
+                      ? (item.quantidadeAtual ?? 0) / (item.quantidadeMinima ?? 0)
+                      : 2;
+                    const nivel: 'baixo' | 'moderado' | 'acima' =
+                      ratio < 1 ? 'baixo' : ratio < 2 ? 'moderado' : 'acima';
+                    const barPct = Math.min(100, Math.round(ratio * 50));
+                    return (
+                      <div
+                        key={item.id}
+                        className={cn(
+                          'flex items-center gap-3 px-5 py-3',
+                          nivel === 'baixo' && 'bg-bokka-danger-soft/20',
+                        )}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            {nivel === 'baixo' && (
+                              <AlertTriangle
+                                className="w-3.5 h-3.5 text-bokka-danger-ink shrink-0"
+                                strokeWidth={2}
+                              />
+                            )}
+                            <p className="text-sm font-semibold text-bokka-ink truncate">
+                              {item.nomeMaterial}
+                            </p>
+                          </div>
+                          <p className="text-[11px] text-bokka-ink-3 mt-0.5">
+                            {item.quantidadeAtual} / {item.quantidadeMinima} {item.unidadeMedida ?? ''}
+                          </p>
+                        </div>
+                        <div className="w-16 shrink-0">
+                          <div className="h-1.5 rounded-full bg-bokka-surface-3 overflow-hidden">
+                            <div
+                              className={cn(
+                                'h-full rounded-full transition-all',
+                                nivel === 'baixo'
+                                  ? 'bg-bokka-danger'
+                                  : nivel === 'moderado'
+                                    ? 'bg-bokka-warning'
+                                    : 'bg-bokka-success',
+                              )}
+                              style={{ width: `${barPct}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {estoqueTotalPages > 1 && (
+                  <div className="px-5 py-3 border-t border-bokka-border flex items-center justify-between shrink-0">
+                    <span className="text-[11px] text-bokka-ink-3 tabular-nums">
+                      Página {estoquePage + 1} de {estoqueTotalPages}
+                    </span>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setEstoquePage((p) => Math.max(0, p - 1))}
+                        disabled={estoquePage === 0}
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-surface-3 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        aria-label="Página anterior"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEstoquePage((p) => Math.min(estoqueTotalPages - 1, p + 1))}
+                        disabled={estoquePage >= estoqueTotalPages - 1}
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-surface-3 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        aria-label="Próxima página"
+                      >
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
       </div>
 
       {/* Modal de novo agendamento a partir do calendário */}
@@ -564,29 +705,6 @@ const HighlightKpi = ({ label, value, hint, icon, loading }: HighlightKpiProps) 
   </div>
 );
 
-interface CtaHatchedProps {
-  title: string;
-  to: string;
-  icon: React.ReactNode;
-}
-
-const CtaHatchedCard = ({ title, to, icon }: CtaHatchedProps) => (
-  <Link
-    to={to}
-    className="relative rounded-2xl border border-bokka-border shadow-sm p-5 flex flex-col items-center justify-center gap-3 text-center overflow-hidden hover:border-bokka-primary/40 transition-colors group min-h-[140px]"
-    style={{
-      backgroundImage:
-        'repeating-linear-gradient(135deg, rgba(148,163,184,0.14) 0px, rgba(148,163,184,0.14) 1px, transparent 1px, transparent 8px)',
-      backgroundColor: 'var(--color-bokka-surface-2)',
-    }}
-  >
-    <span className="text-sm font-semibold text-bokka-ink">{title}</span>
-    <span className="w-11 h-11 rounded-full bg-bokka-primary text-white flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
-      {icon}
-    </span>
-  </Link>
-);
-
 interface TeamMember {
   id: string;
   nomeCompleto: string;
@@ -645,196 +763,144 @@ const TeamCard = ({
   );
 };
 
-// ============ Próxima consulta com countdown ============
-
-const ProximaConsultaCard = ({
-  proxima,
-  pacienteNome,
-  dentistaNome,
-  now,
-}: {
-  proxima: Agendamento | null;
-  pacienteNome?: string;
-  dentistaNome?: string;
-  now: Date;
-}) => {
-  if (!proxima) {
-    return (
-      <div className="bg-bokka-ink rounded-2xl p-5 text-white">
-        <p className="text-xs text-white/60 uppercase tracking-wider font-semibold">
-          Próxima consulta
-        </p>
-        <p className="text-lg font-semibold text-white/70 mt-2">
-          Sem próximas agendadas
-        </p>
-        <p className="text-xs text-white/50 mt-1">
-          Você está livre no momento.
-        </p>
-      </div>
-    );
-  }
-
-  const target = new Date(proxima.dataHoraInicio).getTime();
-  const diff = target - now.getTime();
-  const totalSec = Math.max(0, Math.floor(diff / 1000));
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = totalSec % 60;
-  const started = diff <= 0;
-
-  return (
-    <div className="bg-bokka-ink rounded-2xl p-5 text-white">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs text-white/60 uppercase tracking-wider font-semibold">
-            Próxima consulta
-          </p>
-          <p className="text-3xl font-bold tabular-nums mt-1">
-            {formatTime(proxima.dataHoraInicio)}
-          </p>
-        </div>
-        <button
-          type="button"
-          className="w-11 h-11 rounded-full bg-white text-bokka-ink hover:bg-white/90 flex items-center justify-center transition-colors shadow"
-          aria-label="Iniciar atendimento"
-          title="Iniciar atendimento"
-        >
-          <Play className="w-4 h-4 ml-0.5" fill="currentColor" />
-        </button>
-      </div>
-
-      <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
-        <div>
-          <p className="text-[10px] uppercase font-semibold text-white/60 tracking-wider">
-            {started ? 'Iniciou' : 'Começa em'}
-          </p>
-          <p className="text-2xl font-bold tabular-nums mt-1">
-            {started
-              ? `Há ${formatElapsed(-diff)}`
-              : `${h > 0 ? `${String(h).padStart(2, '0')}:` : ''}${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`}
-          </p>
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-white truncate">
-            {pacienteNome || `Paciente #${proxima.pacienteId?.slice(-6) || '—'}`}
-          </p>
-          <p className="text-xs text-white/60 mt-0.5 truncate">
-            {dentistaNome ? `Dr(a). ${dentistaNome}` : proxima.observacoes || 'Sem observações'}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const formatElapsed = (ms: number): string => {
-  const sec = Math.floor(ms / 1000);
-  if (sec < 60) return `${sec}s`;
-  const min = Math.floor(sec / 60);
-  if (min < 60) return `${min} min`;
-  const h = Math.floor(min / 60);
-  return `${h}h ${min % 60}min`;
-};
-
 // ============ Timeline horária ============
 
-const cardTones = [
-  'bg-bokka-primary text-white',
-  'bg-bokka-primary-soft text-bokka-primary',
-  'bg-white border border-bokka-border text-bokka-ink',
-  'bg-bokka-ink text-white',
-];
+// Cores por status do agendamento — casam com a legenda embaixo do Timeline.
+const statusTone: Record<string, string> = {
+  AGENDADO: 'bg-bokka-primary text-white',
+  CONFIRMADO: 'bg-bokka-success text-white',
+  REALIZADO: 'bg-bokka-surface-3 text-bokka-ink border border-bokka-border',
+  FALTOU: 'bg-bokka-warning text-white',
+  CANCELADO: 'bg-bokka-danger-soft text-bokka-danger-ink border border-bokka-danger/30',
+};
+
+const TIMELINE_MIN_WIDTH = 1400; // px — mesmo valor usado inline
+const BUSINESS_HOUR_START = 8; // horário comercial brasileiro de clínicas odontológicas
 
 const TimelineDia = ({
   byHour,
   nowSlotIdx,
   nowMin,
+  pacienteMap,
 }: {
   byHour: Record<number, Array<{ id?: string; observacoes?: string; pacienteId?: string; status: string }>>;
   nowSlotIdx: number;
   nowMin: number;
+  pacienteMap: Map<string, string>;
 }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Ao MONTAR o componente (entrar no dashboard ou dar refresh),
+  // posiciona o scroll no início do horário comercial brasileiro (8h).
+  // Depois disso, o usuário rola livremente sem que a agenda o force de volta.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const hourWidth = TIMELINE_MIN_WIDTH / HOURS.length;
+    el.scrollLeft = Math.round(BUSINESS_HOUR_START * hourWidth);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
-    <div className="px-5 pb-5 overflow-x-auto">
-      <div className="min-w-[720px] relative">
-        <div className="grid grid-cols-11 border-b border-bokka-border">
-          {HOURS.map((h, i) => {
-            const isNow = i === nowSlotIdx;
-            return (
-              <div
-                key={h}
-                className={cn(
-                  'text-center text-[11px] font-semibold tabular-nums pb-2',
-                  isNow ? 'text-bokka-primary' : 'text-bokka-ink-3',
-                )}
-              >
-                <span className={cn('inline-block px-1.5 py-0.5 rounded-md', isNow && 'bg-bokka-primary text-white')}>
-                  {String(h).padStart(2, '0')}:00
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="grid grid-cols-11 relative" style={{ minHeight: '160px' }}>
-          {nowSlotIdx >= 0 && (
-            <div
-              className="absolute top-0 bottom-0 w-px bg-bokka-primary/40 z-0"
-              style={{
-                left: `calc(${nowSlotIdx * (100 / 11)}% + ${(nowMin / 60) * (100 / 11)}%)`,
-              }}
-            >
-              <span className="absolute -top-1.5 -left-1 w-2 h-2 rounded-full bg-bokka-primary" />
-            </div>
-          )}
-
-          {HOURS.map((h, i) => {
-            const items = byHour[h];
-            const isNow = i === nowSlotIdx;
-            return (
-              <div
-                key={h}
-                className={cn(
-                  'relative pt-3 pb-2 px-1 border-l border-bokka-border/60',
-                  isNow && 'bg-bokka-primary-soft/40',
-                  i === HOURS.length - 1 && 'border-r border-bokka-border/60',
-                )}
-                style={{ minHeight: '160px' }}
-              >
-                {items?.slice(0, 2).map((ag, idx) => (
-                  <div
-                    key={ag.id ?? idx}
+    <div className="pb-5">
+      {/* Faixa de scroll horizontal — headers + grade */}
+      <div ref={scrollRef} className="px-5 overflow-x-auto">
+        <div className="relative" style={{ minWidth: `${TIMELINE_MIN_WIDTH}px` }}>
+          <div
+            className="grid border-b border-bokka-border"
+            style={{ gridTemplateColumns: `repeat(${HOURS.length}, minmax(0, 1fr))` }}
+          >
+            {HOURS.map((h, i) => {
+              const isNow = i === nowSlotIdx;
+              return (
+                <div
+                  key={h}
+                  className={cn(
+                    'text-center text-[11px] font-semibold tabular-nums pb-2',
+                    isNow ? 'text-bokka-primary' : 'text-bokka-ink-3',
+                  )}
+                >
+                  <span
                     className={cn(
-                      'rounded-xl px-2.5 py-2 text-xs font-semibold mb-1 shadow-sm truncate',
-                      cardTones[(i + idx) % cardTones.length],
+                      'inline-block px-1 py-0.5 rounded-md',
+                      isNow && 'bg-bokka-primary text-white',
                     )}
-                    title={ag.observacoes || 'Consulta'}
                   >
-                    <div className="truncate leading-tight">{ag.observacoes?.slice(0, 24) || 'Consulta'}</div>
-                    <div className="text-[10px] font-medium opacity-80 mt-0.5 truncate">
-                      #{ag.pacienteId?.slice(-6) || '—'}
-                    </div>
-                  </div>
-                ))}
-                {items && items.length > 2 && (
-                  <div className="text-[10px] text-bokka-ink-3 font-semibold text-center mt-1">
-                    +{items.length - 2}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                    {String(h).padStart(2, '0')}:00
+                  </span>
+                </div>
+              );
+            })}
+          </div>
 
-        <div className="flex flex-wrap items-center gap-3 pt-4 mt-2 border-t border-bokka-border">
-          {['AGENDADO', 'CONFIRMADO', 'REALIZADO', 'CANCELADO'].map((s) => (
-            <AgendamentoStatusBadge key={s} status={s as never} />
-          ))}
+          <div
+            className="grid relative"
+            style={{
+              gridTemplateColumns: `repeat(${HOURS.length}, minmax(0, 1fr))`,
+              minHeight: '260px',
+            }}
+          >
+            {nowSlotIdx >= 0 && (
+              <div
+                className="absolute top-0 bottom-0 w-px bg-bokka-primary/40 z-0"
+                style={{
+                  left: `calc(${nowSlotIdx * (100 / HOURS.length)}% + ${(nowMin / 60) * (100 / HOURS.length)}%)`,
+                }}
+              >
+                <span className="absolute -top-1.5 -left-1 w-2 h-2 rounded-full bg-bokka-primary" />
+              </div>
+            )}
+
+            {HOURS.map((h, i) => {
+              const items = byHour[h];
+              const isNow = i === nowSlotIdx;
+              return (
+                <div
+                  key={h}
+                  className={cn(
+                    'relative pt-3 pb-2 px-0.5 border-l border-bokka-border/60',
+                    isNow && 'bg-bokka-primary-soft/40',
+                    i === HOURS.length - 1 && 'border-r border-bokka-border/60',
+                  )}
+                  style={{ minHeight: '200px' }}
+                >
+                  {items?.slice(0, 4).map((ag, idx) => {
+                    const nome = pacienteMap.get(ag.pacienteId ?? '') || '—';
+                    const obs = ag.observacoes || 'Consulta';
+                    const tone = statusTone[ag.status] || statusTone.AGENDADO;
+                    return (
+                      <div
+                        key={ag.id ?? idx}
+                        className={cn(
+                          'rounded-lg px-1.5 py-1.5 text-[10px] font-semibold mb-1 shadow-sm truncate',
+                          tone,
+                        )}
+                        title={`${nome} — ${obs}`}
+                      >
+                        <div className="truncate leading-tight">{nome}</div>
+                      </div>
+                    );
+                  })}
+                  {items && items.length > 4 && (
+                    <div className="text-[10px] text-bokka-ink-3 font-semibold text-center mt-1">
+                      +{items.length - 4}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
+      </div>
+
+      {/* Legenda de status — FORA do scroll horizontal, sempre visível */}
+      <div className="flex flex-wrap items-center gap-3 pt-4 mt-2 px-5 border-t border-bokka-border">
+        {['AGENDADO', 'CONFIRMADO', 'REALIZADO', 'CANCELADO'].map((s) => (
+          <AgendamentoStatusBadge key={s} status={s as never} />
+        ))}
       </div>
     </div>
   );
 };
 
-// unused CloseIcon reference retained via alias avoidance
-void CloseIcon;
+
