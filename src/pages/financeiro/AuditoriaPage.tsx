@@ -528,7 +528,7 @@ export const AuditoriaPage = () => {
                     color: 'white',
                   }}
                   labelStyle={{ color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}
-                  formatter={(v: number, name: string) => [formatCurrency(v), name]}
+                  formatter={(v) => [formatCurrency(v as number), undefined]}
                 />
                 <Bar dataKey="receita" name="Receita" radius={[8, 8, 0, 0]} fill="#10B981" maxBarSize={26} />
                 <Bar dataKey="despesa" name="Despesa" radius={[8, 8, 0, 0]} fill="#EF4444" maxBarSize={26} />
@@ -871,7 +871,7 @@ export const AuditoriaPage = () => {
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(v: number) => [formatCurrency(v), 'Valor']}
+                      formatter={(v) => [formatCurrency(v as number), 'Valor']}
                       contentStyle={{
                         background: '#FFFFFF',
                         border: '1px solid #E2E8F0',

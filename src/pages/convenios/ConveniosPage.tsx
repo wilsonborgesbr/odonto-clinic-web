@@ -28,7 +28,7 @@ import {
   useReativarConvenio,
 } from '../../services/convenioService';
 import { ApiError } from '../../lib/api';
-import { cn, formatPhone, formatDate } from '../../lib/utils';
+import { formatPhone, formatDate } from '../../lib/utils';
 import type { Convenio, NomeProcedimentoEnum, Endereco } from '../../types';
 
 const formatCnpj = (cnpj?: string | null): string => {

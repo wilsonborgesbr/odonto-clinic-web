@@ -537,6 +537,8 @@ export interface DentistaListagemDTO {
   email: string;
   telefoneCelular: string;
   ativo: boolean;
+  sexo?: SexoEnum;
+  endereco?: Endereco;
 }
 
 export interface FuncionarioListagemDTO {
@@ -547,6 +549,8 @@ export interface FuncionarioListagemDTO {
   email: string;
   telefoneCelular: string;
   ativo: boolean;
+  sexo?: SexoEnum;
+  endereco?: Endereco;
 }
 
 export interface PacienteListagemDTO {
@@ -556,6 +560,7 @@ export interface PacienteListagemDTO {
   email: string;
   telefoneCelular: string;
   ativo: boolean;
+  createdAt?: string;
 }
 
 // Erro padronizado do backend (GlobalExceptionHandler.ErroPadrao)

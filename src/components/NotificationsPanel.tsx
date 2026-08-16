@@ -7,7 +7,6 @@ import {
   Calendar,
   Package,
   ArrowDownRight,
-  ArrowUpRight,
   UserPlus,
   Check,
   Clock,

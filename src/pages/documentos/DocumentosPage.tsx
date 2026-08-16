@@ -317,9 +317,9 @@ export const DocumentosPage = () => {
         open={!!confirmar}
         onClose={() => setConfirmar(null)}
         title="Excluir documento"
-        description={`Tem certeza que deseja excluir "${confirmar?.desc}"? Esta ação não pode ser desfeita.`}
+        message={`Tem certeza que deseja excluir "${confirmar?.desc}"? Esta ação não pode ser desfeita.`}
         confirmLabel="Excluir"
-        variant="danger"
+        danger
         onConfirm={handleExcluir}
       />
     </div>

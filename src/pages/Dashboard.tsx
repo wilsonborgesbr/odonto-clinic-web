@@ -22,7 +22,6 @@ import {
 } from 'lucide-react';
 import { KpiCard, Card } from '../components/ui/Card';
 import { AgendamentoStatusBadge } from '../components/ui/Badge';
-import { EmptyState } from '../components/ui/EmptyState';
 import { Skeleton } from '../components/ui/Skeleton';
 import { Avatar } from '../components/ui/Avatar';
 import { Modal } from '../components/ui/Modal';

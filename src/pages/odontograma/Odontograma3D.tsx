@@ -330,7 +330,7 @@ function lowerRootPaths(cx: number, neckY: number, tipYFar: number, c: ToothCfg)
 
 function buildUpperGum(teeth: string[]): string {
   const pts: { x: number; y: number }[] = [];
-  teeth.forEach((fdi, i) => {
+  teeth.forEach((_fdi, i) => {
     pts.push({ x: toothCx(i), y: UPPER_NECK - 2 });
   });
   const leftX = PAD - 2;
@@ -353,7 +353,7 @@ function buildUpperGum(teeth: string[]): string {
 
 function buildLowerGum(teeth: string[]): string {
   const pts: { x: number; y: number }[] = [];
-  teeth.forEach((fdi, i) => {
+  teeth.forEach((_fdi, i) => {
     pts.push({ x: toothCx(i), y: LOWER_NECK + 2 });
   });
   const leftX = PAD - 2;

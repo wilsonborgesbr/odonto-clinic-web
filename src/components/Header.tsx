@@ -1,5 +1,5 @@
 import { Fragment, useMemo } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Menu as MenuIcon, User as UserIcon, LogOut, ChevronDown, Settings } from 'lucide-react';
 import { Menu, Transition } from '@headlessui/react';
 import { useAuth } from '../context/AuthContext';
@@ -24,38 +24,9 @@ interface HeaderProps {
   onToggleSidebar: () => void;
 }
 
-const pageTitles: Record<string, string> = {
-  '/': '',
-  '/perfil': 'Meu perfil',
-  '/configuracoes': 'Configurações',
-  '/pacientes': 'Pacientes',
-  '/dentistas': 'Dentistas',
-  '/agenda': 'Agendamentos',
-  '/procedimentos': 'Procedimentos',
-  '/anamnese': 'Anamnese',
-  '/odontograma': 'Odontograma',
-  '/financeiro/auditoria': 'Auditoria Financeira',
-  '/convenios': 'Convênios',
-  '/funcionarios': 'Funcionários',
-  '/estoque': 'Estoque',
-  '/documentos': 'Documentos',
-};
-
-const resolveTitle = (pathname: string): string => {
-  if (pageTitles[pathname]) return pageTitles[pathname];
-  const segments = pathname.split('/').filter(Boolean);
-  if (segments.length > 0) {
-    const base = `/${segments[0]}`;
-    return pageTitles[base] ?? 'Bokka';
-  }
-  return 'Bokka';
-};
-
 export const Header = ({ onToggleSidebar }: HeaderProps) => {
   const { user, logout } = useAuth();
-  const location = useLocation();
   const navigate = useNavigate();
-  const title = resolveTitle(location.pathname);
   const photoKey = useMemo(() => photoKeys.user(user?.email), [user?.email]);
 
   return (

@@ -11,7 +11,6 @@ import {
   ShieldCheck,
   User as UserIcon,
   Award,
-  ChevronRight,
 } from 'lucide-react';
 import { Badge, AgendamentoStatusBadge } from '../../components/ui/Badge';
 import { Skeleton } from '../../components/ui/Skeleton';

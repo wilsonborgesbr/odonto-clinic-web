@@ -25,7 +25,7 @@ import {
 } from '../../services/procedimentoService';
 import { usePacientes } from '../../services/pacienteService';
 import { ApiError } from '../../lib/api';
-import { cn, formatDate, formatCurrency } from '../../lib/utils';
+import { formatDate, formatCurrency } from '../../lib/utils';
 import type {
   Procedimento,
   NomeProcedimentoEnum,

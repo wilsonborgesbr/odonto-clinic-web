@@ -53,7 +53,7 @@ export const useAtualizarAnamnese = () => {
 export const useExcluirAnamnese = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, pacienteId }: { id: string; pacienteId: string }) =>
+    mutationFn: ({ id }: { id: string; pacienteId: string }) =>
       anamneseService.excluir(id),
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: anamneseKeys.byPaciente(vars.pacienteId) });

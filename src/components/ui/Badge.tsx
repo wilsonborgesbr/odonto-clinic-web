@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { cn } from '../../lib/utils';
 import type { StatusAgendamentoEnum, StatusFinanceiroEnum } from '../../types';
 
-export type BadgeTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+export type BadgeTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'primary';
 
 interface BadgeProps {
   tone?: BadgeTone;
@@ -17,6 +17,7 @@ const toneClasses: Record<BadgeTone, string> = {
   danger: 'bg-bokka-danger-soft text-bokka-danger-ink',
   info: 'bg-bokka-info-soft text-bokka-info-ink',
   neutral: 'bg-bokka-neutral-soft text-bokka-neutral-ink',
+  primary: 'bg-bokka-primary-soft text-bokka-primary-ink',
 };
 
 const dotClasses: Record<BadgeTone, string> = {
@@ -25,6 +26,7 @@ const dotClasses: Record<BadgeTone, string> = {
   danger: 'bg-bokka-danger',
   info: 'bg-bokka-info',
   neutral: 'bg-bokka-ink-3',
+  primary: 'bg-bokka-primary',
 };
 
 export const Badge = ({ tone = 'neutral', children, dot, className }: BadgeProps) => (

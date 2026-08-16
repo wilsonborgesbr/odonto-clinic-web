@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Camera } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { CepInput, Input, PhoneInput, Select } from '../../components/ui/Field';
 import { Avatar } from '../../components/ui/Avatar';
