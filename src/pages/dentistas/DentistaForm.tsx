@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Button } from '../../components/ui/Button';
 import { CepInput, Input, PhoneInput, Select } from '../../components/ui/Field';
@@ -6,6 +6,29 @@ import { Avatar } from '../../components/ui/Avatar';
 import { processImageFile, setPhoto } from '../../lib/profilePhotos';
 import { ApiError } from '../../lib/api';
 import type { Dentista, SexoEnum, EspecialidadeEnum } from '../../types';
+
+// UFs do Brasil (27 = 26 estados + DF) — usado no seletor do CRO
+const UFS = [
+  'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG',
+  'PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO',
+] as const;
+
+const ufOptions = UFS.map((uf) => ({ value: uf, label: uf }));
+
+// Parseia string tipo "CRO-SE 12345" ou "CRO-SE 12345/2022" em partes editáveis
+const parseCro = (cro: string | undefined): { uf: string; numero: string; ano: string } => {
+  if (!cro) return { uf: 'SP', numero: '', ano: '' };
+  const m = cro.match(/^CRO-([A-Z]{2})\s+(\d{4,6})(?:\/(\d{4}))?$/);
+  if (!m) return { uf: 'SP', numero: '', ano: '' };
+  return { uf: m[1], numero: m[2], ano: m[3] ?? '' };
+};
+
+// Monta string no formato exigido pelo backend
+const buildCro = (uf: string, numero: string, ano: string): string => {
+  if (!numero) return '';
+  const base = `CRO-${uf} ${numero}`;
+  return ano ? `${base}/${ano}` : base;
+};
 
 interface DentistaFormProps {
   initial: Dentista | null;
@@ -58,6 +81,12 @@ export const DentistaForm = ({ initial, photoKey, onSubmit, onCancel }: Dentista
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
 
+  // CRO editado como 3 campos separados; parseia o valor inicial se existir
+  const initialCro = useMemo(() => parseCro(initial?.cro), [initial?.cro]);
+  const [croUf, setCroUf] = useState<string>(initialCro.uf);
+  const [croNumero, setCroNumero] = useState<string>(initialCro.numero);
+  const [croAno, setCroAno] = useState<string>(initialCro.ano);
+
   const set = <K extends keyof Dentista>(k: K, v: Dentista[K]) =>
     setValues((prev) => ({ ...prev, [k]: v }));
 
@@ -82,9 +111,30 @@ export const DentistaForm = ({ initial, photoKey, onSubmit, onCancel }: Dentista
     setSubmitting(true);
     setErrors({});
     setGlobalError(null);
+
+    // Valida CRO local antes de enviar (backend também valida via @Pattern)
+    if (!croNumero) {
+      setErrors({ cro: 'Informe o número do CRO.' });
+      setSubmitting(false);
+      return;
+    }
+    if (!/^\d{4,6}$/.test(croNumero)) {
+      setErrors({ cro: 'Número do CRO deve ter entre 4 e 6 dígitos.' });
+      setSubmitting(false);
+      return;
+    }
+    if (croAno && !/^\d{4}$/.test(croAno)) {
+      setErrors({ cro: 'Ano deve ter 4 dígitos (ex: 2022).' });
+      setSubmitting(false);
+      return;
+    }
+
+    const croCompleto = buildCro(croUf, croNumero, croAno);
+    const payload: Dentista = { ...values, cro: croCompleto };
+
     try {
       if (pendingPhoto && photoKey) setPhoto(photoKey, pendingPhoto);
-      await onSubmit(values);
+      await onSubmit(payload);
     } catch (err) {
       if (err instanceof ApiError) {
         const fe = err.fieldErrors();
@@ -140,22 +190,14 @@ export const DentistaForm = ({ initial, photoKey, onSubmit, onCancel }: Dentista
 
       <section>
         <h3 className="text-sm font-semibold text-bokka-ink mb-3">Identificação</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-6 gap-4">
           <Input
             label="Nome completo"
             required
             value={values.nomeCompleto}
             onChange={(e) => set('nomeCompleto', e.target.value)}
             error={errors.nomeCompleto}
-            containerClassName="sm:col-span-2"
-          />
-          <Input
-            label="CRO"
-            required
-            value={values.cro}
-            onChange={(e) => set('cro', e.target.value)}
-            placeholder="CRO-SE 12345"
-            error={errors.cro}
+            containerClassName="sm:col-span-4"
           />
           <Select
             label="Sexo"
@@ -163,9 +205,47 @@ export const DentistaForm = ({ initial, photoKey, onSubmit, onCancel }: Dentista
             value={values.sexo}
             onChange={(e) => set('sexo', e.target.value as SexoEnum)}
             options={sexoOptions}
+            containerClassName="sm:col-span-2"
             error={errors.sexo}
           />
+
+          {/* CRO: UF + número + ano opcional (padrão dos sistemas brasileiros) */}
+          <Select
+            label="CRO — UF"
+            required
+            value={croUf}
+            onChange={(e) => setCroUf(e.target.value)}
+            options={ufOptions}
+            hint="Estado onde o CRO foi emitido"
+            containerClassName="sm:col-span-1"
+          />
+          <Input
+            label="Número do CRO"
+            required
+            value={croNumero}
+            onChange={(e) => setCroNumero(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            placeholder="12345"
+            inputMode="numeric"
+            error={errors.cro}
+            containerClassName="sm:col-span-3"
+          />
+          <Input
+            label="Ano (opcional)"
+            value={croAno}
+            onChange={(e) => setCroAno(e.target.value.replace(/\D/g, '').slice(0, 4))}
+            placeholder="2022"
+            inputMode="numeric"
+            containerClassName="sm:col-span-2"
+          />
         </div>
+        {croNumero && (
+          <p className="text-xs text-bokka-ink-3 mt-2">
+            Registro completo:{' '}
+            <span className="font-mono font-semibold text-bokka-ink">
+              {buildCro(croUf, croNumero, croAno)}
+            </span>
+          </p>
+        )}
       </section>
 
       <section>

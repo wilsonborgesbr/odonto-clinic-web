@@ -148,7 +148,7 @@ export const DentistaDetalheModal = ({ dentistaId, open, onClose }: DentistaDeta
                   </div>
                   <p className="text-sm text-bokka-ink-3 mt-1 flex items-center gap-1.5">
                     <Award className="w-3.5 h-3.5" strokeWidth={2} />
-                    CRO {dentista.cro}
+                    {dentista.cro}
                   </p>
                 </div>
               </div>
