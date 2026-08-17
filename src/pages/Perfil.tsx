@@ -11,8 +11,8 @@ import { photoKeys, removePhoto } from '../lib/profilePhotos';
 import type { RoleEnum } from '../types';
 
 const roleLabel: Record<RoleEnum, string> = {
-  PROPRIETARIO: 'Proprietária do consultório',
-  SOCIO: 'Sócia — controle total',
+  PROPRIETARIO: 'Proprietário(a) — controle total',
+  SOCIO: 'Sócio(a) — controle total',
   ADMINISTRADOR: 'Administrador(a)',
   DENTISTA: 'Dentista',
   RECEPCIONISTA: 'Recepcionista',

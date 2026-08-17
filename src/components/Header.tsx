@@ -10,14 +10,14 @@ import { photoKeys } from '../lib/profilePhotos';
 import type { RoleEnum } from '../types';
 
 const roleLabel: Record<RoleEnum, string> = {
-  PROPRIETARIO: 'Proprietária',
-  SOCIO: 'Sócia',
+  PROPRIETARIO: 'Proprietário(a) — controle total',
+  SOCIO: 'Sócio(a) — controle total',
   ADMINISTRADOR: 'Administrador(a)',
   DENTISTA: 'Dentista',
   RECEPCIONISTA: 'Recepcionista',
   FINANCEIRO: 'Financeiro',
   ESTOQUISTA: 'Estoquista',
-  AUXILIAR_CLINICO: 'Aux. clínico',
+  AUXILIAR_CLINICO: 'Auxiliar clínico (ASB/TSB)',
 };
 
 interface HeaderProps {
@@ -51,11 +51,11 @@ export const Header = ({ onToggleSidebar }: HeaderProps) => {
         <Menu as="div" className="relative">
           <Menu.Button className="flex items-center gap-2 bg-bokka-surface border border-bokka-border rounded-full pl-1 pr-3 py-1 hover:shadow-sm transition-shadow">
             <Avatar photoKey={photoKey} name={user?.name || user?.email} size="sm" />
-            <div className="hidden sm:block text-left leading-tight">
-              <div className="text-xs font-semibold text-bokka-ink max-w-[140px] truncate">
+            <div className="hidden sm:block text-left leading-tight max-w-[220px]">
+              <div className="text-xs font-semibold text-bokka-ink truncate">
                 {user?.name?.split(' ').slice(0, 2).join(' ') || 'Usuária'}
               </div>
-              <div className="text-[10px] text-bokka-ink-3">
+              <div className="text-[10px] text-bokka-ink-3 truncate">
                 {roleLabel[user?.role ?? 'DENTISTA'] ?? 'Usuário'}
               </div>
             </div>
