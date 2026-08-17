@@ -59,8 +59,15 @@ const semanaLabels = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 export const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, hasPermissao } = useAuth();
   const userPhotoKey = photoKeys.user(user?.email);
+
+  // Permissões que gateiam cards e queries
+  const canAgendamentos = hasPermissao('AGENDAMENTOS');
+  const canFinanceiro = hasPermissao('AUDITORIA_FINANCEIRA');
+  const canPacientes = hasPermissao('PACIENTES');
+  const canDentistas = hasPermissao('DENTISTAS');
+  const canEstoque = hasPermissao('ESTOQUE');
 
   // Reloga a cada minuto pra o timer atualizar
   const [now, setNow] = useState(() => new Date());
@@ -69,11 +76,14 @@ export const Dashboard = () => {
     return () => clearInterval(id);
   }, []);
 
-  const agendamentosQ = useAgendamentos({ pagina: 0, tamanho: 300, ordem: 'dataHoraInicio' });
-  const contasQ = useContasReceber();
-  const pacientesQ = usePacientes({ pagina: 0, tamanho: 200 });
-  const dentistasQ = useDentistasAtivos();
-  const estoqueQ = useEstoque();
+  const agendamentosQ = useAgendamentos(
+    { pagina: 0, tamanho: 300, ordem: 'dataHoraInicio' },
+    { enabled: canAgendamentos },
+  );
+  const contasQ = useContasReceber({ enabled: canFinanceiro });
+  const pacientesQ = usePacientes({ pagina: 0, tamanho: 200 }, { enabled: canPacientes });
+  const dentistasQ = useDentistasAtivos({ enabled: canDentistas });
+  const estoqueQ = useEstoque({ enabled: canEstoque });
   const criarM = useCriarAgendamento();
 
   const agendamentos = agendamentosQ.data?.content ?? [];
@@ -242,8 +252,25 @@ export const Dashboard = () => {
   };
 
   const loading =
-    agendamentosQ.isLoading || contasQ.isLoading || pacientesQ.isLoading || dentistasQ.isLoading || estoqueQ.isLoading;
+    (canAgendamentos && agendamentosQ.isLoading) ||
+    (canFinanceiro && contasQ.isLoading) ||
+    (canPacientes && pacientesQ.isLoading) ||
+    (canDentistas && dentistasQ.isLoading) ||
+    (canEstoque && estoqueQ.isLoading);
   const dentistasAtivos = dentistasQ.data ?? [];
+
+  // Conta quantos KPIs vão renderizar (pra ajustar grid)
+  const kpisVisiveis =
+    (canAgendamentos ? 2 : 0) + (canFinanceiro ? 2 : 0) + (canDentistas ? 1 : 0);
+  const kpiGridCols = kpisVisiveis <= 1
+    ? 'grid-cols-1'
+    : kpisVisiveis === 2
+      ? 'grid-cols-1 sm:grid-cols-2'
+      : kpisVisiveis === 3
+        ? 'grid-cols-1 sm:grid-cols-3'
+        : kpisVisiveis === 4
+          ? 'grid-cols-2 sm:grid-cols-4'
+          : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5';
 
   return (
     <div className="space-y-4">
@@ -260,50 +287,63 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <KpiCard
-          label="Agendamentos hoje"
-          value={loading ? '—' : agendamentosHoje.length}
-          hint={agendamentosHoje.length ? 'Consultas do dia' : 'Nenhuma hoje'}
-          icon={<CalendarDays className="w-5 h-5" strokeWidth={1.75} />}
-          tone="primary"
-          loading={loading}
-        />
-        <HighlightKpi
-          label="Confirmadas"
-          value={loading ? '—' : confirmadosHoje}
-          hint={`de ${agendamentosHoje.length} agendadas`}
-          icon={<CalendarDays className="w-5 h-5" strokeWidth={2} />}
-          loading={loading}
-        />
-        <KpiCard
-          label="Receita mês"
-          value={loading ? '—' : formatCurrency(receitaMes)}
-          icon={<Wallet className="w-5 h-5" strokeWidth={1.75} />}
-          tone="success"
-          loading={loading}
-        />
-        <KpiCard
-          label="Pendente"
-          value={loading ? '—' : formatCurrency(saldoPendente)}
-          hint={saldoPendente > 0 ? 'A receber' : 'Sem pendências'}
-          icon={<Wallet className="w-5 h-5" strokeWidth={1.75} />}
-          tone="warning"
-          loading={loading}
-        />
-        <TeamCard
-          label="Equipe clínica"
-          count={dentistasAtivos.length}
-          members={dentistasAtivos.slice(0, 4)}
-          loading={loading}
-        />
-      </div>
+      {/* KPIs — filtrados por permissão */}
+      {kpisVisiveis > 0 && (
+        <div className={cn('grid gap-4', kpiGridCols)}>
+          {canAgendamentos && (
+            <KpiCard
+              label="Agendamentos hoje"
+              value={loading ? '—' : agendamentosHoje.length}
+              hint={agendamentosHoje.length ? 'Consultas do dia' : 'Nenhuma hoje'}
+              icon={<CalendarDays className="w-5 h-5" strokeWidth={1.75} />}
+              tone="primary"
+              loading={loading}
+            />
+          )}
+          {canAgendamentos && (
+            <HighlightKpi
+              label="Confirmadas"
+              value={loading ? '—' : confirmadosHoje}
+              hint={`de ${agendamentosHoje.length} agendadas`}
+              icon={<CalendarDays className="w-5 h-5" strokeWidth={2} />}
+              loading={loading}
+            />
+          )}
+          {canFinanceiro && (
+            <KpiCard
+              label="Receita mês"
+              value={loading ? '—' : formatCurrency(receitaMes)}
+              icon={<Wallet className="w-5 h-5" strokeWidth={1.75} />}
+              tone="success"
+              loading={loading}
+            />
+          )}
+          {canFinanceiro && (
+            <KpiCard
+              label="Pendente"
+              value={loading ? '—' : formatCurrency(saldoPendente)}
+              hint={saldoPendente > 0 ? 'A receber' : 'Sem pendências'}
+              icon={<Wallet className="w-5 h-5" strokeWidth={1.75} />}
+              tone="warning"
+              loading={loading}
+            />
+          )}
+          {canDentistas && (
+            <TeamCard
+              label="Equipe clínica"
+              count={dentistasAtivos.length}
+              members={dentistasAtivos.slice(0, 4)}
+              loading={loading}
+            />
+          )}
+        </div>
+      )}
 
       {/* Grid principal — 2 linhas × pares balanceados */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 auto-rows-fr">
         {/* ═══════ LINHA 1 ═══════ */}
         {/* Agenda de hoje — HERO (2/3) */}
+        {canAgendamentos && (
         <Card padded={false} className="lg:col-span-2 flex flex-col min-h-[440px] overflow-hidden">
           <div className="px-5 pt-5 pb-3 flex items-center justify-between shrink-0">
             <div>
@@ -348,8 +388,10 @@ export const Dashboard = () => {
             </div>
           )}
         </Card>
+        )}
 
         {/* Mini calendar AZUL — clicável (1/3) */}
+        {canAgendamentos && (
         <div className="bg-bokka-primary-soft rounded-2xl p-5 flex flex-col justify-center min-h-[440px]">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -447,9 +489,11 @@ export const Dashboard = () => {
               })}
             </div>
           </div>
+        )}
 
           {/* ═══════ LINHA 2 ═══════ */}
           {/* Produtividade PRETO — chart (2/3) */}
+          {canAgendamentos && (
           <div className="bg-bokka-ink rounded-2xl p-5 lg:p-6 text-white lg:col-span-2 flex flex-col min-h-[440px]">
             <div className="flex items-center justify-between mb-4 shrink-0">
               <div>
@@ -521,8 +565,10 @@ export const Dashboard = () => {
               </span>
             </div>
           </div>
+          )}
 
           {/* Estoque — card expandido paginado (1/3) */}
+          {canEstoque && (
           <div className="bg-bokka-surface border border-bokka-border rounded-2xl overflow-hidden flex flex-col min-h-[440px]">
             <div className="px-5 pt-5 pb-3 flex items-center justify-between shrink-0">
               <div>
@@ -638,7 +684,21 @@ export const Dashboard = () => {
               </>
             )}
           </div>
+          )}
       </div>
+
+      {/* Empty state — usuário sem nenhum módulo visível no dashboard */}
+      {!canAgendamentos && !canFinanceiro && !canEstoque && !canDentistas && (
+        <div className="bg-bokka-surface border border-bokka-border rounded-2xl p-12 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-bokka-surface-3 text-bokka-ink-3 flex items-center justify-center mx-auto mb-4">
+            <CalendarDays className="w-7 h-7" strokeWidth={1.75} />
+          </div>
+          <h2 className="text-lg font-bold text-bokka-ink">Sem cards para exibir</h2>
+          <p className="text-sm text-bokka-ink-3 mt-2 max-w-md mx-auto">
+            Seu cargo atual não tem permissão para nenhum dos módulos exibidos aqui. Use o menu ao lado para acessar as áreas do seu perfil.
+          </p>
+        </div>
+      )}
 
       {/* Modal de novo agendamento a partir do calendário */}
       <Modal

@@ -47,11 +47,12 @@ export const useDentistas = (params: ListarDentistasParams) =>
     placeholderData: (prev) => prev,
   });
 
-export const useDentistasAtivos = () =>
+export const useDentistasAtivos = (options?: { enabled?: boolean }) =>
   useQuery({
     queryKey: dentistaKeys.ativos(),
     queryFn: dentistaService.listarAtivos,
     staleTime: 5 * 60_000,
+    enabled: options?.enabled ?? true,
   });
 
 export const useDentista = (id: string | undefined) =>

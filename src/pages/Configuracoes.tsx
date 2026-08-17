@@ -17,6 +17,7 @@ import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Field';
 import { bokkaToast } from '../components/ui/Toast';
+import { useAuth } from '../context/AuthContext';
 import { cn } from '../lib/utils';
 
 type Prefs = {
@@ -75,6 +76,11 @@ const readWebhooks = (): Webhooks => {
 };
 
 export const Configuracoes = () => {
+  const { hasPermissao } = useAuth();
+  const canFinanceiro = hasPermissao('AUDITORIA_FINANCEIRA');
+  const canAgendamentos = hasPermissao('AGENDAMENTOS');
+  const canEstoque = hasPermissao('ESTOQUE');
+
   const [prefs, setPrefs] = useState<Prefs>(readPrefs);
   const [webhooks, setWebhooks] = useState<Webhooks>(readWebhooks);
 
@@ -99,43 +105,53 @@ export const Configuracoes = () => {
         </p>
       </div>
 
-      {/* ============ Notificações ============ */}
+      {/* ============ Notificações — mostra só toggles que o cargo do usuário acessa ============ */}
+      {(canFinanceiro || canAgendamentos || canEstoque) && (
       <Card>
         <CardHeader
           title="Notificações"
           subtitle="Escolha o que aparece no sino da barra superior."
         />
         <ul className="divide-y divide-bokka-border -mx-5 -my-1">
-          <ToggleRow
-            icon={<Wallet className="w-4 h-4" strokeWidth={1.75} />}
-            title="Pagamentos recebidos"
-            description="Cobranças quitadas por pacientes."
-            enabled={prefs.notifyPagamentos}
-            onToggle={() => togglePref('notifyPagamentos')}
-          />
-          <ToggleRow
-            icon={<Calendar className="w-4 h-4" strokeWidth={1.75} />}
-            title="Novos agendamentos"
-            description="Consultas criadas ou alteradas."
-            enabled={prefs.notifyAgendamentos}
-            onToggle={() => togglePref('notifyAgendamentos')}
-          />
-          <ToggleRow
-            icon={<Bell className="w-4 h-4" strokeWidth={1.75} />}
-            title="Estoque baixo"
-            description="Itens abaixo do mínimo cadastrado."
-            enabled={prefs.notifyEstoqueBaixo}
-            onToggle={() => togglePref('notifyEstoqueBaixo')}
-          />
-          <ToggleRow
-            icon={<CreditCard className="w-4 h-4" strokeWidth={1.75} />}
-            title="Despesas próximas do vencimento"
-            description="Contas a pagar com vencimento em até 7 dias."
-            enabled={prefs.notifyDespesas}
-            onToggle={() => togglePref('notifyDespesas')}
-          />
+          {canFinanceiro && (
+            <ToggleRow
+              icon={<Wallet className="w-4 h-4" strokeWidth={1.75} />}
+              title="Pagamentos recebidos"
+              description="Cobranças quitadas por pacientes."
+              enabled={prefs.notifyPagamentos}
+              onToggle={() => togglePref('notifyPagamentos')}
+            />
+          )}
+          {canAgendamentos && (
+            <ToggleRow
+              icon={<Calendar className="w-4 h-4" strokeWidth={1.75} />}
+              title="Novos agendamentos"
+              description="Consultas criadas ou alteradas."
+              enabled={prefs.notifyAgendamentos}
+              onToggle={() => togglePref('notifyAgendamentos')}
+            />
+          )}
+          {canEstoque && (
+            <ToggleRow
+              icon={<Bell className="w-4 h-4" strokeWidth={1.75} />}
+              title="Estoque baixo"
+              description="Itens abaixo do mínimo cadastrado."
+              enabled={prefs.notifyEstoqueBaixo}
+              onToggle={() => togglePref('notifyEstoqueBaixo')}
+            />
+          )}
+          {canFinanceiro && (
+            <ToggleRow
+              icon={<CreditCard className="w-4 h-4" strokeWidth={1.75} />}
+              title="Despesas próximas do vencimento"
+              description="Contas a pagar com vencimento em até 7 dias."
+              enabled={prefs.notifyDespesas}
+              onToggle={() => togglePref('notifyDespesas')}
+            />
+          )}
         </ul>
       </Card>
+      )}
 
       {/* ============ Aparência ============ */}
       <Card>

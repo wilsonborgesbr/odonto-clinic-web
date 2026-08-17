@@ -38,11 +38,15 @@ export const agendamentoKeys = {
   byDentista: (did: string) => [...agendamentoKeys.all, 'byDentista', did] as const,
 };
 
-export const useAgendamentos = (params: ListarAgendamentosParams) =>
+export const useAgendamentos = (
+  params: ListarAgendamentosParams,
+  options?: { enabled?: boolean },
+) =>
   useQuery({
     queryKey: agendamentoKeys.list(params),
     queryFn: () => agendamentoService.listar(params),
     placeholderData: (prev) => prev,
+    enabled: options?.enabled ?? true,
   });
 
 export const useAgendamento = (id: string | undefined) =>

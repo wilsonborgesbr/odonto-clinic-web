@@ -16,6 +16,7 @@ import { useContasReceber, useContasPagar } from '../services/financeiroService'
 import { useAgendamentos } from '../services/agendamentoService';
 import { useEstoque } from '../services/estoqueService';
 import { usePacientes } from '../services/pacienteService';
+import { useAuth } from '../context/AuthContext';
 import { cn, formatCurrency } from '../lib/utils';
 
 // ============ Preferências (compartilhadas com a página Configurações) ============
@@ -121,23 +122,36 @@ const relativeTime = (ts: number, now: number): string => {
 
 export const NotificationsPanel = () => {
   const navigate = useNavigate();
+  const { hasPermissao } = useAuth();
   const [open, setOpen] = useState(false);
   const [lastSeen, setLastSeen] = useState<number>(() => getLastSeen());
   const wrapperRef = useRef<HTMLDivElement>(null);
   const now = useMemo(() => Date.now(), []);
   const prefs = useMemo(readPrefs, [open]);
 
-  // Fetch todas as fontes (cache do react-query)
-  const receberQ = useContasReceber();
-  const pagarQ = useContasPagar();
-  const agendamentosQ = useAgendamentos({ pagina: 0, tamanho: 200, ordem: 'dataHoraInicio' });
-  const estoqueQ = useEstoque();
-  const pacientesQ = usePacientes({ pagina: 0, tamanho: 100, ordem: 'nomeCompleto' });
+  // Permissões gateiam tanto queries quanto notificações renderizadas
+  const canFinanceiro = hasPermissao('AUDITORIA_FINANCEIRA');
+  const canAgendamentos = hasPermissao('AGENDAMENTOS');
+  const canEstoque = hasPermissao('ESTOQUE');
+  const canPacientes = hasPermissao('PACIENTES');
+
+  // Fetch condicional — usuário sem permissão não faz a request
+  const receberQ = useContasReceber({ enabled: canFinanceiro });
+  const pagarQ = useContasPagar({ enabled: canFinanceiro });
+  const agendamentosQ = useAgendamentos(
+    { pagina: 0, tamanho: 200, ordem: 'dataHoraInicio' },
+    { enabled: canAgendamentos },
+  );
+  const estoqueQ = useEstoque({ enabled: canEstoque });
+  const pacientesQ = usePacientes(
+    { pagina: 0, tamanho: 100, ordem: 'nomeCompleto' },
+    { enabled: canPacientes },
+  );
 
   const notifs = useMemo<Notif[]>(() => {
     const out: Notif[] = [];
 
-    if (prefs.notifyPagamentos) {
+    if (prefs.notifyPagamentos && canFinanceiro) {
       (receberQ.data ?? [])
         .filter((c) => c.status === 'PAGO' && c.dataPagamento)
         .forEach((c) => {
@@ -152,7 +166,7 @@ export const NotificationsPanel = () => {
         });
     }
 
-    if (prefs.notifyAgendamentos) {
+    if (prefs.notifyAgendamentos && canAgendamentos) {
       (agendamentosQ.data?.content ?? [])
         .filter((a) => a.createdAt || a.dataHoraInicio)
         .forEach((a) => {
@@ -169,7 +183,7 @@ export const NotificationsPanel = () => {
         });
     }
 
-    if (prefs.notifyDespesas) {
+    if (prefs.notifyDespesas && canFinanceiro) {
       (pagarQ.data ?? []).forEach((c) => {
         // Despesa paga
         if (c.status === 'PAGO' && c.dataPagamento) {
@@ -205,7 +219,7 @@ export const NotificationsPanel = () => {
       });
     }
 
-    if (prefs.notifyEstoqueBaixo) {
+    if (prefs.notifyEstoqueBaixo && canEstoque) {
       (estoqueQ.data ?? [])
         .filter((e) => (e.quantidadeAtual ?? 0) <= (e.quantidadeMinima ?? 0))
         .forEach((e) => {
@@ -221,24 +235,38 @@ export const NotificationsPanel = () => {
         });
     }
 
-    // Novos pacientes (últimos 14 dias) — não é "novidade organizacional" restrita, é evento clínico
-    (pacientesQ.data?.content ?? [])
-      .filter((p) => p.createdAt)
-      .forEach((p) => {
-        const ts = parseTs(p.createdAt);
-        if (!ts || now - ts > 14 * 86_400_000) return;
-        out.push({
-          id: `pac-${p.id}`,
-          tipo: 'paciente',
-          titulo: 'Novo paciente cadastrado',
-          descricao: p.nomeCompleto,
-          timestamp: ts,
-          href: `/pacientes/${p.id}`,
+    // Novos pacientes (últimos 14 dias) — só notifica quem tem acesso ao módulo Pacientes
+    if (canPacientes) {
+      (pacientesQ.data?.content ?? [])
+        .filter((p) => p.createdAt)
+        .forEach((p) => {
+          const ts = parseTs(p.createdAt);
+          if (!ts || now - ts > 14 * 86_400_000) return;
+          out.push({
+            id: `pac-${p.id}`,
+            tipo: 'paciente',
+            titulo: 'Novo paciente cadastrado',
+            descricao: p.nomeCompleto,
+            timestamp: ts,
+            href: `/pacientes/${p.id}`,
+          });
         });
-      });
+    }
 
     return out.sort((a, b) => b.timestamp - a.timestamp).slice(0, 50);
-  }, [receberQ.data, pagarQ.data, agendamentosQ.data, estoqueQ.data, pacientesQ.data, prefs, now]);
+  }, [
+    receberQ.data,
+    pagarQ.data,
+    agendamentosQ.data,
+    estoqueQ.data,
+    pacientesQ.data,
+    prefs,
+    now,
+    canFinanceiro,
+    canAgendamentos,
+    canEstoque,
+    canPacientes,
+  ]);
 
   const unreadCount = useMemo(
     () => notifs.filter((n) => n.timestamp > lastSeen).length,

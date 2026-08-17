@@ -43,11 +43,15 @@ export const pacienteKeys = {
   detail: (id: string) => [...pacienteKeys.details(), id] as const,
 };
 
-export const usePacientes = (params: ListarPacientesParams) =>
+export const usePacientes = (
+  params: ListarPacientesParams,
+  options?: { enabled?: boolean },
+) =>
   useQuery({
     queryKey: pacienteKeys.list(params),
     queryFn: () => pacienteService.listar(params),
     placeholderData: (prev) => prev,
+    enabled: options?.enabled ?? true,
   });
 
 export const usePaciente = (id: string | undefined) =>

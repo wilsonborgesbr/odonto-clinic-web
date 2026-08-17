@@ -33,10 +33,11 @@ export const contaReceberKeys = {
   detail: (id: string) => [...contaReceberKeys.all, 'detail', id] as const,
 };
 
-export const useContasReceber = () =>
+export const useContasReceber = (options?: { enabled?: boolean }) =>
   useQuery({
     queryKey: contaReceberKeys.lists(),
     queryFn: contaReceberService.listar,
+    enabled: options?.enabled ?? true,
   });
 
 export const useContasReceberPorPaciente = (pacienteId: string | undefined) =>
@@ -101,10 +102,11 @@ export const contaPagarKeys = {
   detail: (id: string) => [...contaPagarKeys.all, 'detail', id] as const,
 };
 
-export const useContasPagar = () =>
+export const useContasPagar = (options?: { enabled?: boolean }) =>
   useQuery({
     queryKey: contaPagarKeys.lists(),
     queryFn: contaPagarService.listar,
+    enabled: options?.enabled ?? true,
   });
 
 export const useCriarContaPagar = () => {

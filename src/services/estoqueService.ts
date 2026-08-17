@@ -23,8 +23,12 @@ export const estoqueKeys = {
   detail: (id: string) => [...estoqueKeys.all, 'detail', id] as const,
 };
 
-export const useEstoque = () =>
-  useQuery({ queryKey: estoqueKeys.lists(), queryFn: estoqueService.listar });
+export const useEstoque = (options?: { enabled?: boolean }) =>
+  useQuery({
+    queryKey: estoqueKeys.lists(),
+    queryFn: estoqueService.listar,
+    enabled: options?.enabled ?? true,
+  });
 
 export const useEstoqueAbaixoMinimo = () =>
   useQuery({
