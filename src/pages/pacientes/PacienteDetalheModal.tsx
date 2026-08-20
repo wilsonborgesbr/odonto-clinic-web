@@ -124,6 +124,7 @@ export const PacienteDetalheModal = ({ pacienteId, open, onClose }: PacienteDeta
               <div className="flex items-center gap-4 min-w-0">
                 <Avatar
                   photoKey={photoKeys.paciente(paciente.id)}
+                  remoteSrc={paciente.fotoUrl}
                   name={paciente.nomeCompleto}
                   size="xl"
                   editable={false}

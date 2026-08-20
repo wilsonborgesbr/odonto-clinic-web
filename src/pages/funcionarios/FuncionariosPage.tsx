@@ -243,6 +243,7 @@ export const FuncionariosPage = () => {
               >
                 <Avatar
                   photoKey={photoKeys.funcionario(f.id)}
+                  remoteSrc={f.fotoUrl}
                   name={f.nomeCompleto}
                   size="lg"
                   ring

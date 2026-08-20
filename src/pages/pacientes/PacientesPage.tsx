@@ -204,6 +204,7 @@ export const PacientesPage = () => {
                       >
                         <Avatar
                           photoKey={photoKeys.paciente(p.id)}
+                          remoteSrc={p.fotoUrl}
                           name={p.nomeCompleto}
                           size="sm"
                         />

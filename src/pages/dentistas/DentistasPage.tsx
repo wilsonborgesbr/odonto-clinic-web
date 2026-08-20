@@ -234,6 +234,7 @@ export const DentistasPage = () => {
               >
                 <Avatar
                   photoKey={photoKeys.dentista(d.id)}
+                  remoteSrc={d.fotoUrl}
                   name={d.nomeCompleto}
                   size="lg"
                   ring

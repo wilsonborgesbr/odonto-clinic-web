@@ -217,6 +217,7 @@ export const PacienteDetalhePage = () => {
                     >
                       <Avatar
                         photoKey={photoKeys.paciente(p.id)}
+                        remoteSrc={p.fotoUrl}
                         name={p.nomeCompleto}
                         size="md"
                       />
@@ -245,6 +246,7 @@ export const PacienteDetalhePage = () => {
               <div className="flex items-center gap-4 min-w-0">
                 <Avatar
                   photoKey={photoKeys.paciente(paciente.id)}
+                  remoteSrc={paciente.fotoUrl}
                   name={paciente.nomeCompleto}
                   size="xl"
                   editable

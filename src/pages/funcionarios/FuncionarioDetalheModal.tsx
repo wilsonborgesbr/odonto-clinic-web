@@ -163,6 +163,7 @@ export const FuncionarioDetalheModal = ({
               <div className="flex items-center gap-4 min-w-0">
                 <Avatar
                   photoKey={photoKeys.funcionario(funcionario.id)}
+                  remoteSrc={funcionario.fotoUrl}
                   name={funcionario.nomeCompleto}
                   size="xl"
                   editable={false}

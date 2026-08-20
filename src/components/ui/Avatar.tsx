@@ -70,6 +70,8 @@ interface AvatarProps {
   editable?: boolean;
   ring?: boolean;
   previewSrc?: string | null;
+  /** Foto vinda do backend (campo fotoUrl da entidade). Tem prioridade sobre o localStorage. */
+  remoteSrc?: string | null;
   onFileSelect?: (file: File) => void;
 }
 
@@ -81,6 +83,7 @@ export const Avatar = ({
   editable,
   ring,
   previewSrc,
+  remoteSrc,
   onFileSelect,
 }: AvatarProps) => {
   const photo = usePhoto(photoKey);
@@ -88,7 +91,7 @@ export const Avatar = ({
 
   const tone = hashTone(name || photoKey || 'x');
 
-  const displaySrc = previewSrc ?? photo;
+  const displaySrc = previewSrc ?? remoteSrc ?? photo;
 
   const handleUpload = async (file: File) => {
     if (onFileSelect) {

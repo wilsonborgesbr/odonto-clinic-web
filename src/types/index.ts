@@ -400,6 +400,7 @@ export interface Dentista {
   telefoneCelular?: string;
   sexo: SexoEnum;
   endereco?: Endereco;
+  fotoUrl?: string;
   ativo?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -438,6 +439,7 @@ export interface Funcionario {
   telefoneCelular?: string;
   sexo: SexoEnum;
   endereco?: Endereco;
+  fotoUrl?: string;
   ativo?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -474,6 +476,7 @@ export interface Paciente {
   convenioId?: string;
   tipoPagamento?: TipoPagamentoPaciente;
   comoConheceu?: ComoConheceu;
+  fotoUrl?: string;
   ativo?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -539,6 +542,7 @@ export interface DentistaListagemDTO {
   ativo: boolean;
   sexo?: SexoEnum;
   endereco?: Endereco;
+  fotoUrl?: string;
 }
 
 export interface FuncionarioListagemDTO {
@@ -551,6 +555,7 @@ export interface FuncionarioListagemDTO {
   ativo: boolean;
   sexo?: SexoEnum;
   endereco?: Endereco;
+  fotoUrl?: string;
 }
 
 export interface PacienteListagemDTO {
@@ -561,6 +566,7 @@ export interface PacienteListagemDTO {
   telefoneCelular: string;
   ativo: boolean;
   createdAt?: string;
+  fotoUrl?: string;
 }
 
 // Erro padronizado do backend (GlobalExceptionHandler.ErroPadrao)
