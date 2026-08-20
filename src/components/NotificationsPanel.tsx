@@ -17,7 +17,7 @@ import { useAgendamentos } from '../services/agendamentoService';
 import { useEstoque } from '../services/estoqueService';
 import { usePacientes } from '../services/pacienteService';
 import { useAuth } from '../context/AuthContext';
-import { cn, formatCurrency } from '../lib/utils';
+import { cn, formatCurrency, formatDescricaoFinanceira } from '../lib/utils';
 
 // ============ Preferências (compartilhadas com a página Configurações) ============
 const PREFS_KEY = 'bokka:preferences';
@@ -159,7 +159,7 @@ export const NotificationsPanel = () => {
             id: `pag-receber-${c.id}`,
             tipo: 'pagamento',
             titulo: `Pagamento recebido · ${formatCurrency(c.valorPago ?? c.valorTotal ?? 0)}`,
-            descricao: c.descricao || 'Cobrança quitada por paciente',
+            descricao: formatDescricaoFinanceira(c.descricao) || 'Cobrança quitada por paciente',
             timestamp: parseTs(c.dataPagamento) || parseTs(c.updatedAt),
             href: '/financeiro/auditoria',
           });
@@ -210,7 +210,7 @@ export const NotificationsPanel = () => {
                   : dias < 1
                     ? 'Despesa vence hoje'
                     : `Despesa vence em ${Math.ceil(dias)} dias`,
-              descricao: `${c.descricao || 'Conta a pagar'} · ${formatCurrency(c.valor ?? 0)}`,
+              descricao: `${formatDescricaoFinanceira(c.descricao) || 'Conta a pagar'} · ${formatCurrency(c.valor ?? 0)}`,
               timestamp: vencTs,
               href: '/financeiro/auditoria',
             });

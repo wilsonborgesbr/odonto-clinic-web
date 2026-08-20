@@ -51,7 +51,7 @@ import {
 import { usePacientes } from '../../services/pacienteService';
 import { useEstoque } from '../../services/estoqueService';
 import { ApiError } from '../../lib/api';
-import { cn, formatCurrency, formatDate } from '../../lib/utils';
+import { cn, formatCurrency, formatDate, formatDescricaoFinanceira } from '../../lib/utils';
 import type {
   CategoriaContaPagarEnum,
   ContaPagar,
@@ -266,7 +266,7 @@ export const AuditoriaPage = () => {
       arr.push({
         id: c.id ?? '',
         tipo: 'receber',
-        titulo: c.descricao || 'Receita',
+        titulo: formatDescricaoFinanceira(c.descricao) || 'Receita',
         contexto: pacienteMap.get(c.pacienteId) || '—',
         valor: restante,
         dias,
@@ -280,7 +280,7 @@ export const AuditoriaPage = () => {
       arr.push({
         id: c.id ?? '',
         tipo: 'pagar',
-        titulo: c.descricao || 'Despesa',
+        titulo: formatDescricaoFinanceira(c.descricao) || 'Despesa',
         contexto: c.fornecedor || categoriaPagarLabel[c.categoria],
         valor: c.valor ?? 0,
         dias,
@@ -625,7 +625,7 @@ export const AuditoriaPage = () => {
                       <tr key={c.id} className="hover:bg-bokka-surface-3/60">
                         <td className="px-4 py-3">
                           <div className="font-semibold text-bokka-ink truncate max-w-[220px]">
-                            {c.descricao || '—'}
+                            {formatDescricaoFinanceira(c.descricao)}
                           </div>
                           <div className="text-[11px] text-bokka-ink-3 mt-0.5 truncate max-w-[220px]">
                             {pacienteMap.get(c.pacienteId) || `Paciente #${c.pacienteId?.slice(-6)}`}
@@ -673,7 +673,7 @@ export const AuditoriaPage = () => {
                               type="button"
                               onClick={() =>
                                 c.id &&
-                                setConfirmar({ tipo: 'receber', id: c.id, nome: c.descricao || 'Receita' })
+                                setConfirmar({ tipo: 'receber', id: c.id, nome: formatDescricaoFinanceira(c.descricao) || 'Receita' })
                               }
                               className="w-8 h-8 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-danger-soft hover:text-bokka-danger-ink transition-colors"
                               title="Excluir"
@@ -762,7 +762,7 @@ export const AuditoriaPage = () => {
                       <tr key={c.id} className="hover:bg-bokka-surface-3/60">
                         <td className="px-4 py-3">
                           <div className="font-semibold text-bokka-ink truncate max-w-[220px]">
-                            {c.descricao || '—'}
+                            {formatDescricaoFinanceira(c.descricao)}
                           </div>
                           <div className="flex items-center gap-1.5 mt-1">
                             <span
@@ -812,7 +812,7 @@ export const AuditoriaPage = () => {
                               type="button"
                               onClick={() =>
                                 c.id &&
-                                setConfirmar({ tipo: 'pagar', id: c.id, nome: c.descricao || 'Despesa' })
+                                setConfirmar({ tipo: 'pagar', id: c.id, nome: formatDescricaoFinanceira(c.descricao) || 'Despesa' })
                               }
                               className="w-8 h-8 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-danger-soft hover:text-bokka-danger-ink transition-colors"
                               title="Excluir"

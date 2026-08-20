@@ -3,7 +3,7 @@ import type { FormEvent } from 'react';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Field';
-import { formatCurrency } from '../../lib/utils';
+import { formatCurrency, formatDescricaoFinanceira } from '../../lib/utils';
 import type { ContaReceber } from '../../types';
 
 interface PagamentoModalProps {
@@ -53,7 +53,7 @@ export const PagamentoModal = ({ conta, onClose, onSubmit }: PagamentoModalProps
       open={!!conta}
       onClose={onClose}
       title="Registrar pagamento"
-      subtitle={conta?.descricao}
+      subtitle={formatDescricaoFinanceira(conta?.descricao)}
       size="sm"
       footer={
         <>
