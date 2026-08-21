@@ -385,7 +385,7 @@ export const AuditoriaPage = () => {
         <div>
           <h1 className="text-2xl font-bold text-bokka-ink tracking-tight">Auditoria Financeira</h1>
           <p className="text-sm text-bokka-ink-3 mt-1">
-            Controle completo do fluxo de caixa da clínica — receitas, despesas e lucratividade.
+            Controle completo do fluxo de caixa da clínica: receitas, despesas e lucratividade.
           </p>
         </div>
         <div className="relative">
