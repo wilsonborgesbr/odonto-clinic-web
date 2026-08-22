@@ -56,6 +56,18 @@ body,
   height: 100%;
 }
 
+/* Rede de segurança contra overflow horizontal — sem isso, um `position: fixed` como a
+   BottomNav pode aparecer deslocado/cortado em navegadores mobile assim que qualquer elemento
+   da página (mesmo um não identificado) ultrapassa a largura da viewport. Não muda nada
+   visualmente quando não há overflow.
+   Só em `body` (não em `html`): definir overflow explícito nos dois quebra a propagação
+   padrão do "root scroller" do body pro html/viewport — testado ao vivo e confirmado (com os
+   dois, document.documentElement parava de refletir a altura real da página, e a rolagem da
+   janela parava de funcionar). Só em body preserva a propagação e cobre a mesma regra. */
+body {
+  overflow-x: hidden;
+}
+
 html {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;

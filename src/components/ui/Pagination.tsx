@@ -48,6 +48,7 @@ export const Pagination = ({
           disabled={page === 0 || loading}
           onClick={() => onPageChange(Math.max(0, page - 1))}
           icon={<ChevronLeft />}
+          className="h-10 sm:h-8"
         >
           Anterior
         </Button>
@@ -57,6 +58,7 @@ export const Pagination = ({
           disabled={page >= totalPages - 1 || loading}
           onClick={() => onPageChange(page + 1)}
           iconRight={<ChevronRight />}
+          className="h-10 sm:h-8"
         >
           Próxima
         </Button>
