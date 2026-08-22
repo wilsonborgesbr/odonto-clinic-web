@@ -25,7 +25,6 @@ SPA completa para gestão de clínicas odontológicas, consumindo a [Bokka API](
 |:----------:|:---------:|:-----:|
 | ![Financeiro](docs/screenshots/financeiro.png) | ![Pacientes](docs/screenshots/pacientes.png) | ![Login](docs/screenshots/login.png) |
 
-> 📸 **Adicione suas screenshots na pasta `docs/screenshots/`** com os nomes acima.
 
 ---
 
