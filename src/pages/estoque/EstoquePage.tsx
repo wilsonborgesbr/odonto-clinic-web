@@ -224,7 +224,58 @@ export const EstoquePage = () => {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            {/* Abaixo de md: lista de cards empilhados */}
+            <div className="md:hidden divide-y divide-bokka-border">
+              {filtrados.map((item) => {
+                const low = isLow(item);
+                return (
+                  <div
+                    key={item.id}
+                    className={cn('px-4 py-3', low && 'bg-bokka-danger-soft/20')}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex items-center gap-1.5">
+                        {low && <AlertTriangle className="w-3.5 h-3.5 text-bokka-danger-ink shrink-0" strokeWidth={2} />}
+                        <span className="font-semibold text-bokka-ink truncate">{item.nomeMaterial}</span>
+                      </div>
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(item)}
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary transition-colors"
+                          title="Editar"
+                        >
+                          <Pencil className="w-4 h-4" strokeWidth={1.75} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmar({ id: item.id!, nome: item.nomeMaterial ?? 'Item' })}
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-danger-soft hover:text-bokka-danger-ink transition-colors"
+                          title="Excluir"
+                        >
+                          <Trash2 className="w-4 h-4" strokeWidth={1.75} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap mt-1.5">
+                      <span className="px-2 py-0.5 rounded-full bg-bokka-primary-soft text-bokka-primary text-[10px] font-semibold">
+                        {categoriaLabel[item.categoria!] ?? item.categoria}
+                      </span>
+                      <span className={cn('text-xs tabular-nums font-semibold', low ? 'text-bokka-danger-ink' : 'text-bokka-ink-2')}>
+                        {item.quantidadeAtual}/{item.quantidadeMinima} {item.unidadeMedida ?? ''}
+                      </span>
+                    </div>
+                    <p className="text-xs text-bokka-ink-3 mt-1 truncate">
+                      {item.fornecedor || '—'}
+                      {item.dataValidade && ` · Val. ${formatDate(item.dataValidade)}`}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-[11px] uppercase tracking-wider text-bokka-ink-3 bg-bokka-surface-3">
@@ -298,7 +349,8 @@ export const EstoquePage = () => {
                 })}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
       </Card>
 

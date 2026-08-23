@@ -47,11 +47,23 @@ export type CategoriaEstoqueEnum =
   | 'OUTRO';
 
 export type CondicaoDenteEnum =
+  | 'HIGIDO'
+  | 'CARIE'
+  | 'RESTAURACAO_SATISFATORIA'
+  | 'RESTAURACAO_INSATISFATORIA'
+  | 'AUSENTE'
+  | 'ENDODONTIA'
+  | 'PROTESE_FIXA'
+  | 'PROTESE_REMOVIVEL'
+  | 'IMPLANTE'
+  | 'FRATURA'
+  | 'DENTE_INCLUSO'
+  | 'EXTRACAO_INDICADA'
+  | 'SELANTE'
+  // legadas — odontogramas antigos são imutáveis, esses valores existem pra sempre
   | 'SAUDAVEL'
   | 'CARIADO'
   | 'RESTAURADO'
-  | 'AUSENTE'
-  | 'IMPLANTE'
   | 'COROA'
   | 'FRATURADO'
   | 'EM_TRATAMENTO'

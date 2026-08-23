@@ -214,7 +214,61 @@ export const DocumentosPage = () => {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            {/* Abaixo de md: lista de cards empilhados */}
+            <div className="md:hidden divide-y divide-bokka-border">
+              {filtrados.map((doc) => (
+                <div key={doc.id} className="flex items-center gap-3 px-4 py-3">
+                  <span
+                    className={cn(
+                      'w-9 h-9 rounded-lg flex items-center justify-center shrink-0',
+                      tipoTone(doc.tipo) === 'info'
+                        ? 'bg-bokka-info-soft text-bokka-info-ink'
+                        : tipoTone(doc.tipo) === 'success'
+                          ? 'bg-bokka-success-soft text-bokka-success-ink'
+                          : tipoTone(doc.tipo) === 'warning'
+                            ? 'bg-bokka-warning-soft text-bokka-warning-ink'
+                            : 'bg-bokka-surface-3 text-bokka-ink-3',
+                    )}
+                  >
+                    {tipoIcon(doc.tipo)}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-bokka-ink truncate">
+                      {doc.descricao || 'Sem descrição'}
+                    </p>
+                    <p className="text-xs text-bokka-ink-3 mt-0.5 truncate">
+                      {doc.pacienteId ? pacienteMap.get(doc.pacienteId) ?? `#${doc.pacienteId.slice(-6)}` : '—'}
+                      {' · '}
+                      {formatDate(doc.dataUpload)}
+                    </p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <Badge tone={tipoTone(doc.tipo)}>{doc.tipo ? tipoLabel[doc.tipo] : 'Outro'}</Badge>
+                      {doc.urlArquivo && (
+                        <a
+                          href={doc.urlArquivo}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[11px] text-bokka-primary hover:underline inline-flex items-center gap-0.5"
+                        >
+                          Ver arquivo <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmar({ id: doc.id!, desc: doc.descricao || 'documento' })}
+                    className="w-9 h-9 rounded-full inline-flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-danger-soft hover:text-bokka-danger-ink transition-colors shrink-0"
+                    title="Excluir"
+                  >
+                    <Trash2 className="w-4 h-4" strokeWidth={1.75} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-[11px] uppercase tracking-wider text-bokka-ink-3 bg-bokka-surface-3">
@@ -288,7 +342,8 @@ export const DocumentosPage = () => {
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
       </Card>
 

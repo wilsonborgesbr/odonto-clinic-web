@@ -181,7 +181,65 @@ export const PacientesPage = () => {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            {/* Abaixo de md: lista de cards empilhados — a tabela crua obrigava scroll horizontal pra ver Status/Ações */}
+            <div className="md:hidden divide-y divide-bokka-border">
+              {linhas.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-4 px-4 py-3 hover:bg-bokka-surface-3/50 transition-colors cursor-pointer"
+                  onClick={() => setDetalheId(p.id)}
+                >
+                  <Avatar
+                    photoKey={photoKeys.paciente(p.id)}
+                    remoteSrc={p.fotoUrl}
+                    name={p.nomeCompleto}
+                    size="md"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-semibold text-bokka-ink truncate">
+                        {p.nomeCompleto}
+                      </span>
+                      <Badge tone={p.ativo ? 'success' : 'neutral'} dot>
+                        {p.ativo ? 'Ativo' : 'Inativo'}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-bokka-ink-3 mt-0.5 truncate">
+                      {formatCpf(p.cpf)} · {p.email || formatPhone(p.telefoneCelular)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => setDetalheId(p.id)}
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-bokka-ink-2 hover:bg-bokka-surface hover:text-bokka-primary"
+                      title="Ver ficha"
+                    >
+                      <Eye className="w-4 h-4" strokeWidth={1.75} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => abrirEdicao(p)}
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-bokka-ink-2 hover:bg-bokka-surface hover:text-bokka-primary"
+                      title="Editar"
+                    >
+                      <Pencil className="w-4 h-4" strokeWidth={1.75} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmar(p)}
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-bokka-ink-2 hover:bg-bokka-danger-soft hover:text-bokka-danger-ink"
+                      title="Inativar"
+                    >
+                      <UserX className="w-4 h-4" strokeWidth={1.75} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-[11px] uppercase tracking-wider text-bokka-ink-3 bg-bokka-surface-3">
@@ -257,7 +315,8 @@ export const PacientesPage = () => {
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
 
         <Pagination

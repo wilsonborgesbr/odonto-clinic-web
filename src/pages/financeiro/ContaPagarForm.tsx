@@ -193,7 +193,7 @@ export const ContaPagarForm = ({ initial, onSubmit, onCancel }: ContaPagarFormPr
         />
       </div>
 
-      <div className="flex justify-end gap-3 pt-4 border-t border-bokka-border -mx-6 px-6">
+      <div className="flex justify-end gap-3 pt-4 border-t border-bokka-border -mx-6 px-6 max-sm:sticky max-sm:bottom-0 max-sm:-mb-6 max-sm:pb-4 max-sm:bg-bokka-surface max-sm:z-10">
         <Button type="button" variant="secondary" onClick={onCancel} disabled={submitting}>
           Cancelar
         </Button>

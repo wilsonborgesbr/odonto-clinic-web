@@ -41,6 +41,7 @@ import {
   cn,
   formatCurrency,
   formatDateLong,
+  formatTime,
   getGreeting,
   isSameDay,
 } from '../lib/utils';
@@ -344,7 +345,7 @@ export const Dashboard = () => {
         {/* ═══════ LINHA 1 ═══════ */}
         {/* Agenda de hoje — HERO (2/3) */}
         {canAgendamentos && (
-        <Card padded={false} className="lg:col-span-2 flex flex-col min-h-[440px] overflow-hidden">
+        <Card padded={false} className="order-1 lg:col-span-2 flex flex-col min-h-[440px] overflow-hidden">
           <div className="px-5 pt-5 pb-3 flex items-center justify-between shrink-0">
             <div>
               <h2 className="text-base font-semibold text-bokka-ink">Agenda de hoje</h2>
@@ -384,7 +385,24 @@ export const Dashboard = () => {
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto">
-              <TimelineDia byHour={timelineByHour} nowSlotIdx={nowSlotIdx} nowMin={nowMin} pacienteMap={pacienteMap} />
+              {/* Abaixo de md: lista vertical simples — a timeline horizontal (min-width 1400px)
+                  força arrastar o dia inteiro pra achar as consultas, ruim pro caso "o que eu tenho hoje?" */}
+              <div className="md:hidden divide-y divide-bokka-border">
+                {agendamentosHoje.map((ag) => (
+                  <div key={ag.id} className="flex items-center gap-3 px-5 py-3">
+                    <span className="w-12 shrink-0 text-sm font-semibold text-bokka-ink tabular-nums">
+                      {formatTime(ag.dataHoraInicio)}
+                    </span>
+                    <span className="flex-1 min-w-0 text-sm font-medium text-bokka-ink truncate">
+                      {pacienteMap.get(ag.pacienteId ?? '') || ag.observacoes || 'Consulta'}
+                    </span>
+                    <AgendamentoStatusBadge status={ag.status} />
+                  </div>
+                ))}
+              </div>
+              <div className="hidden md:block">
+                <TimelineDia byHour={timelineByHour} nowSlotIdx={nowSlotIdx} nowMin={nowMin} pacienteMap={pacienteMap} />
+              </div>
             </div>
           )}
         </Card>
@@ -392,7 +410,7 @@ export const Dashboard = () => {
 
         {/* Mini calendar AZUL — clicável (1/3) */}
         {canAgendamentos && (
-        <div className="bg-bokka-primary-soft rounded-2xl p-5 flex flex-col justify-center min-h-[440px]">
+        <div className="order-2 bg-bokka-primary-soft rounded-2xl p-5 flex flex-col justify-center min-h-[440px]">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-base font-semibold text-bokka-ink capitalize">
@@ -494,7 +512,7 @@ export const Dashboard = () => {
           {/* ═══════ LINHA 2 ═══════ */}
           {/* Produtividade PRETO — chart (2/3) */}
           {canAgendamentos && (
-          <div className="bg-bokka-ink rounded-2xl p-5 lg:p-6 text-white lg:col-span-2 flex flex-col min-h-[440px]">
+          <div className="order-4 lg:order-3 bg-bokka-ink rounded-2xl p-5 lg:p-6 text-white lg:col-span-2 flex flex-col min-h-[440px]">
             <div className="flex items-center justify-between mb-4 shrink-0">
               <div>
                 <h2 className="text-base font-semibold">Produtividade</h2>
@@ -569,7 +587,7 @@ export const Dashboard = () => {
 
           {/* Estoque — card expandido paginado (1/3) */}
           {canEstoque && (
-          <div className="bg-bokka-surface border border-bokka-border rounded-2xl overflow-hidden flex flex-col min-h-[440px]">
+          <div className="order-3 lg:order-4 bg-bokka-surface border border-bokka-border rounded-2xl overflow-hidden flex flex-col min-h-[440px]">
             <div className="px-5 pt-5 pb-3 flex items-center justify-between shrink-0">
               <div>
                 <div className="flex items-center gap-2">
@@ -664,7 +682,7 @@ export const Dashboard = () => {
                         type="button"
                         onClick={() => setEstoquePage((p) => Math.max(0, p - 1))}
                         disabled={estoquePage === 0}
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-surface-3 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="w-10 h-10 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-surface-3 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                         aria-label="Página anterior"
                       >
                         <ChevronLeft className="w-3.5 h-3.5" />
@@ -673,7 +691,7 @@ export const Dashboard = () => {
                         type="button"
                         onClick={() => setEstoquePage((p) => Math.min(estoqueTotalPages - 1, p + 1))}
                         disabled={estoquePage >= estoqueTotalPages - 1}
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-surface-3 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="w-10 h-10 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-surface-3 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                         aria-label="Próxima página"
                       >
                         <ChevronRight className="w-3.5 h-3.5" />

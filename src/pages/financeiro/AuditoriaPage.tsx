@@ -400,7 +400,12 @@ export const AuditoriaPage = () => {
                 onClick={() => setNovoOpen(false)}
                 aria-label="Fechar menu"
               />
-              <div className="absolute right-0 top-full mt-2 z-20 w-56 bg-bokka-surface border border-bokka-border rounded-xl shadow-md overflow-hidden">
+              {/* Responsivo: o header (h1 + parágrafo dentro de flex flex-wrap) só desquebra por
+                  volta de ~720px (medido ao vivo), não em sm (640px) — usar sm deixava um buraco
+                  entre 640-720px (ex: iPhone SE landscape, 667px) onde o botão ainda está
+                  alinhado à esquerda mas a âncora já tinha virado right-0, cortando o menu de
+                  novo. md (768px) dá folga suficiente pra cobrir o ponto real de quebra. */}
+              <div className="absolute left-0 md:left-auto md:right-0 top-full mt-2 z-20 w-56 bg-bokka-surface border border-bokka-border rounded-xl shadow-md overflow-hidden">
                 <button
                   type="button"
                   onClick={() => {
@@ -606,7 +611,71 @@ export const AuditoriaPage = () => {
               }
             />
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              {/* Abaixo de md: lista de cards empilhados */}
+              <div className="md:hidden divide-y divide-bokka-border">
+                {receberFiltradas.map((c) => {
+                  const restante = Math.max(0, (c.valorTotal ?? 0) - (c.valorPago ?? 0));
+                  const podeReceber = c.status !== 'PAGO' && c.status !== 'CANCELADO' && restante > 0;
+                  return (
+                    <div key={c.id} className="px-4 py-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-bokka-ink truncate">
+                            {formatDescricaoFinanceira(c.descricao)}
+                          </p>
+                          <p className="text-[11px] text-bokka-ink-3 mt-0.5 truncate">
+                            {pacienteMap.get(c.pacienteId) || `Paciente #${c.pacienteId?.slice(-6)}`}
+                            {' · '}
+                            {formatDate(c.dataVencimento)}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-semibold text-bokka-ink tabular-nums">{formatCurrency(c.valorTotal)}</p>
+                          <FinanceiroStatusBadge status={c.status as StatusFinanceiroEnum} />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-end gap-1 mt-2">
+                        {podeReceber && (
+                          <button
+                            type="button"
+                            onClick={() => setPagamentoConta(c)}
+                            className="px-3 h-9 rounded-md bg-bokka-primary text-white text-xs font-semibold inline-flex items-center gap-1 hover:bg-bokka-primary-hover transition-colors"
+                            title="Registrar pagamento"
+                          >
+                            <Wallet className="w-3.5 h-3.5" strokeWidth={2} />
+                            Receber
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReceberInitial(c);
+                            setReceberFormOpen(true);
+                          }}
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary transition-colors"
+                          title="Editar"
+                        >
+                          <Pencil className="w-4 h-4" strokeWidth={1.75} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            c.id &&
+                            setConfirmar({ tipo: 'receber', id: c.id, nome: formatDescricaoFinanceira(c.descricao) || 'Receita' })
+                          }
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-danger-soft hover:text-bokka-danger-ink transition-colors"
+                          title="Excluir"
+                        >
+                          <Trash2 className="w-4 h-4" strokeWidth={1.75} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-[11px] uppercase tracking-wider text-bokka-ink-3 bg-bokka-surface-3">
@@ -687,7 +756,8 @@ export const AuditoriaPage = () => {
                   })}
                 </tbody>
               </table>
-            </div>
+              </div>
+            </>
           )}
         </Card>
 
@@ -744,7 +814,77 @@ export const AuditoriaPage = () => {
               }
             />
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              {/* Abaixo de md: lista de cards empilhados */}
+              <div className="md:hidden divide-y divide-bokka-border">
+                {pagarFiltradas.map((c) => {
+                  const podeQuitar = c.status !== 'PAGO' && c.status !== 'CANCELADO';
+                  return (
+                    <div key={c.id} className="px-4 py-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-bokka-ink truncate">
+                            {formatDescricaoFinanceira(c.descricao)}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span
+                              className="w-1.5 h-1.5 rounded-full shrink-0"
+                              style={{ background: categoriaColors[c.categoria] }}
+                            />
+                            <span className="text-[11px] text-bokka-ink-3 truncate">
+                              {categoriaPagarLabel[c.categoria]}
+                              {c.fornecedor && ` · ${c.fornecedor}`}
+                              {' · '}
+                              {formatDate(c.dataVencimento)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-semibold text-bokka-ink tabular-nums">{formatCurrency(c.valor)}</p>
+                          <FinanceiroStatusBadge status={c.status as StatusFinanceiroEnum} />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-end gap-1 mt-2">
+                        {podeQuitar && (
+                          <button
+                            type="button"
+                            onClick={() => handleQuitarPagar(c)}
+                            className="px-3 h-9 rounded-md bg-bokka-ink text-white text-xs font-semibold inline-flex items-center gap-1 hover:bg-bokka-ink-2 transition-colors"
+                            title="Marcar como paga"
+                          >
+                            <Check className="w-3.5 h-3.5" strokeWidth={2} />
+                            Quitar
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPagarInitial(c);
+                            setPagarFormOpen(true);
+                          }}
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary transition-colors"
+                          title="Editar"
+                        >
+                          <Pencil className="w-4 h-4" strokeWidth={1.75} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            c.id &&
+                            setConfirmar({ tipo: 'pagar', id: c.id, nome: formatDescricaoFinanceira(c.descricao) || 'Despesa' })
+                          }
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-danger-soft hover:text-bokka-danger-ink transition-colors"
+                          title="Excluir"
+                        >
+                          <Trash2 className="w-4 h-4" strokeWidth={1.75} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-[11px] uppercase tracking-wider text-bokka-ink-3 bg-bokka-surface-3">
@@ -826,7 +966,8 @@ export const AuditoriaPage = () => {
                   })}
                 </tbody>
               </table>
-            </div>
+              </div>
+            </>
           )}
         </Card>
       </div>

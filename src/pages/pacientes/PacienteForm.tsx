@@ -295,7 +295,7 @@ export const PacienteForm = ({ initial, photoKey, onSubmit, onCancel }: Paciente
         </div>
       </section>
 
-      <div className="flex justify-end gap-3 pt-2 border-t border-bokka-border -mx-6 px-6 pt-4">
+      <div className="flex justify-end gap-3 border-t border-bokka-border -mx-6 px-6 pt-4 max-sm:sticky max-sm:bottom-0 max-sm:-mb-6 max-sm:pb-4 max-sm:bg-bokka-surface max-sm:z-10">
         <Button type="button" variant="secondary" onClick={onCancel} disabled={submitting}>
           Cancelar
         </Button>

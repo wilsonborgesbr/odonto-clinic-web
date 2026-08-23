@@ -28,6 +28,7 @@ import { usePaciente } from '../../services/pacienteService';
 import { useOdontogramaRecente } from '../../services/odontogramaService';
 import { ApiError } from '../../lib/api';
 import { formatDate, formatCurrency, cn } from '../../lib/utils';
+import { nomeProcLabel, statusLabel, nomeProcOptions } from '../../lib/procedimentoLabels';
 import type {
   Procedimento,
   NomeProcedimentoEnum,
@@ -46,60 +47,6 @@ const tipoPagamentoOptions: { value: TipoPagamentoProcedimentoEnum; label: strin
   { value: 'PARCELADO', label: 'Parcelado' },
 ];
 
-const nomeProcLabel: Record<NomeProcedimentoEnum, string> = {
-  RESTAURACAO_RESINA: 'Restauração em Resina',
-  RESTAURACAO_AMALGAMA: 'Restauração em Amálgama',
-  INLAY: 'Inlay',
-  ONLAY: 'Onlay',
-  FACETA_PORCELANA: 'Faceta de Porcelana',
-  FACETA_RESINA: 'Faceta de Resina',
-  TRATAMENTO_CANAL_UNIRRADICULAR: 'Tratamento de Canal (Uni)',
-  TRATAMENTO_CANAL_BIRRADICULAR: 'Tratamento de Canal (Bi)',
-  TRATAMENTO_CANAL_MULTIRRADICULAR: 'Tratamento de Canal (Multi)',
-  RETRATAMENTO_CANAL: 'Retratamento de Canal',
-  PROFILAXIA: 'Profilaxia',
-  RASPAGEM_SUPRAGENGIVAL: 'Raspagem Supragengival',
-  RASPAGEM_SUBGENGIVAL: 'Raspagem Subgengival',
-  GENGIVECTOMIA: 'Gengivectomia',
-  ENXERTO_GENGIVAL: 'Enxerto Gengival',
-  EXTRACAO_SIMPLES: 'Extração Simples',
-  EXTRACAO_DENTE_SISO: 'Extração de Siso',
-  CIRURGIA_PERIODONTAL: 'Cirurgia Periodontal',
-  FRENECTOMIA: 'Frenectomia',
-  BIOPSIA: 'Biópsia',
-  INSTALACAO_IMPLANTE: 'Instalação de Implante',
-  INSTALACAO_PROTESE_SOBRE_IMPLANTE: 'Prótese sobre Implante',
-  ENXERTO_OSSEO: 'Enxerto Ósseo',
-  PROTESE_PARCIAL_REMOVIVEL: 'Prótese Parcial Removível',
-  PROTESE_TOTAL: 'Prótese Total',
-  COROA_PORCELANA: 'Coroa de Porcelana',
-  COROA_METALICA: 'Coroa Metálica',
-  PONTE_FIXA: 'Ponte Fixa',
-  APARELHO_METALICO: 'Aparelho Metálico',
-  APARELHO_ESTETICO: 'Aparelho Estético',
-  APARELHO_INVISIVEL: 'Aparelho Invisível',
-  MANUTENCAO_ORTODONTICA: 'Manutenção Ortodôntica',
-  CONTENCAO: 'Contenção',
-  SELANTE: 'Selante',
-  FLUORTERAPIA: 'Fluorterapia',
-  COROA_PEDIATRICA: 'Coroa Pediátrica',
-  PULPOTOMIA: 'Pulpotomia',
-  CLAREAMENTO_CASEIRO: 'Clareamento Caseiro',
-  CLAREAMENTO_CONSULTORIO: 'Clareamento em Consultório',
-  MICROABRASAO: 'Microabrasão',
-  RADIOGRAFIA_PERIAPICAL: 'Radiografia Periapical',
-  RADIOGRAFIA_PANORAMICA: 'Radiografia Panorâmica',
-  TOMOGRAFIA: 'Tomografia',
-};
-
-const statusLabel: Record<StatusProcedimentoEnum, string> = {
-  ORCADO: 'Orçado',
-  AGENDADO: 'Agendado',
-  EM_ANDAMENTO: 'Em andamento',
-  CONCLUIDO: 'Concluído',
-  CANCELADO: 'Cancelado',
-};
-
 const statusTone: Record<StatusProcedimentoEnum, BadgeTone> = {
   ORCADO: 'neutral',
   AGENDADO: 'info',
@@ -117,10 +64,6 @@ const regiaoLabel: Record<RegiaoEnum, string> = {
 
 const allRegioes: RegiaoEnum[] = ['SUPERIOR', 'INFERIOR', 'ANTERIOR', 'POSTERIOR'];
 const allStatus: StatusProcedimentoEnum[] = ['ORCADO', 'AGENDADO', 'EM_ANDAMENTO', 'CONCLUIDO', 'CANCELADO'];
-
-const nomeProcOptions = (Object.entries(nomeProcLabel) as [NomeProcedimentoEnum, string][]).map(
-  ([value, label]) => ({ value, label }),
-);
 
 const regiaoOptions = [
   { value: '', label: 'Todas' },
@@ -355,9 +298,17 @@ interface ProcFormProps {
   pacienteId: string;
   onSubmit: (values: Procedimento) => Promise<void>;
   onCancel: () => void;
+  /** Esconde o link "Abrir odontograma completo" — redundante quando o form já foi aberto a partir do próprio odontograma. */
+  showOdontogramaLink?: boolean;
 }
 
-export const ProcedimentoFormInline = ({ initial, pacienteId, onSubmit, onCancel }: ProcFormProps) => {
+export const ProcedimentoFormInline = ({
+  initial,
+  pacienteId,
+  onSubmit,
+  onCancel,
+  showOdontogramaLink = true,
+}: ProcFormProps) => {
   const [values, setValues] = useState<Procedimento>(
     () => initial ?? { ...emptyProcedimento, pacienteId },
   );
@@ -464,14 +415,15 @@ export const ProcedimentoFormInline = ({ initial, pacienteId, onSubmit, onCancel
                 : 'Nenhum odontograma cadastrado ainda para vincular.'}
             </p>
           </div>
-          <Link
-            to={`/pacientes/${pacienteId}/odontograma`}
-            target="_blank"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-bokka-primary hover:text-bokka-primary-strong"
-          >
-            <ExternalLink className="w-3.5 h-3.5" strokeWidth={2} />
-            Abrir odontograma completo
-          </Link>
+          {showOdontogramaLink && (
+            <Link
+              to={`/pacientes/${pacienteId}/odontograma`}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-bokka-primary hover:text-bokka-primary-strong"
+            >
+              <ExternalLink className="w-3.5 h-3.5" strokeWidth={2} />
+              Abrir odontograma completo
+            </Link>
+          )}
         </div>
         <div className="bg-bokka-surface-2 border border-bokka-border rounded-xl p-4 flex items-center gap-4 flex-wrap">
           <ArchMini highlightDente={values.dente ?? ''} />
