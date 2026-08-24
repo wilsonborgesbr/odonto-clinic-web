@@ -304,6 +304,113 @@ export const NotificationsPanel = () => {
     !prefs.notifyDespesas &&
     !prefs.notifyEstoqueBaixo;
 
+  // Conteúdo do painel — reaproveitado pelas variantes desktop (absolute) e mobile (fixed),
+  // pra não duplicar JSX entre as duas âncoras.
+  const renderPanelBody = () => (
+    <>
+      <div className="px-4 py-3 flex items-center justify-between border-b border-bokka-border bg-bokka-surface-2">
+        <div>
+          <p className="text-sm font-bold text-bokka-ink">Notificações</p>
+          <p className="text-[11px] text-bokka-ink-3 mt-0.5">
+            {unreadCount > 0
+              ? `${unreadCount} não ${unreadCount === 1 ? 'lida' : 'lidas'} · ${notifs.length} no total`
+              : `${notifs.length} ${notifs.length === 1 ? 'notificação' : 'notificações'}`}
+          </p>
+        </div>
+        {unreadCount > 0 && (
+          <button
+            type="button"
+            onClick={marcarTodasLidas}
+            className="text-xs font-semibold text-bokka-primary hover:text-bokka-primary-hover inline-flex items-center gap-1"
+          >
+            <Check className="w-3.5 h-3.5" strokeWidth={2} />
+            Marcar todas lidas
+          </button>
+        )}
+      </div>
+
+      {nothingEnabled ? (
+        <EmptyPanel
+          icon={<BellOff className="w-6 h-6" strokeWidth={1.75} />}
+          titulo="Notificações desativadas"
+          descricao="Você desligou todos os tipos de notificação em Configurações."
+          actionLabel="Abrir configurações"
+          onAction={() => {
+            navigate('/configuracoes');
+            setOpen(false);
+          }}
+        />
+      ) : notifs.length === 0 ? (
+        <EmptyPanel
+          icon={<Bell className="w-6 h-6" strokeWidth={1.75} />}
+          titulo="Nada por enquanto"
+          descricao="Assim que houver movimento — pagamento, agendamento, alerta de estoque — aparece aqui."
+        />
+      ) : (
+        <ul className="max-h-[420px] overflow-y-auto divide-y divide-bokka-border">
+          {notifs.map((n) => {
+            const style = tipoStyle[n.tipo];
+            const Icon = style.icon;
+            const unread = n.timestamp > lastSeen;
+            return (
+              <li key={n.id}>
+                <button
+                  type="button"
+                  onClick={() => commit(n)}
+                  className={cn(
+                    'w-full flex items-start gap-3 px-4 py-3 text-left transition-colors',
+                    unread ? 'bg-bokka-primary-soft/30 hover:bg-bokka-primary-soft/60' : 'hover:bg-bokka-surface-3/60',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5',
+                      style.tone,
+                    )}
+                  >
+                    <Icon className="w-4 h-4" strokeWidth={1.75} />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-bokka-ink truncate flex-1">
+                        {n.titulo}
+                      </p>
+                      {unread && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-bokka-primary shrink-0" />
+                      )}
+                    </div>
+                    <p className="text-xs text-bokka-ink-3 mt-0.5 truncate">
+                      {n.descricao}
+                    </p>
+                    <p className="text-[10px] text-bokka-ink-3 mt-1 inline-flex items-center gap-1 uppercase font-semibold tracking-wider">
+                      <Clock className="w-3 h-3" strokeWidth={2} />
+                      {relativeTime(n.timestamp, now)}
+                      <span className="mx-1 text-bokka-border-strong">·</span>
+                      <span>{style.label}</span>
+                    </p>
+                  </div>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <div className="border-t border-bokka-border px-4 py-2 bg-bokka-surface-2">
+        <button
+          type="button"
+          onClick={() => {
+            navigate('/configuracoes');
+            setOpen(false);
+          }}
+          className="text-[11px] font-semibold text-bokka-ink-3 hover:text-bokka-primary transition-colors"
+        >
+          Ajustar em Configurações →
+        </button>
+      </div>
+    </>
+  );
+
   return (
     <div ref={wrapperRef} className="relative">
       <button
@@ -326,108 +433,19 @@ export const NotificationsPanel = () => {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-[380px] max-w-[calc(100vw-2rem)] bg-bokka-surface border border-bokka-border rounded-2xl shadow-md overflow-hidden z-30">
-          <div className="px-4 py-3 flex items-center justify-between border-b border-bokka-border bg-bokka-surface-2">
-            <div>
-              <p className="text-sm font-bold text-bokka-ink">Notificações</p>
-              <p className="text-[11px] text-bokka-ink-3 mt-0.5">
-                {unreadCount > 0
-                  ? `${unreadCount} não ${unreadCount === 1 ? 'lida' : 'lidas'} · ${notifs.length} no total`
-                  : `${notifs.length} ${notifs.length === 1 ? 'notificação' : 'notificações'}`}
-              </p>
-            </div>
-            {unreadCount > 0 && (
-              <button
-                type="button"
-                onClick={marcarTodasLidas}
-                className="text-xs font-semibold text-bokka-primary hover:text-bokka-primary-hover inline-flex items-center gap-1"
-              >
-                <Check className="w-3.5 h-3.5" strokeWidth={2} />
-                Marcar todas lidas
-              </button>
-            )}
+        <>
+          {/* Desktop / tablet largo — dropdown ancorado ao sino */}
+          <div className="hidden md:block absolute right-0 top-full mt-2 w-[380px] max-w-[calc(100vw-2rem)] bg-bokka-surface border border-bokka-border rounded-2xl shadow-md overflow-hidden z-30">
+            {renderPanelBody()}
           </div>
 
-          {nothingEnabled ? (
-            <EmptyPanel
-              icon={<BellOff className="w-6 h-6" strokeWidth={1.75} />}
-              titulo="Notificações desativadas"
-              descricao="Você desligou todos os tipos de notificação em Configurações."
-              actionLabel="Abrir configurações"
-              onAction={() => {
-                navigate('/configuracoes');
-                setOpen(false);
-              }}
-            />
-          ) : notifs.length === 0 ? (
-            <EmptyPanel
-              icon={<Bell className="w-6 h-6" strokeWidth={1.75} />}
-              titulo="Nada por enquanto"
-              descricao="Assim que houver movimento — pagamento, agendamento, alerta de estoque — aparece aqui."
-            />
-          ) : (
-            <ul className="max-h-[420px] overflow-y-auto divide-y divide-bokka-border">
-              {notifs.map((n) => {
-                const style = tipoStyle[n.tipo];
-                const Icon = style.icon;
-                const unread = n.timestamp > lastSeen;
-                return (
-                  <li key={n.id}>
-                    <button
-                      type="button"
-                      onClick={() => commit(n)}
-                      className={cn(
-                        'w-full flex items-start gap-3 px-4 py-3 text-left transition-colors',
-                        unread ? 'bg-bokka-primary-soft/30 hover:bg-bokka-primary-soft/60' : 'hover:bg-bokka-surface-3/60',
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          'w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5',
-                          style.tone,
-                        )}
-                      >
-                        <Icon className="w-4 h-4" strokeWidth={1.75} />
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold text-bokka-ink truncate flex-1">
-                            {n.titulo}
-                          </p>
-                          {unread && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-bokka-primary shrink-0" />
-                          )}
-                        </div>
-                        <p className="text-xs text-bokka-ink-3 mt-0.5 truncate">
-                          {n.descricao}
-                        </p>
-                        <p className="text-[10px] text-bokka-ink-3 mt-1 inline-flex items-center gap-1 uppercase font-semibold tracking-wider">
-                          <Clock className="w-3 h-3" strokeWidth={2} />
-                          {relativeTime(n.timestamp, now)}
-                          <span className="mx-1 text-bokka-border-strong">·</span>
-                          <span>{style.label}</span>
-                        </p>
-                      </div>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-
-          <div className="border-t border-bokka-border px-4 py-2 bg-bokka-surface-2">
-            <button
-              type="button"
-              onClick={() => {
-                navigate('/configuracoes');
-                setOpen(false);
-              }}
-              className="text-[11px] font-semibold text-bokka-ink-3 hover:text-bokka-primary transition-colors"
-            >
-              Ajustar em Configurações →
-            </button>
+          {/* Mobile / tablet estreito — o sino não fica na borda direita real (tem o avatar
+              depois dele), então ancorar por right-0 estoura a tela; fixed com margens de
+              viewport corrige isso sem depender de onde o botão está. */}
+          <div className="md:hidden fixed left-4 right-4 top-[72px] bg-bokka-surface border border-bokka-border rounded-2xl shadow-md overflow-hidden z-30">
+            {renderPanelBody()}
           </div>
-        </div>
+        </>
       )}
     </div>
   );

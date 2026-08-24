@@ -30,7 +30,7 @@ export const Header = ({ onToggleSidebar }: HeaderProps) => {
   const photoKey = useMemo(() => photoKeys.user(user?.email), [user?.email]);
 
   return (
-    <header className="h-16 bg-bokka-surface/85 backdrop-blur border-b border-bokka-border sticky top-0 z-20 shrink-0">
+    <header className="h-16 bg-bokka-surface border-b border-bokka-border sticky top-0 z-20 shrink-0">
       <div className="h-full px-4 lg:px-8 flex items-center gap-4">
         <button
           type="button"
@@ -49,7 +49,7 @@ export const Header = ({ onToggleSidebar }: HeaderProps) => {
 
         {/* Menu do perfil */}
         <Menu as="div" className="relative">
-          <Menu.Button className="flex items-center gap-2 bg-bokka-surface border border-bokka-border rounded-full pl-1 pr-3 py-1 hover:shadow-sm transition-shadow">
+          <Menu.Button className="flex items-center gap-2 bg-bokka-surface border border-bokka-border rounded-full p-1 sm:pl-1 sm:pr-3 sm:py-1 hover:shadow-sm transition-shadow">
             <Avatar photoKey={photoKey} name={user?.name || user?.email} size="sm" />
             <div className="hidden sm:block text-left leading-tight max-w-[220px]">
               <div className="text-xs font-semibold text-bokka-ink truncate">

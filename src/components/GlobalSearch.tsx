@@ -38,9 +38,11 @@ export const GlobalSearch = () => {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const mobileInputRef = useRef<HTMLInputElement>(null);
 
   // Data — fetched once with large page sizes, cached by react-query
   const pacientesQ = usePacientes({ pagina: 0, tamanho: 500, ordem: 'nomeCompleto' });
@@ -145,13 +147,21 @@ export const GlobalSearch = () => {
   const commit = (r: SearchResult) => {
     navigate(r.to);
     setOpen(false);
+    setMobileOpen(false);
     setQuery('');
     inputRef.current?.blur();
   };
 
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const t = setTimeout(() => mobileInputRef.current?.focus(), 50);
+    return () => clearTimeout(t);
+  }, [mobileOpen]);
+
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape') {
       setOpen(false);
+      setMobileOpen(false);
       inputRef.current?.blur();
       return;
     }
@@ -174,118 +184,185 @@ export const GlobalSearch = () => {
   const loading =
     pacientesQ.isLoading || dentistasQ.isLoading || funcionariosQ.isLoading || agendamentosQ.isLoading;
 
-  let flatIndex = -1;
+  const renderResultsPanel = (scrollClassName: string) => {
+    let flatIndex = -1;
+    if (loading && !hasResults) {
+      return (
+        <div className="p-6 text-center text-sm text-bokka-ink-3">
+          Carregando dados…
+        </div>
+      );
+    }
+    if (!hasResults) {
+      return (
+        <div className="p-6 text-center">
+          <div className="w-12 h-12 rounded-2xl bg-bokka-surface-3 text-bokka-ink-3 flex items-center justify-center mx-auto mb-3">
+            <Search className="w-5 h-5" strokeWidth={1.75} />
+          </div>
+          <p className="text-sm font-semibold text-bokka-ink">
+            {query.trim() ? `Nada encontrado para "${query.trim()}"` : 'Digite ao menos 2 letras para buscar'}
+          </p>
+          <p className="text-xs text-bokka-ink-3 mt-1">
+            Tente por nome, CPF, CRO ou e-mail.
+          </p>
+        </div>
+      );
+    }
+    return (
+      <div className={scrollClassName}>
+        {groupedResults.map((group) => {
+          const style = tipoStyle[group.tipo];
+          return (
+            <div key={group.tipo} className="pb-1.5">
+              <div className="px-4 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-bokka-ink-3">
+                {style.group} · {group.items.length}
+              </div>
+              {group.items.map((r) => {
+                flatIndex += 1;
+                const isActive = flatIndex === activeIndex;
+                const Icon = style.icon;
+                return (
+                  <button
+                    key={`${r.tipo}-${r.id}`}
+                    type="button"
+                    onMouseEnter={() => setActiveIndex(flatIndex)}
+                    onClick={() => commit(r)}
+                    className={cn(
+                      'w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors',
+                      isActive ? 'bg-bokka-surface-3' : 'hover:bg-bokka-surface-3/60',
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'w-9 h-9 rounded-lg flex items-center justify-center shrink-0',
+                        style.tone,
+                      )}
+                    >
+                      <Icon className="w-4 h-4" strokeWidth={1.75} />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-bokka-ink truncate">
+                        {r.titulo}
+                      </p>
+                      <p className="text-[11px] text-bokka-ink-3 truncate capitalize">
+                        {r.subtitulo}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
+        <div className="border-t border-bokka-border px-4 py-2 text-[10px] text-bokka-ink-3 flex items-center justify-between">
+          <span>
+            <kbd className="px-1.5 py-0.5 rounded bg-bokka-surface-3 font-semibold">↑↓</kbd> navegar ·{' '}
+            <kbd className="px-1.5 py-0.5 rounded bg-bokka-surface-3 font-semibold">↵</kbd> abrir
+          </span>
+          <span className="tabular-nums">{results.length} resultado{results.length === 1 ? '' : 's'}</span>
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div ref={wrapperRef} className="relative hidden md:block w-64 lg:w-80">
-      <div
-        className={cn(
-          'flex items-center bg-bokka-surface-2 border border-bokka-border rounded-full px-4 h-10 gap-2 transition-colors',
-          showDropdown && 'border-bokka-primary-ring bg-bokka-surface',
-          !showDropdown && 'focus-within:border-bokka-primary-ring focus-within:bg-bokka-surface',
-        )}
-      >
-        <Search className="w-4 h-4 text-bokka-ink-3 shrink-0" strokeWidth={2} />
-        <input
-          ref={inputRef}
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => setOpen(true)}
-          onKeyDown={onKeyDown}
-          placeholder="Buscar pacientes, agendamentos..."
-          className="bg-transparent border-0 outline-none text-sm text-bokka-ink placeholder:text-bokka-ink-3 flex-1 min-w-0"
-        />
-        {query && (
-          <button
-            type="button"
-            onClick={() => {
-              setQuery('');
-              inputRef.current?.focus();
-            }}
-            className="w-5 h-5 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-surface-3 hover:text-bokka-ink shrink-0"
-            aria-label="Limpar"
-          >
-            <X className="w-3.5 h-3.5" strokeWidth={2} />
-          </button>
+    <>
+      {/* Desktop / tablet — dropdown ancorado no input */}
+      <div ref={wrapperRef} className="relative hidden md:block w-64 lg:w-80">
+        <div
+          className={cn(
+            'flex items-center bg-bokka-surface-2 border border-bokka-border rounded-full px-4 h-10 gap-2 transition-colors',
+            showDropdown && 'border-bokka-primary-ring bg-bokka-surface',
+            !showDropdown && 'focus-within:border-bokka-primary-ring focus-within:bg-bokka-surface',
+          )}
+        >
+          <Search className="w-4 h-4 text-bokka-ink-3 shrink-0" strokeWidth={2} />
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setOpen(true)}
+            onKeyDown={onKeyDown}
+            placeholder="Buscar pacientes, agendamentos..."
+            className="bg-transparent border-0 outline-none text-sm text-bokka-ink placeholder:text-bokka-ink-3 flex-1 min-w-0"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => {
+                setQuery('');
+                inputRef.current?.focus();
+              }}
+              className="w-5 h-5 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-surface-3 hover:text-bokka-ink shrink-0"
+              aria-label="Limpar"
+            >
+              <X className="w-3.5 h-3.5" strokeWidth={2} />
+            </button>
+          )}
+        </div>
+
+        {showDropdown && (
+          <div className="absolute top-full mt-2 right-0 w-[420px] max-w-[calc(100vw-2rem)] bg-bokka-surface border border-bokka-border rounded-2xl shadow-md overflow-hidden z-30">
+            {renderResultsPanel('max-h-[480px] overflow-y-auto py-1.5')}
+          </div>
         )}
       </div>
 
-      {showDropdown && (
-        <div className="absolute top-full mt-2 right-0 w-[420px] max-w-[calc(100vw-2rem)] bg-bokka-surface border border-bokka-border rounded-2xl shadow-md overflow-hidden z-30">
-          {loading && !hasResults ? (
-            <div className="p-6 text-center text-sm text-bokka-ink-3">
-              Carregando dados…
+      {/* Mobile / tablet estreito — ícone abre busca full-screen (achado crítico da MOBILE-SPEC-2) */}
+      <button
+        type="button"
+        onClick={() => setMobileOpen(true)}
+        className="md:hidden w-9 h-9 rounded-full flex items-center justify-center text-bokka-ink-2 hover:bg-bokka-surface-3 shrink-0"
+        aria-label="Buscar"
+      >
+        <Search className="w-5 h-5" strokeWidth={2} />
+      </button>
+
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 bg-bokka-surface flex flex-col md:hidden">
+          <div className="h-16 px-4 flex items-center gap-3 border-b border-bokka-border shrink-0">
+            <div className="flex-1 flex items-center bg-bokka-surface-2 border border-bokka-border-strong rounded-full px-4 h-10 gap-2">
+              <Search className="w-4 h-4 text-bokka-ink-3 shrink-0" strokeWidth={2} />
+              <input
+                ref={mobileInputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder="Buscar pacientes, agendamentos..."
+                className="bg-transparent border-0 outline-none text-sm text-bokka-ink placeholder:text-bokka-ink-3 flex-1 min-w-0"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuery('');
+                    mobileInputRef.current?.focus();
+                  }}
+                  className="w-5 h-5 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-surface-3 hover:text-bokka-ink shrink-0"
+                  aria-label="Limpar"
+                >
+                  <X className="w-3.5 h-3.5" strokeWidth={2} />
+                </button>
+              )}
             </div>
-          ) : !hasResults ? (
-            <div className="p-6 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-bokka-surface-3 text-bokka-ink-3 flex items-center justify-center mx-auto mb-3">
-                <Search className="w-5 h-5" strokeWidth={1.75} />
-              </div>
-              <p className="text-sm font-semibold text-bokka-ink">
-                Nada encontrado para "{query.trim()}"
-              </p>
-              <p className="text-xs text-bokka-ink-3 mt-1">
-                Tente por nome, CPF, CRO ou e-mail.
-              </p>
-            </div>
-          ) : (
-            <div className="max-h-[480px] overflow-y-auto py-1.5">
-              {groupedResults.map((group) => {
-                const style = tipoStyle[group.tipo];
-                return (
-                  <div key={group.tipo} className="pb-1.5">
-                    <div className="px-4 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-bokka-ink-3">
-                      {style.group} · {group.items.length}
-                    </div>
-                    {group.items.map((r) => {
-                      flatIndex += 1;
-                      const isActive = flatIndex === activeIndex;
-                      const Icon = style.icon;
-                      return (
-                        <button
-                          key={`${r.tipo}-${r.id}`}
-                          type="button"
-                          onMouseEnter={() => setActiveIndex(flatIndex)}
-                          onClick={() => commit(r)}
-                          className={cn(
-                            'w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors',
-                            isActive ? 'bg-bokka-surface-3' : 'hover:bg-bokka-surface-3/60',
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              'w-9 h-9 rounded-lg flex items-center justify-center shrink-0',
-                              style.tone,
-                            )}
-                          >
-                            <Icon className="w-4 h-4" strokeWidth={1.75} />
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-bokka-ink truncate">
-                              {r.titulo}
-                            </p>
-                            <p className="text-[11px] text-bokka-ink-3 truncate capitalize">
-                              {r.subtitulo}
-                            </p>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-              <div className="border-t border-bokka-border px-4 py-2 text-[10px] text-bokka-ink-3 flex items-center justify-between">
-                <span>
-                  <kbd className="px-1.5 py-0.5 rounded bg-bokka-surface-3 font-semibold">↑↓</kbd> navegar ·{' '}
-                  <kbd className="px-1.5 py-0.5 rounded bg-bokka-surface-3 font-semibold">↵</kbd> abrir
-                </span>
-                <span className="tabular-nums">{results.length} resultado{results.length === 1 ? '' : 's'}</span>
-              </div>
-            </div>
-          )}
+            <button
+              type="button"
+              onClick={() => {
+                setMobileOpen(false);
+                setQuery('');
+              }}
+              className="text-sm font-semibold text-bokka-primary shrink-0"
+            >
+              Cancelar
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {renderResultsPanel('py-1.5')}
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
