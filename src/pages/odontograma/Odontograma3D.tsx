@@ -1,3 +1,5 @@
+import { useRef } from 'react';
+import { ArrowUp, ArrowDown } from 'lucide-react';
 import type { CondicaoDenteEnum, DenteStatus, FaceDenteEnum } from '../../types';
 import { cn } from '../../lib/utils';
 
@@ -488,28 +490,48 @@ const FaceGridBox = ({
 
 // ============ Colors ============
 
+// Paleta USP — 4 buckets fixos (ODONTOGRAMA-COLOR-SPEC). Cor de identificação (legenda/badge/
+// seletor de condição) é sempre a do bucket; a técnica de desenho da coroa (dentina natural,
+// fantasma pálido, contorno tracejado) é resolvida à parte em UpperTooth/LowerTooth — não aqui.
 export const condicaoColor = (
   c?: CondicaoDenteEnum,
 ): { fill: string; stroke: string; textInk: string } => {
   switch (c) {
+    // Vermelho — precisa de tratamento
+    case 'CARIE':
+    case 'RESTAURACAO_INSATISFATORIA':
+    case 'FRATURA':
+    case 'EXTRACAO_INDICADA':
+    // legados
     case 'CARIADO':
-      return { fill: '#DC2626', stroke: '#991B1B', textInk: '#991B1B' };
-    case 'RESTAURADO':
-      return { fill: '#2563EB', stroke: '#1D4ED8', textInk: '#1D4ED8' };
-    case 'AUSENTE':
-      return { fill: '#E8ECF0', stroke: '#94A3B8', textInk: '#64748B' };
-    case 'IMPLANTE':
-      return { fill: '#475569', stroke: '#334155', textInk: '#334155' };
-    case 'COROA':
-      return { fill: '#F59E0B', stroke: '#B45309', textInk: '#B45309' };
     case 'FRATURADO':
-      return { fill: '#EA580C', stroke: '#C2410C', textInk: '#C2410C' };
-    case 'EM_TRATAMENTO':
-      return { fill: '#CA8A04', stroke: '#A16207', textInk: '#A16207' };
     case 'EXTRAIR':
-      return { fill: '#FCA5A5', stroke: '#991B1B', textInk: '#991B1B' };
+      return { fill: '#DC2626', stroke: '#991B1B', textInk: '#991B1B' };
+
+    // Azul — tratamento realizado
+    case 'RESTAURACAO_SATISFATORIA':
+    case 'ENDODONTIA':
+    case 'PROTESE_FIXA':
+    case 'PROTESE_REMOVIVEL':
+    case 'IMPLANTE':
+    // legados
+    case 'RESTAURADO':
+    case 'COROA':
+    case 'EM_TRATAMENTO':
+      return { fill: '#2563EB', stroke: '#1D4ED8', textInk: '#1D4ED8' };
+
+    // Verde — saudável
+    case 'HIGIDO':
+    case 'SELANTE':
+    // legado
     case 'SAUDAVEL':
-      return { fill: '#FFFCF2', stroke: '#B0A78F', textInk: '#334155' };
+      return { fill: '#059669', stroke: '#047857', textInk: '#047857' };
+
+    // Preto — ausente / incluso
+    case 'AUSENTE':
+    case 'DENTE_INCLUSO':
+      return { fill: '#111827', stroke: '#111827', textInk: '#111827' };
+
     default:
       return { fill: '#FFFCF2', stroke: '#B0A78F', textInk: '#64748B' };
   }
@@ -517,15 +539,27 @@ export const condicaoColor = (
 
 export const condicaoLabel = (c: CondicaoDenteEnum): string => {
   switch (c) {
-    case 'SAUDAVEL':      return 'Saudável';
-    case 'CARIADO':       return 'Cariado';
-    case 'RESTAURADO':    return 'Restaurado';
-    case 'AUSENTE':       return 'Ausente';
-    case 'IMPLANTE':      return 'Implante';
-    case 'COROA':         return 'Coroa';
-    case 'FRATURADO':     return 'Fraturado';
-    case 'EM_TRATAMENTO': return 'Em tratamento';
-    case 'EXTRAIR':       return 'A extrair';
+    case 'HIGIDO':                     return 'Hígido';
+    case 'CARIE':                      return 'Cárie';
+    case 'RESTAURACAO_SATISFATORIA':   return 'Restauração satisfatória';
+    case 'RESTAURACAO_INSATISFATORIA': return 'Restauração insatisfatória';
+    case 'AUSENTE':                    return 'Ausente';
+    case 'ENDODONTIA':                 return 'Endodontia';
+    case 'PROTESE_FIXA':               return 'Prótese fixa';
+    case 'PROTESE_REMOVIVEL':          return 'Prótese removível';
+    case 'IMPLANTE':                   return 'Implante';
+    case 'FRATURA':                    return 'Fratura';
+    case 'DENTE_INCLUSO':              return 'Dente incluso';
+    case 'EXTRACAO_INDICADA':          return 'Extração indicada';
+    case 'SELANTE':                    return 'Selante';
+    // legados — mesmo rótulo do equivalente novo (ODONTOGRAMA-COLOR-SPEC seção 3.1)
+    case 'SAUDAVEL':      return 'Hígido';
+    case 'CARIADO':       return 'Cárie';
+    case 'RESTAURADO':    return 'Restauração satisfatória';
+    case 'COROA':         return 'Prótese fixa';
+    case 'FRATURADO':     return 'Fratura';
+    case 'EM_TRATAMENTO': return 'Endodontia';
+    case 'EXTRAIR':       return 'Extração indicada';
     default:              return c;
   }
 };
@@ -544,6 +578,12 @@ export const faceLabel = (f: FaceDenteEnum): string => {
 };
 
 export const CONDICOES_COM_FACE: CondicaoDenteEnum[] = [
+  'CARIE',
+  'RESTAURACAO_SATISFATORIA',
+  'RESTAURACAO_INSATISFATORIA',
+  'FRATURA',
+  'SELANTE',
+  // legados
   'CARIADO',
   'RESTAURADO',
   'FRATURADO',
@@ -567,27 +607,32 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
   const condicao = mark?.condicao;
   const faces = mark?.faces ?? [];
   const isAusente = condicao === 'AUSENTE';
-  const isExtrair = condicao === 'EXTRAIR';
+  const isDenteIncluso = condicao === 'DENTE_INCLUSO';
+  const isExtrair = condicao === 'EXTRAIR' || condicao === 'EXTRACAO_INDICADA';
   const isImplante = condicao === 'IMPLANTE';
-  const isCoroa = condicao === 'COROA';
+  const isCoroa = condicao === 'COROA' || condicao === 'PROTESE_FIXA' || condicao === 'PROTESE_REMOVIVEL';
+  const isEndodontia = condicao === 'EM_TRATAMENTO' || condicao === 'ENDODONTIA';
+  const isHigido = condicao === 'HIGIDO' || condicao === 'SAUDAVEL';
   const { fill, stroke } = condicaoColor(condicao);
 
-  // If restauração/cariado with faces marked, apply face-level color instead of full crown
+  // Face marcada (CARIE/RESTAURACAO_*/FRATURA/SELANTE) pinta só a face; senão a coroa inteira
   const hasFaceMark = faces.length > 0 && condicao && CONDICOES_COM_FACE.includes(condicao);
   const crownFillMode = isAusente ? 'ausente'
+    : isDenteIncluso ? 'incluso'
     : isImplante ? 'coroa-implante'
     : isCoroa ? 'coroa-total'
     : hasFaceMark ? 'natural-com-faces'
-    : condicao && !CONDICOES_COM_FACE.includes(condicao) && condicao !== 'SAUDAVEL' ? 'total'
+    : condicao && !CONDICOES_COM_FACE.includes(condicao) && !isHigido ? 'total'
     : 'natural';
 
   const crownFill = crownFillMode === 'ausente' ? '#E8ECF0'
+    : crownFillMode === 'incluso' ? '#E8ECF0'
     : crownFillMode === 'coroa-implante' ? '#CBD5E1'
     : crownFillMode === 'coroa-total' ? fill
     : crownFillMode === 'total' ? fill
     : '#FFFCF2';
 
-  const opacity = isAusente ? 0.4 : 1;
+  const opacity = isAusente ? 0.4 : isDenteIncluso ? 0.5 : 1;
 
   const tipY = UPPER_CROWN_TIP;
   const rootTipY = UPPER_ROOT_TOP + (UPPER_NECK - UPPER_ROOT_TOP) * (1 - cfg.rootLen);
@@ -641,18 +686,18 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
         <g key={ri}>
           <path
             d={d}
-            fill={isAusente ? '#E8ECF0' : 'url(#dentin-grad)'}
-            stroke={isAusente ? '#B0B8C4' : '#B08D5D'}
+            fill={isAusente || isDenteIncluso ? '#E8ECF0' : 'url(#dentin-grad)'}
+            stroke={isAusente || isDenteIncluso ? '#B0B8C4' : '#B08D5D'}
             strokeWidth="0.7"
             opacity={opacity}
             pointerEvents="none"
           />
-          {/* Root canal hint (endodontic) */}
-          {condicao === 'EM_TRATAMENTO' && (
+          {/* Root canal hint (endodontia — vale pro nome novo e pro legado EM_TRATAMENTO) */}
+          {isEndodontia && (
             <path
               d={d.split('Z')[0] + 'Z'}
               fill="none"
-              stroke="#C2410C"
+              stroke="#2563EB"
               strokeWidth="1.2"
               opacity="0.7"
               transform={`translate(0, 0) scale(0.9)`}
@@ -690,7 +735,12 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
       <path
         d={crownGeom.path}
         fill={crownFill}
-        stroke={isAusente ? '#B0B8C4' : (crownFillMode === 'natural' || crownFillMode === 'natural-com-faces' ? '#B0A78F' : stroke)}
+        stroke={
+          isAusente ? '#B0B8C4'
+          : isDenteIncluso ? '#111827'
+          : (crownFillMode === 'natural' || crownFillMode === 'natural-com-faces' ? '#B0A78F' : stroke)
+        }
+        strokeDasharray={isDenteIncluso ? '3 2' : undefined}
         strokeWidth="1.1"
         opacity={opacity}
         filter={isAusente ? undefined : 'url(#tooth-shadow)'}
@@ -698,7 +748,7 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
       />
 
       {/* Enamel shine + radial highlight = volume 3D */}
-      {!isAusente && crownFillMode !== 'total' && (
+      {!isAusente && !isDenteIncluso && crownFillMode !== 'total' && (
         <>
           <path
             d={crownGeom.path}
@@ -718,7 +768,7 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
       {hasFaceMark && faces.map((f) => renderFaceOverlayUpper(f, cx, UPPER_NECK, tipY, cfg, fill, stroke))}
 
       {/* Fossae/fissures */}
-      {!isAusente && crownGeom.fossae.map((fd, fi) => (
+      {!isAusente && !isDenteIncluso && crownGeom.fossae.map((fd, fi) => (
         <path
           key={fi}
           d={fd}
@@ -732,7 +782,7 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
       ))}
 
       {/* Cusp tips (small light dots) */}
-      {!isAusente && crownGeom.cusps.map((cp, ci) => (
+      {!isAusente && !isDenteIncluso && crownGeom.cusps.map((cp, ci) => (
         <circle
           key={ci}
           cx={cp.x} cy={cp.y}
@@ -762,7 +812,7 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
       )}
 
       {/* Face grid box (below crown) */}
-      {!isAusente && (
+      {!isAusente && !isDenteIncluso && (
         <FaceGridBox
           numero={numero}
           x={cx - FACE_BOX_SIZE / 2}
@@ -787,26 +837,31 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
   const condicao = mark?.condicao;
   const faces = mark?.faces ?? [];
   const isAusente = condicao === 'AUSENTE';
-  const isExtrair = condicao === 'EXTRAIR';
+  const isDenteIncluso = condicao === 'DENTE_INCLUSO';
+  const isExtrair = condicao === 'EXTRAIR' || condicao === 'EXTRACAO_INDICADA';
   const isImplante = condicao === 'IMPLANTE';
-  const isCoroa = condicao === 'COROA';
+  const isCoroa = condicao === 'COROA' || condicao === 'PROTESE_FIXA' || condicao === 'PROTESE_REMOVIVEL';
+  const isEndodontia = condicao === 'EM_TRATAMENTO' || condicao === 'ENDODONTIA';
+  const isHigido = condicao === 'HIGIDO' || condicao === 'SAUDAVEL';
   const { fill, stroke } = condicaoColor(condicao);
 
   const hasFaceMark = faces.length > 0 && condicao && CONDICOES_COM_FACE.includes(condicao);
   const crownFillMode = isAusente ? 'ausente'
+    : isDenteIncluso ? 'incluso'
     : isImplante ? 'coroa-implante'
     : isCoroa ? 'coroa-total'
     : hasFaceMark ? 'natural-com-faces'
-    : condicao && !CONDICOES_COM_FACE.includes(condicao) && condicao !== 'SAUDAVEL' ? 'total'
+    : condicao && !CONDICOES_COM_FACE.includes(condicao) && !isHigido ? 'total'
     : 'natural';
 
   const crownFill = crownFillMode === 'ausente' ? '#E8ECF0'
+    : crownFillMode === 'incluso' ? '#E8ECF0'
     : crownFillMode === 'coroa-implante' ? '#CBD5E1'
     : crownFillMode === 'coroa-total' ? fill
     : crownFillMode === 'total' ? fill
     : '#FFFCF2';
 
-  const opacity = isAusente ? 0.4 : 1;
+  const opacity = isAusente ? 0.4 : isDenteIncluso ? 0.5 : 1;
 
   const tipY = LOWER_CROWN_TOP;
   const rootTipY = LOWER_NECK + (LOWER_ROOT_TIP - LOWER_NECK) * cfg.rootLen;
@@ -821,7 +876,7 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
       aria-label={`Dente ${numero}`}
     >
       {/* Face grid box (above crown) */}
-      {!isAusente && (
+      {!isAusente && !isDenteIncluso && (
         <FaceGridBox
           numero={numero}
           x={cx - FACE_BOX_SIZE / 2}
@@ -860,15 +915,29 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
 
       {/* Roots */}
       {roots.map((d, ri) => (
-        <path
-          key={ri}
-          d={d}
-          fill={isAusente ? '#E8ECF0' : 'url(#dentin-grad)'}
-          stroke={isAusente ? '#B0B8C4' : '#B08D5D'}
-          strokeWidth="0.7"
-          opacity={opacity}
-          pointerEvents="none"
-        />
+        <g key={ri}>
+          <path
+            d={d}
+            fill={isAusente || isDenteIncluso ? '#E8ECF0' : 'url(#dentin-grad)'}
+            stroke={isAusente || isDenteIncluso ? '#B0B8C4' : '#B08D5D'}
+            strokeWidth="0.7"
+            opacity={opacity}
+            pointerEvents="none"
+          />
+          {/* Root canal hint (endodontia — vale pro nome novo e pro legado EM_TRATAMENTO) */}
+          {isEndodontia && (
+            <path
+              d={d.split('Z')[0] + 'Z'}
+              fill="none"
+              stroke="#2563EB"
+              strokeWidth="1.2"
+              opacity="0.7"
+              transform={`translate(0, 0) scale(0.9)`}
+              style={{ transformOrigin: `${cx}px ${(LOWER_NECK + rootTipY) / 2}px` }}
+              pointerEvents="none"
+            />
+          )}
+        </g>
       ))}
 
       {/* Implant post */}
@@ -898,7 +967,12 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
       <path
         d={crownGeom.path}
         fill={crownFill}
-        stroke={isAusente ? '#B0B8C4' : (crownFillMode === 'natural' || crownFillMode === 'natural-com-faces' ? '#B0A78F' : stroke)}
+        stroke={
+          isAusente ? '#B0B8C4'
+          : isDenteIncluso ? '#111827'
+          : (crownFillMode === 'natural' || crownFillMode === 'natural-com-faces' ? '#B0A78F' : stroke)
+        }
+        strokeDasharray={isDenteIncluso ? '3 2' : undefined}
         strokeWidth="1.1"
         opacity={opacity}
         filter={isAusente ? undefined : 'url(#tooth-shadow)'}
@@ -906,7 +980,7 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
       />
 
       {/* Enamel shine + radial highlight */}
-      {!isAusente && crownFillMode !== 'total' && (
+      {!isAusente && !isDenteIncluso && crownFillMode !== 'total' && (
         <>
           <path
             d={crownGeom.path}
@@ -926,7 +1000,7 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
       {hasFaceMark && faces.map((f) => renderFaceOverlayLower(f, cx, LOWER_NECK, tipY, cfg, fill, stroke))}
 
       {/* Fossae */}
-      {!isAusente && crownGeom.fossae.map((fd, fi) => (
+      {!isAusente && !isDenteIncluso && crownGeom.fossae.map((fd, fi) => (
         <path
           key={fi}
           d={fd}
@@ -940,7 +1014,7 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
       ))}
 
       {/* Cusp tips */}
-      {!isAusente && crownGeom.cusps.map((cp, ci) => (
+      {!isAusente && !isDenteIncluso && crownGeom.cusps.map((cp, ci) => (
         <circle
           key={ci}
           cx={cp.x} cy={cp.y} r="0.9"
@@ -1105,9 +1179,45 @@ export const Odontograma3D = ({
 }: Odontograma3DProps) => {
   const upperGum = buildUpperGum(superior);
   const lowerGum = buildLowerGum(inferior);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Abaixo de md, a área do SVG (altura fixa de SVG_H) fica mais alta que a viewport visível,
+  // então a arcada oposta exige scroll vertical além do arrasto horizontal de sempre — os botões
+  // Superior/Inferior resolvem os dois de uma vez com 1 toque em vez de arrastar manualmente.
+  const jumpTo = (arcada: 'superior' | 'inferior') => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({
+      left: 0,
+      top: arcada === 'superior' ? 0 : el.scrollHeight,
+      behavior: 'smooth',
+    });
+  };
 
   return (
-    <div style={{ minWidth: TOTAL_W }}>
+    <div>
+      <div className="flex gap-2 mb-3 md:hidden">
+        <button
+          type="button"
+          onClick={() => jumpTo('superior')}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-lg bg-bokka-surface-2 border border-bokka-border text-xs font-semibold text-bokka-ink-2 hover:border-bokka-primary/40 transition-colors"
+        >
+          <ArrowUp className="w-3.5 h-3.5" strokeWidth={2} /> Arcada superior
+        </button>
+        <button
+          type="button"
+          onClick={() => jumpTo('inferior')}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-lg bg-bokka-surface-2 border border-bokka-border text-xs font-semibold text-bokka-ink-2 hover:border-bokka-primary/40 transition-colors"
+        >
+          <ArrowDown className="w-3.5 h-3.5" strokeWidth={2} /> Arcada inferior
+        </button>
+      </div>
+
+      <div
+        ref={scrollRef}
+        className="overflow-x-auto overflow-y-auto max-h-[280px] md:max-h-none md:overflow-y-visible"
+      >
+      <div style={{ minWidth: TOTAL_W }}>
       <svg
         viewBox={`0 0 ${TOTAL_W} ${SVG_H}`}
         width="100%"
@@ -1232,20 +1342,26 @@ export const Odontograma3D = ({
           />
         ))}
       </svg>
+      </div>
+      </div>
 
-      {/* Legend */}
+      {/* Legend — fora da faixa de scroll horizontal/vertical, sempre visível por inteiro */}
       <div className="flex flex-wrap gap-x-4 gap-y-2 pt-4 mt-3 border-t border-bokka-border text-xs">
         {(
           [
-            'SAUDAVEL',
-            'CARIADO',
-            'RESTAURADO',
+            'HIGIDO',
+            'CARIE',
+            'RESTAURACAO_SATISFATORIA',
+            'RESTAURACAO_INSATISFATORIA',
             'AUSENTE',
+            'ENDODONTIA',
+            'PROTESE_FIXA',
+            'PROTESE_REMOVIVEL',
             'IMPLANTE',
-            'COROA',
-            'FRATURADO',
-            'EM_TRATAMENTO',
-            'EXTRAIR',
+            'FRATURA',
+            'DENTE_INCLUSO',
+            'EXTRACAO_INDICADA',
+            'SELANTE',
           ] as CondicaoDenteEnum[]
         ).map((c) => {
           const { fill } = condicaoColor(c);

@@ -36,6 +36,7 @@ import type {
   Procedimento,
 } from '../../types';
 import { ProcedimentoFormInline } from '../pacientes/PacienteProcedimentos';
+import { ProcedimentoQuickLaunch } from './ProcedimentoQuickLaunch';
 import {
   Odontograma3D,
   condicaoColor,
@@ -49,15 +50,19 @@ const SUPERIOR = ['18', '17', '16', '15', '14', '13', '12', '11', '21', '22', '2
 const INFERIOR = ['48', '47', '46', '45', '44', '43', '42', '41', '31', '32', '33', '34', '35', '36', '37', '38'];
 
 const TODAS_CONDICOES: CondicaoDenteEnum[] = [
-  'SAUDAVEL',
-  'CARIADO',
-  'RESTAURADO',
+  'HIGIDO',
+  'CARIE',
+  'RESTAURACAO_SATISFATORIA',
+  'RESTAURACAO_INSATISFATORIA',
   'AUSENTE',
+  'ENDODONTIA',
+  'PROTESE_FIXA',
+  'PROTESE_REMOVIVEL',
   'IMPLANTE',
-  'COROA',
-  'FRATURADO',
-  'EM_TRATAMENTO',
-  'EXTRAIR',
+  'FRATURA',
+  'DENTE_INCLUSO',
+  'EXTRACAO_INDICADA',
+  'SELANTE',
 ];
 
 export const OdontogramaPacientePage = () => {
@@ -72,12 +77,28 @@ export const OdontogramaPacientePage = () => {
 
   const [editing, setEditing] = useState(false);
   const [selectedTooth, setSelectedTooth] = useState<string | null>(null);
-  const [activeCondicao, setActiveCondicao] = useState<CondicaoDenteEnum>('CARIADO');
+  const [activeCondicao, setActiveCondicao] = useState<CondicaoDenteEnum>('CARIE');
   const [dentes, setDentes] = useState<Map<string, DenteStatus>>(new Map());
   const [observacoes, setObservacoes] = useState('');
   const [viewing, setViewing] = useState<Odontograma | null>(null);
-  const [procFormOpen, setProcFormOpen] = useState(false);
+
+  // Modal de procedimento — um Dialog só, que troca de conteúdo (rápido/completo) em vez de
+  // dois Modals independentes: montar dois Dialogs do Headless UI ao mesmo tempo (um fechando,
+  // outro abrindo na mesma leva de estado) faz o primeiro nunca desmontar — trocar o conteúdo
+  // do mesmo Dialog evita o problema de raiz em vez de tentar sequenciar com setTimeout.
+  const [procMode, setProcMode] = useState<'quick' | 'full' | null>(null);
+  const [procContext, setProcContext] = useState<{
+    dente?: string;
+    odontogramaId?: string;
+    condicaoLabel?: string;
+  } | null>(null);
   const [procInitial, setProcInitial] = useState<Procedimento | null>(null);
+
+  const fecharProcModal = () => {
+    setProcMode(null);
+    setProcContext(null);
+    setProcInitial(null);
+  };
 
   const iniciarNovaAvaliacao = () => {
     const ultimo = historicoQ.data?.[0];
@@ -110,7 +131,9 @@ export const OdontogramaPacientePage = () => {
       next.set(numero, {
         numeroDente: numero,
         condicao,
-        faces: preservaFaces ? anterior?.faces : undefined,
+        // SELANTE só faz sentido na face oclusal — não precisa pedir a face ao usuário
+        // (ODONTOGRAMA-COLOR-SPEC seção 3.4). Continua ajustável no FacePicker se quiser.
+        faces: preservaFaces ? anterior?.faces : condicao === 'SELANTE' ? ['OCLUSAL'] : undefined,
         observacao: anterior?.observacao,
       });
       return next;
@@ -125,7 +148,7 @@ export const OdontogramaPacientePage = () => {
       if (!atual || !atual.condicao || !CONDICOES_COM_FACE.includes(atual.condicao)) {
         const cond = CONDICOES_COM_FACE.includes(activeCondicao)
           ? activeCondicao
-          : ('CARIADO' as CondicaoDenteEnum);
+          : ('CARIE' as CondicaoDenteEnum);
         next.set(numero, {
           numeroDente: numero,
           condicao: cond,
@@ -161,45 +184,86 @@ export const OdontogramaPacientePage = () => {
     setSelectedTooth(null);
   };
 
-  const salvar = async () => {
-    if (!id) return;
+  // Reutilizável: cria o documento de odontograma a partir do estado de edição em andamento.
+  // Devolve o odontograma salvo, ou undefined se não salvou (vazio ou erro — toast já disparado).
+  const salvarAvaliacao = async (): Promise<Odontograma | undefined> => {
+    if (!id) return undefined;
     if (dentes.size === 0) {
       bokkaToast.warning('Marque pelo menos um dente antes de salvar.');
-      return;
+      return undefined;
     }
     try {
-      const salvo = await criarM.mutateAsync({
+      return await criarM.mutateAsync({
         pacienteId: id,
         dataAvaliacao: new Date().toISOString().slice(0, 10),
         dentes: Array.from(dentes.values()),
         observacoes: observacoes || undefined,
       } as Odontograma);
-      bokkaToast.success('Odontograma salvo. Agora você pode vincular procedimentos.');
-      setEditing(false);
-      setDentes(new Map());
-      setSelectedTooth(null);
-      setObservacoes('');
-      setViewing(salvo);
     } catch (err) {
       bokkaToast.error(
         err instanceof ApiError ? err.friendlyMessage() : 'Erro ao salvar odontograma',
       );
+      return undefined;
     }
   };
 
+  const salvar = async () => {
+    const salvo = await salvarAvaliacao();
+    if (!salvo) return;
+    bokkaToast.success('Odontograma salvo. Agora você pode vincular procedimentos.');
+    setEditing(false);
+    setDentes(new Map());
+    setSelectedTooth(null);
+    setObservacoes('');
+    setViewing(salvo);
+  };
+
+  const abrirLancamentoRapido = (context: { dente?: string; odontogramaId?: string; condicao?: CondicaoDenteEnum }) => {
+    setProcContext({
+      dente: context.dente,
+      odontogramaId: context.odontogramaId,
+      condicaoLabel: context.condicao ? condicaoLabel(context.condicao) : undefined,
+    });
+    setProcMode('quick');
+  };
+
+  // Entrada 1 (edição): salva a avaliação inteira em andamento automaticamente — 1 clique só,
+  // sem exigir "Salvar" antes (confirmado com o Wilson) — mantém o dente selecionado e abre
+  // o formulário rápido pré-preenchido.
+  const lancarProcedimentoNoDenteAtual = async () => {
+    if (!selectedTooth) return;
+    const condicaoAtual = dentes.get(selectedTooth)?.condicao;
+    const salvo = await salvarAvaliacao();
+    if (!salvo) return;
+    bokkaToast.success('Odontograma salvo. Agora você pode lançar o procedimento.');
+    const dente = selectedTooth;
+    setEditing(false);
+    setDentes(new Map());
+    setObservacoes('');
+    setViewing(salvo);
+    abrirLancamentoRapido({ dente, odontogramaId: salvo.id, condicao: condicaoAtual });
+  };
+
+  // Entradas 2 e 3 (visualização): seringa no header do canvas e "Novo" no card Procedimentos.
   const criarProcedimentoNoDente = () => {
     if (!id) return;
     const contexto = viewing ?? historicoQ.data?.[0];
-    setProcInitial({
-      pacienteId: id,
+    const condicaoAtual = selectedTooth
+      ? contexto?.dentes?.find((d) => d.numeroDente === selectedTooth)?.condicao
+      : undefined;
+    abrirLancamentoRapido({
       dente: selectedTooth ?? undefined,
-      status: 'ORCADO',
-      numeroDeSessoes: 1,
-      sessaoAtual: 1,
       odontogramaId: contexto?.id,
-      nomeProcedimento: 'PROFILAXIA',
+      condicao: condicaoAtual,
     });
-    setProcFormOpen(true);
+  };
+
+  // Escape hatch do lançamento rápido: abre o formulário completo pré-preenchido com o que
+  // já foi digitado, sem redigitar nada — pra quem precisa de parcelamento/pagamento detalhado.
+  // Troca o conteúdo do MESMO Dialog (não abre um segundo) — ver comentário em procMode acima.
+  const abrirFormularioCompleto = (draft: Procedimento) => {
+    setProcInitial(draft);
+    setProcMode('full');
   };
 
   const dentesArray = useMemo(() => Array.from(dentes.values()), [dentes]);
@@ -290,9 +354,10 @@ export const OdontogramaPacientePage = () => {
       {/* Editor */}
       {editing && (
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
-          {/* Painel de condição */}
-          <div className="xl:col-span-1 space-y-4">
-            <div className="bg-bokka-surface border border-bokka-border rounded-2xl p-4">
+          {/* Painel de condição — abaixo de xl vem DEPOIS do canvas (order-2) e fica sticky no
+              rodapé, já que é usado a cada toque num dente; volta pra coluna esquerda em xl+ */}
+          <div className="order-2 xl:order-1 xl:col-span-1 space-y-4">
+            <div className="bg-bokka-surface border border-bokka-border rounded-2xl p-4 max-lg:sticky max-lg:bottom-20 max-lg:z-20 max-lg:shadow-lg">
               <h3 className="text-sm font-semibold text-bokka-ink mb-3">
                 Selecione a condição
               </h3>
@@ -332,6 +397,34 @@ export const OdontogramaPacientePage = () => {
                   );
                 })}
               </div>
+
+              {/* Ações do dente — vivem DENTRO do card sticky (não no card "Dente selecionado"
+                  abaixo), porque sticky não reserva espaço de layout: como esse card é alto (13
+                  condições) e fica por cima em z-20, ele cobria os botões quando estavam no card
+                  seguinte. Aqui dentro, os botões fazem parte do que cobre — nunca ficam cobertos. */}
+              {selectedTooth && (
+                <div className="mt-3 pt-3 border-t border-bokka-border">
+                  {dentes.get(selectedTooth) && (
+                    <button
+                      type="button"
+                      onClick={() => removerCondicao(selectedTooth)}
+                      className="text-xs font-semibold text-bokka-danger-ink hover:text-bokka-danger inline-flex items-center gap-1"
+                    >
+                      <Trash2 className="w-3 h-3" /> Remover marcação
+                    </button>
+                  )}
+                  <Button
+                    size="sm"
+                    fullWidth
+                    className="mt-2"
+                    icon={<Syringe className="w-3.5 h-3.5" strokeWidth={1.75} />}
+                    onClick={lancarProcedimentoNoDenteAtual}
+                    loading={criarM.isPending}
+                  >
+                    Lançar procedimento
+                  </Button>
+                </div>
+              )}
             </div>
 
             {selectedTooth && (
@@ -343,22 +436,10 @@ export const OdontogramaPacientePage = () => {
                   {selectedTooth}
                 </p>
                 {dentes.get(selectedTooth) && (
-                  <>
-                    <p className="text-sm font-semibold text-bokka-ink-2 mt-2">
-                      {condicaoLabel(dentes.get(selectedTooth)!.condicao!)}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => removerCondicao(selectedTooth)}
-                      className="mt-3 text-xs font-semibold text-bokka-danger-ink hover:text-bokka-danger inline-flex items-center gap-1"
-                    >
-                      <Trash2 className="w-3 h-3" /> Remover marcação
-                    </button>
-                  </>
+                  <p className="text-sm font-semibold text-bokka-ink-2 mt-2">
+                    {condicaoLabel(dentes.get(selectedTooth)!.condicao!)}
+                  </p>
                 )}
-                <p className="text-[11px] text-bokka-ink-3 mt-3 leading-snug">
-                  Salve o odontograma para vincular procedimentos a este dente.
-                </p>
               </div>
             )}
 
@@ -398,8 +479,8 @@ export const OdontogramaPacientePage = () => {
           </div>
 
           {/* Canvas do odontograma */}
-          <div className="xl:col-span-3 bg-bokka-surface border border-bokka-border rounded-2xl p-4 lg:p-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="order-1 xl:order-2 xl:col-span-3 bg-bokka-surface border border-bokka-border rounded-2xl p-4 lg:p-6">
+            <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
               <h3 className="text-sm font-semibold text-bokka-ink">
                 Odontograma — {dentes.size} dentes marcados
               </h3>
@@ -415,16 +496,14 @@ export const OdontogramaPacientePage = () => {
                 </Button>
               </div>
             </div>
-            <div className="overflow-x-auto">
-              <Odontograma3D
-                superior={SUPERIOR}
-                inferior={INFERIOR}
-                marks={dentes}
-                selected={selectedTooth}
-                onSelect={(numero) => aplicarCondicao(numero, activeCondicao)}
-                onSelectFace={(numero, face) => toggleFace(numero, face)}
-              />
-            </div>
+            <Odontograma3D
+              superior={SUPERIOR}
+              inferior={INFERIOR}
+              marks={dentes}
+              selected={selectedTooth}
+              onSelect={(numero) => aplicarCondicao(numero, activeCondicao)}
+              onSelectFace={(numero, face) => toggleFace(numero, face)}
+            />
           </div>
         </div>
       )}
@@ -520,22 +599,21 @@ export const OdontogramaPacientePage = () => {
                     </Button>
                   )}
                 </div>
-                <div className="overflow-x-auto">
-                  <Odontograma3D
-                    superior={SUPERIOR}
-                    inferior={INFERIOR}
-                    marks={
-                      new Map(
-                        (viewing.dentes ?? [])
-                          .filter((d) => d.numeroDente)
-                          .map((d) => [d.numeroDente!, d]),
-                      )
-                    }
-                    selected={selectedTooth}
-                    onSelect={(numero) => setSelectedTooth(numero)}
-                    readOnly={false}
-                  />
-                </div>
+                <Odontograma3D
+                  superior={SUPERIOR}
+                  inferior={INFERIOR}
+                  marks={
+                    new Map(
+                      (viewing.dentes ?? [])
+                        .filter((d) => d.numeroDente)
+                        .map((d) => [d.numeroDente!, d]),
+                    )
+                  }
+                  selected={selectedTooth}
+                  onSelect={(numero) => setSelectedTooth(numero)}
+                  readOnly={false}
+                />
+
                 {viewing.observacoes && (
                   <div className="mt-4 pt-4 border-t border-bokka-border">
                     <p className="text-xs uppercase font-semibold text-bokka-ink-3 tracking-wider">
@@ -694,30 +772,48 @@ export const OdontogramaPacientePage = () => {
         </div>
       )}
 
-      {/* Modal para criar procedimento vinculado */}
+      {/* Modal de procedimento — um Dialog só, alterna entre lançamento rápido e formulário
+          completo (escape hatch) trocando o conteúdo, nunca dois Dialogs montados ao mesmo tempo */}
       <Modal
-        open={procFormOpen}
-        onClose={() => {
-          setProcFormOpen(false);
-          setProcInitial(null);
-        }}
-        title={`Novo procedimento${selectedTooth ? ` · dente ${selectedTooth}` : ''}`}
-        subtitle="Este procedimento ficará vinculado ao odontograma selecionado."
-        size="xl"
+        open={procMode !== null}
+        onClose={fecharProcModal}
+        title={
+          procMode === 'quick'
+            ? `Lançar procedimento${procContext?.dente ? ` · dente ${procContext.dente}` : ''}`
+            : `Novo procedimento${procInitial?.dente ? ` · dente ${procInitial.dente}` : ''}`
+        }
+        subtitle={
+          procMode === 'quick'
+            ? 'Vinculado ao odontograma selecionado.'
+            : 'Este procedimento ficará vinculado ao odontograma selecionado.'
+        }
+        size={procMode === 'quick' ? 'md' : 'xl'}
       >
-        {id && (
+        {id && procMode === 'quick' && (
+          <ProcedimentoQuickLaunch
+            pacienteId={id}
+            dente={procContext?.dente}
+            odontogramaId={procContext?.odontogramaId}
+            condicaoLabel={procContext?.condicaoLabel}
+            onCancel={fecharProcModal}
+            onSubmit={async (values) => {
+              await criarProcM.mutateAsync(values);
+              bokkaToast.success('Procedimento lançado.');
+              fecharProcModal();
+            }}
+            onEditarCompleto={abrirFormularioCompleto}
+          />
+        )}
+        {id && procMode === 'full' && (
           <ProcedimentoFormInline
             initial={procInitial}
             pacienteId={id}
-            onCancel={() => {
-              setProcFormOpen(false);
-              setProcInitial(null);
-            }}
+            showOdontogramaLink={false}
+            onCancel={fecharProcModal}
             onSubmit={async (values) => {
               await criarProcM.mutateAsync(values);
               bokkaToast.success('Procedimento vinculado ao odontograma.');
-              setProcFormOpen(false);
-              setProcInitial(null);
+              fecharProcModal();
             }}
           />
         )}
