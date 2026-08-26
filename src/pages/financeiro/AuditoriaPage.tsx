@@ -1208,7 +1208,7 @@ const LucroCard = ({ value, loading }: { value: number; loading: boolean }) => {
   return (
     <div
       className={cn(
-        'rounded-2xl p-5 shadow-sm flex flex-col gap-4 border transition-colors',
+        'rounded-2xl p-5 shadow-sm flex flex-col gap-4 border transition-colors min-w-0',
         positive
           ? 'bg-bokka-primary text-white border-transparent'
           : 'bg-bokka-surface text-bokka-ink border-bokka-danger/30',
@@ -1232,7 +1232,7 @@ const LucroCard = ({ value, loading }: { value: number; loading: boolean }) => {
           <TrendingUp className="w-5 h-5" strokeWidth={2} />
         </span>
       </div>
-      <div>
+      <div className="min-w-0">
         {loading ? (
           <span
             className={cn(
@@ -1243,7 +1243,7 @@ const LucroCard = ({ value, loading }: { value: number; loading: boolean }) => {
         ) : (
           <span
             className={cn(
-              'text-[30px] font-bold tabular-nums leading-none tracking-tight',
+              'block text-xl sm:text-2xl lg:text-[30px] font-bold tabular-nums leading-tight tracking-tight break-words',
               !positive && 'text-bokka-danger-ink',
             )}
           >
@@ -1278,7 +1278,7 @@ const CaixaHero = ({
   return (
     <div
       className={cn(
-        'relative rounded-2xl overflow-hidden p-6 lg:p-7 flex flex-col justify-between min-h-[180px] shadow-sm',
+        'relative rounded-2xl overflow-hidden p-6 lg:p-7 flex flex-col justify-between min-h-[180px] shadow-sm min-w-0',
         positive ? 'bg-bokka-ink text-white' : 'bg-bokka-danger text-white',
         className,
       )}
@@ -1305,11 +1305,11 @@ const CaixaHero = ({
           {positive ? 'Positivo' : 'Negativo'}
         </span>
       </div>
-      <div className="relative mt-4">
+      <div className="relative mt-4 min-w-0">
         {loading ? (
           <span className="inline-block w-56 h-12 rounded-md bg-white/10 animate-pulse" />
         ) : (
-          <span className="text-[44px] lg:text-[52px] font-bold leading-none tracking-tight tabular-nums">
+          <span className="block text-3xl sm:text-[44px] lg:text-[52px] font-bold leading-tight tracking-tight tabular-nums break-words">
             {formatCurrency(value)}
           </span>
         )}
@@ -1329,7 +1329,7 @@ const EstoqueIntegracaoCard = ({
   baixoCount: number;
   loading: boolean;
 }) => (
-  <div className="bg-bokka-surface border border-bokka-border rounded-2xl p-5 lg:p-6 flex flex-col justify-between min-h-[180px] shadow-sm">
+  <div className="bg-bokka-surface border border-bokka-border rounded-2xl p-5 lg:p-6 flex flex-col justify-between min-h-[180px] shadow-sm min-w-0">
     <div className="flex items-start justify-between gap-3">
       <div>
         <div className="inline-flex items-center gap-2 text-bokka-ink-3 text-xs font-semibold uppercase tracking-wider">
@@ -1344,11 +1344,11 @@ const EstoqueIntegracaoCard = ({
         <Package className="w-5 h-5" strokeWidth={1.75} />
       </span>
     </div>
-    <div>
+    <div className="min-w-0">
       {loading ? (
         <span className="inline-block w-40 h-9 rounded-md bg-bokka-surface-3 animate-pulse" />
       ) : (
-        <span className="text-3xl font-bold text-bokka-ink tabular-nums leading-none tracking-tight">
+        <span className="block text-2xl sm:text-3xl font-bold text-bokka-ink tabular-nums leading-tight tracking-tight break-words">
           {formatCurrency(investimento)}
         </span>
       )}

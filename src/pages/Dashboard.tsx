@@ -762,18 +762,18 @@ interface HighlightKpiProps {
 }
 
 const HighlightKpi = ({ label, value, hint, icon, loading }: HighlightKpiProps) => (
-  <div className="bg-bokka-primary rounded-2xl p-5 shadow-sm text-white flex flex-col gap-4">
+  <div className="bg-bokka-primary rounded-2xl p-5 shadow-sm text-white flex flex-col gap-4 min-w-0">
     <div className="flex items-start justify-between">
       <span className="text-sm font-semibold text-white/85">{label}</span>
       <span className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
         {icon}
       </span>
     </div>
-    <div>
+    <div className="min-w-0">
       {loading ? (
         <span className="inline-block w-20 h-9 rounded-md bg-white/15 animate-pulse" />
       ) : (
-        <span className="text-[30px] font-bold tabular-nums leading-none tracking-tight">
+        <span className="block text-xl sm:text-2xl lg:text-[30px] font-bold tabular-nums leading-tight tracking-tight break-words">
           {value}
         </span>
       )}

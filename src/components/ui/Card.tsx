@@ -72,7 +72,7 @@ export const KpiCard = ({
   <div
     className={cn(
       'bg-bokka-surface border border-bokka-border rounded-2xl p-5 shadow-sm',
-      'flex flex-col gap-4',
+      'flex flex-col gap-4 min-w-0',
       className,
     )}
   >
@@ -87,18 +87,18 @@ export const KpiCard = ({
         {icon}
       </span>
     </div>
-    <div>
+    <div className="min-w-0">
       {loading ? (
         <span className="inline-block w-20 h-9 rounded-md bg-bokka-surface-3 animate-pulse" />
       ) : (
-        <div className="flex items-baseline gap-2">
-          <span className="text-[30px] font-bold text-bokka-ink tabular-nums leading-none tracking-tight">
+        <div className="flex items-baseline gap-2 min-w-0">
+          <span className="text-xl sm:text-2xl lg:text-[30px] font-bold text-bokka-ink tabular-nums leading-tight tracking-tight break-words">
             {value}
           </span>
           {delta && (
             <span
               className={cn(
-                'text-xs font-semibold tabular-nums',
+                'text-xs font-semibold tabular-nums shrink-0',
                 delta.positive ? 'text-bokka-success-ink' : 'text-bokka-danger-ink',
               )}
             >
