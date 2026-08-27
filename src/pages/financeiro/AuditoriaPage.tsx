@@ -849,7 +849,7 @@ export const AuditoriaPage = () => {
                           <button
                             type="button"
                             onClick={() => handleQuitarPagar(c)}
-                            className="px-3 h-9 rounded-md bg-bokka-ink text-white text-xs font-semibold inline-flex items-center gap-1 hover:bg-bokka-ink-2 transition-colors"
+                            className="px-3 h-9 rounded-md bg-bokka-primary text-white text-xs font-semibold inline-flex items-center gap-1 hover:bg-bokka-primary-hover transition-colors"
                             title="Marcar como paga"
                           >
                             <Check className="w-3.5 h-3.5" strokeWidth={2} />
@@ -930,7 +930,7 @@ export const AuditoriaPage = () => {
                               <button
                                 type="button"
                                 onClick={() => handleQuitarPagar(c)}
-                                className="px-2.5 h-8 rounded-md bg-bokka-ink text-white text-xs font-semibold inline-flex items-center gap-1 hover:bg-bokka-ink-2 transition-colors"
+                                className="px-2.5 h-8 rounded-md bg-bokka-primary text-white text-xs font-semibold inline-flex items-center gap-1 hover:bg-bokka-primary-hover transition-colors"
                                 title="Marcar como paga"
                               >
                                 <Check className="w-3.5 h-3.5" strokeWidth={2} />
