@@ -1,101 +1,225 @@
-# Bokka Web — Frontend
+# Bokka Web
 
-[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
-[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](https://vite.dev)
-[![Deploy](https://img.shields.io/badge/Deploy-Cloudflare%20Pages-F38020?logo=cloudflarepages&logoColor=white)](https://bokka.com.br)
+Frontend do Bokka, sistema de gestão para clínicas odontológicas.
 
-SPA completa para gestão de clínicas odontológicas, consumindo a [Bokka API](https://github.com/wilsonborgesbr/odonto-clinic-api) (backend). Interface responsiva com design system próprio, odontograma interativo, dashboard com KPIs e módulo financeiro com auditoria.
+A aplicação foi desenvolvida em React e TypeScript e consome a Bokka API para atender os fluxos clínicos, administrativos e financeiros do sistema.
 
-🔗 **Produção:** [bokka.com.br](https://bokka.com.br)
-🔗 **Backend (API):** [github.com/wilsonborgesbr/odonto-clinic-api](https://github.com/wilsonborgesbr/odonto-clinic-api)
-
----
+- Aplicação: https://bokka.com.br
+- Backend: https://github.com/wilsonborgesbr/odonto-clinic-api
+- API: https://api.bokka.com.br
 
 ## Screenshots
 
-> ⚠️ O sistema requer autenticação. Abaixo estão capturas das principais telas.
+O sistema exige autenticação, então as principais telas podem ser visualizadas abaixo sem necessidade de acesso a uma conta real.
 
 | Dashboard | Odontograma | Agenda |
-|:---------:|:-----------:|:------:|
+| --- | --- | --- |
 | ![Dashboard](docs/screenshots/dashboard.png) | ![Odontograma](docs/screenshots/odontograma.png) | ![Agenda](docs/screenshots/agenda.png) |
 
 | Financeiro | Pacientes | Login |
-|:----------:|:---------:|:-----:|
+| --- | --- | --- |
 | ![Financeiro](docs/screenshots/financeiro.png) | ![Pacientes](docs/screenshots/pacientes.png) | ![Login](docs/screenshots/login.png) |
 
+## Stack
 
----
+- React 19
+- TypeScript 6
+- Vite 8
+- Tailwind CSS 4
+- TanStack React Query 5
+- React Router 7
+- Recharts 3
+- Axios
+- Headless UI
+- Lucide React
 
-## Tecnologias
+## O sistema
 
-- **React 19** com **TypeScript 6**
-- **Vite 8** — build e dev server
-- **Tailwind CSS 4** — estilização utility-first
-- **TanStack React Query 5** — gerenciamento de estado do servidor, cache e sincronização
-- **React Router 7** — roteamento SPA
-- **Recharts 3** — gráficos (receita mensal, agendamentos, auditoria)
-- **Headless UI** — componentes acessíveis sem estilo pré-definido
-- **Axios** — requisições HTTP
-- **Lucide React** — ícones
+O frontend possui atualmente 33 páginas distribuídas pelos módulos da clínica.
 
-## Funcionalidades
+Entre os principais recursos estão:
 
-- **33 páginas** cobrindo todos os módulos da clínica
-- **Design system customizado** com 18 componentes reutilizáveis (Card, Button, Modal, Badge, Skeleton, EmptyState, Pagination, Toast, Avatar, Field, entre outros)
-- **Dashboard** com KPIs em tempo real e gráficos de receita mensal e agendamentos
-- **Odontograma SVG interativo** com representação anatômica de 32 dentes e 5 faces clicáveis por dente
-- **Módulo de auditoria financeira** com gráficos de pizza e barras
-- **Agenda visual** com navegação por dia/semana
-- **Busca global** e **sistema de notificações**
-- **Rotas protegidas com RBAC** — sidebar e botões condicionais por permissão do usuário (8 roles, 14 permissões granulares propagadas via JWT do backend)
+- dashboard com indicadores financeiros e operacionais
+- agenda de atendimentos
+- cadastro e consulta de pacientes
+- gestão de dentistas e funcionários
+- odontograma interativo
+- anamnese
+- procedimentos
+- documentos clínicos
+- estoque
+- contas a pagar e receber
+- auditoria financeira
+- convênios
+- usuários e permissões
+- busca global
+- notificações
 
-## Como executar localmente
+## Odontograma
+
+Um dos componentes específicos do sistema é o odontograma desenvolvido em SVG.
+
+Ele representa os 32 dentes e permite trabalhar individualmente com as 5 faces de cada dente.
+
+O componente foi criado para permitir interação direta com a representação visual, mantendo os dados integrados ao prontuário do paciente.
+
+## Design system
+
+O projeto utiliza um conjunto próprio de componentes reutilizáveis.
+
+Atualmente são 18 componentes base, incluindo:
+
+- Button
+- Card
+- Modal
+- Badge
+- Skeleton
+- EmptyState
+- Pagination
+- Toast
+- Avatar
+- Field
+
+Esses componentes são reutilizados nas diferentes páginas para manter comportamento e interface consistentes.
+
+## Dados e API
+
+A comunicação com o backend é feita com Axios.
+
+O TanStack React Query cuida do cache, sincronização e atualização dos dados recebidos da API.
+
+A aplicação consome o backend disponível em:
+
+```text
+https://api.bokka.com.br
+```
+
+No desenvolvimento local:
+
+```text
+http://localhost:8080
+```
+
+## Autenticação e permissões
+
+A autenticação utiliza JWT emitido pelo backend.
+
+O backend envia no token as informações necessárias para o controle de acesso.
+
+O frontend utiliza essas permissões para:
+
+- proteger rotas
+- controlar itens da sidebar
+- exibir ou ocultar ações
+- adaptar a interface de acordo com o usuário autenticado
+
+O sistema possui 8 roles e 14 permissões granulares.
+
+A interface utiliza essas informações para experiência do usuário, enquanto a autorização definitiva continua sendo validada pela API.
+
+## Executando localmente
+
+Clone o projeto:
 
 ```bash
-# 1. Clone o repositório
 git clone https://github.com/wilsonborgesbr/odonto-clinic-web.git
 cd odonto-clinic-web
+```
 
-# 2. Instale as dependências
+Instale as dependências:
+
+```bash
 npm install
+```
 
-# 3. Configure a URL da API no arquivo de ambiente
-#    Crie um .env com: VITE_API_URL=http://localhost:8080
+Crie o arquivo `.env`:
 
-# 4. Execute
+```env
+VITE_API_URL=http://localhost:8080
+```
+
+Inicie o frontend:
+
+```bash
 npm run dev
 ```
 
-O app sobe em `http://localhost:5173` por padrão.
+A aplicação ficará disponível em:
 
-> **Pré-requisito:** o [backend (Bokka API)](https://github.com/wilsonborgesbr/odonto-clinic-api) precisa estar rodando para o frontend funcionar.
-
-## Estrutura de pastas
-
+```text
+http://localhost:5173
 ```
+
+O backend precisa estar rodando em `localhost:8080` para que os recursos que dependem da API funcionem normalmente.
+
+## Scripts
+
+Desenvolvimento:
+
+```bash
+npm run dev
+```
+
+Build de produção:
+
+```bash
+npm run build
+```
+
+Lint:
+
+```bash
+npm run lint
+```
+
+Preview do build:
+
+```bash
+npm run preview
+```
+
+## Estrutura
+
+```text
 src/
-├── components/       # Design system (18 componentes reutilizáveis)
-├── contexts/         # AuthContext, NotificationContext
-├── hooks/            # Custom hooks (useAuth, usePermissions, etc.)
-├── pages/            # 33 páginas organizadas por módulo
-├── services/         # Camada de requisições HTTP (Axios)
-├── types/            # Tipagens TypeScript
-└── utils/            # Funções utilitárias
+├── components/
+├── contexts/
+├── hooks/
+├── pages/
+├── services/
+├── types/
+└── utils/
 ```
+
+- `components` contém o design system e componentes compartilhados.
+- `contexts` concentra estados globais, como autenticação e notificações.
+- `hooks` contém hooks reutilizáveis.
+- `pages` reúne as páginas organizadas pelos módulos do sistema.
+- `services` contém a comunicação HTTP com a API.
+- `types` concentra as tipagens TypeScript.
+- `utils` contém funções auxiliares.
 
 ## Deploy
 
-Deploy em produção via **Cloudflare Pages** com auto-deploy a partir do branch `main` no GitHub.
+O frontend está hospedado no Cloudflare Pages.
 
-- **Domínio:** [bokka.com.br](https://bokka.com.br)
-- **CDN:** Cloudflare (global edge)
-- **CORS:** restrito aos domínios de produção
+O branch `main` é utilizado para o deploy de produção.
+
+Aplicação:
+
+https://bokka.com.br
+
+Backend:
+
+https://api.bokka.com.br
+
+Os dois projetos possuem repositórios e processos de deploy independentes.
 
 ## Autor
 
-**Wilson Borges** — Estudante de Análise e Desenvolvimento de Sistemas
+Wilson Borges
 
-- GitHub: [github.com/wilsonborgesbr](https://github.com/wilsonborgesbr)
-- LinkedIn: [linkedin.com/in/wilsonborgeslima](https://www.linkedin.com/in/wilsonborgeslima/)
+Estudante de Análise e Desenvolvimento de Sistemas.
+
+- GitHub: https://github.com/wilsonborgesbr
+- LinkedIn: https://linkedin.com/in/wilsonborgeslima
