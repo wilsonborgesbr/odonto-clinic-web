@@ -28,6 +28,11 @@ export const formatCurrency = (value?: number | null): string => {
   return currencyFormatter.format(value);
 };
 
+/** Máscara de privacidade pra valores financeiros — largura fixa, não vaza a ordem de
+ * grandeza do valor real (ao contrário de trocar só os dígitos por •, que preserva a
+ * quantidade de casas). */
+export const MASKED_CURRENCY = 'R$ ••••••';
+
 const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
   day: '2-digit',
   month: '2-digit',

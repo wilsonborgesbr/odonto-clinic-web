@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { FinancialVisibilityProvider } from './context/FinancialVisibilityContext';
 import { AppLayout } from './components/AppLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { RequirePermission } from './components/RequirePermission';
@@ -160,7 +161,9 @@ const AppRoutes = () => (
 const App = () => (
   <BrowserRouter>
     <AuthProvider>
-      <AppRoutes />
+      <FinancialVisibilityProvider>
+        <AppRoutes />
+      </FinancialVisibilityProvider>
     </AuthProvider>
   </BrowserRouter>
 );

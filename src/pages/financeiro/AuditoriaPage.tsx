@@ -28,7 +28,8 @@ import {
   Package,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
-import { KpiCard, Card } from '../../components/ui/Card';
+import { KpiCard, Card, VisibilityToggle } from '../../components/ui/Card';
+import { useFinancialVisibility } from '../../context/FinancialVisibilityContext';
 import { Modal, ConfirmModal } from '../../components/ui/Modal';
 import { FinanceiroStatusBadge } from '../../components/ui/Badge';
 import { SkeletonTableRows } from '../../components/ui/Skeleton';
@@ -51,7 +52,7 @@ import {
 import { usePacientes } from '../../services/pacienteService';
 import { useEstoque } from '../../services/estoqueService';
 import { ApiError } from '../../lib/api';
-import { cn, formatCurrency, formatDate, formatDescricaoFinanceira } from '../../lib/utils';
+import { cn, formatCurrency, formatDate, formatDescricaoFinanceira, MASKED_CURRENCY } from '../../lib/utils';
 import type {
   CategoriaContaPagarEnum,
   ContaPagar,
@@ -448,7 +449,7 @@ export const AuditoriaPage = () => {
       </div>
 
       {/* ============ Caixa Disponível (Hero) ============ */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 tv:gap-6">
         <CaixaHero value={caixaDisponivel} loading={loading} className="lg:col-span-2" />
         <EstoqueIntegracaoCard
           investimento={investimentoEstoque}
@@ -459,7 +460,7 @@ export const AuditoriaPage = () => {
       </div>
 
       {/* ============ KPIs ============ */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 tv:gap-6">
         <KpiCard
           label="Receita do mês"
           value={loading ? '—' : formatCurrency(receitaMes)}
@@ -467,6 +468,7 @@ export const AuditoriaPage = () => {
           icon={<ArrowUpRight className="w-5 h-5" strokeWidth={1.75} />}
           tone="success"
           loading={loading}
+          sensitive
         />
         <KpiCard
           label="Despesas do mês"
@@ -475,6 +477,7 @@ export const AuditoriaPage = () => {
           icon={<ArrowDownRight className="w-5 h-5" strokeWidth={1.75} />}
           tone="danger"
           loading={loading}
+          sensitive
         />
         <LucroCard value={lucroLiquido} loading={loading} />
         <KpiCard
@@ -484,6 +487,7 @@ export const AuditoriaPage = () => {
           icon={<Wallet className="w-5 h-5" strokeWidth={1.75} />}
           tone="warning"
           loading={loading}
+          sensitive
         />
       </div>
 
@@ -1205,27 +1209,34 @@ export const AuditoriaPage = () => {
 
 const LucroCard = ({ value, loading }: { value: number; loading: boolean }) => {
   const positive = value >= 0;
+  const { visible } = useFinancialVisibility();
+  const masked = !visible;
   return (
     <div
       className={cn(
-        'rounded-2xl p-5 shadow-sm flex flex-col gap-4 border transition-colors min-w-0',
+        '@container rounded-2xl p-5 tv:p-7 shadow-sm flex flex-col gap-4 tv:gap-5 border transition-colors min-w-0',
         positive
           ? 'bg-bokka-primary text-white border-transparent'
           : 'bg-bokka-surface text-bokka-ink border-bokka-danger/30',
       )}
     >
-      <div className="flex items-start justify-between">
-        <span
-          className={cn(
-            'text-sm font-semibold',
-            positive ? 'text-white/85' : 'text-bokka-danger-ink',
-          )}
-        >
-          Lucro líquido
+      <div className="flex items-start justify-between gap-2">
+        <span className="inline-flex items-center gap-1 min-w-0">
+          <span
+            className={cn(
+              'text-sm tv:text-base font-semibold truncate',
+              positive ? 'text-white/85' : 'text-bokka-danger-ink',
+            )}
+          >
+            Lucro líquido
+          </span>
+          <VisibilityToggle
+            className={positive ? 'text-white/85 hover:text-white hover:bg-white/15' : undefined}
+          />
         </span>
         <span
           className={cn(
-            'w-9 h-9 rounded-lg flex items-center justify-center shrink-0',
+            'w-9 h-9 tv:w-11 tv:h-11 rounded-lg flex items-center justify-center shrink-0',
             positive ? 'bg-white/15' : 'bg-bokka-danger-soft text-bokka-danger-ink',
           )}
         >
@@ -1242,15 +1253,16 @@ const LucroCard = ({ value, loading }: { value: number; loading: boolean }) => {
           />
         ) : (
           <span
+            key={masked ? 'masked' : 'visible'}
             className={cn(
-              'block text-xl sm:text-2xl lg:text-[30px] font-bold tabular-nums leading-tight tracking-tight break-words',
+              'block text-[clamp(1.125rem,9cqw,1.875rem)] tv:text-[clamp(1.75rem,4.5cqw,3rem)] font-bold tabular-nums leading-tight tracking-tight break-words animate-[bokka-eye-pop_200ms_ease-out]',
               !positive && 'text-bokka-danger-ink',
             )}
           >
-            {formatCurrency(value)}
+            {masked ? MASKED_CURRENCY : formatCurrency(value)}
           </span>
         )}
-        <p className={cn('text-xs mt-2', positive ? 'text-white/80' : 'text-bokka-ink-3')}>
+        <p className={cn('text-xs tv:text-sm mt-2', positive ? 'text-white/80' : 'text-bokka-ink-3')}>
           {positive ? 'Receita − despesa do mês' : 'Despesas superaram receita'}
         </p>
       </div>
@@ -1275,10 +1287,12 @@ const CaixaHero = ({
   className?: string;
 }) => {
   const positive = value >= 0;
+  const { visible } = useFinancialVisibility();
+  const masked = !visible;
   return (
     <div
       className={cn(
-        'relative rounded-2xl overflow-hidden p-6 lg:p-7 flex flex-col justify-between min-h-[180px] shadow-sm min-w-0',
+        '@container relative rounded-2xl overflow-hidden p-6 lg:p-7 tv:p-9 flex flex-col justify-between min-h-[180px] tv:min-h-[220px] shadow-sm min-w-0',
         positive ? 'bg-bokka-ink text-white' : 'bg-bokka-danger text-white',
         className,
       )}
@@ -1296,6 +1310,7 @@ const CaixaHero = ({
           <div className="inline-flex items-center gap-2 text-white/70 text-xs font-semibold uppercase tracking-wider">
             <Vault className="w-4 h-4" strokeWidth={2} />
             Caixa disponível
+            <VisibilityToggle className="text-white/70 hover:text-white hover:bg-white/15 normal-case tracking-normal" />
           </div>
           <p className="text-white/60 text-sm mt-2 max-w-md">
             Saldo total em caixa da clínica · soma cumulativa de todas as receitas pagas menos todas as despesas quitadas.
@@ -1309,8 +1324,11 @@ const CaixaHero = ({
         {loading ? (
           <span className="inline-block w-56 h-12 rounded-md bg-white/10 animate-pulse" />
         ) : (
-          <span className="block text-3xl sm:text-[44px] lg:text-[52px] font-bold leading-tight tracking-tight tabular-nums break-words">
-            {formatCurrency(value)}
+          <span
+            key={masked ? 'masked' : 'visible'}
+            className="block text-[clamp(1.5rem,7cqw,3.25rem)] tv:text-[clamp(2.5rem,5cqw,4.5rem)] font-bold leading-tight tracking-tight tabular-nums break-words animate-[bokka-eye-pop_200ms_ease-out]"
+          >
+            {masked ? MASKED_CURRENCY : formatCurrency(value)}
           </span>
         )}
       </div>
@@ -1328,19 +1346,23 @@ const EstoqueIntegracaoCard = ({
   totalItens: number;
   baixoCount: number;
   loading: boolean;
-}) => (
-  <div className="bg-bokka-surface border border-bokka-border rounded-2xl p-5 lg:p-6 flex flex-col justify-between min-h-[180px] shadow-sm min-w-0">
+}) => {
+  const { visible } = useFinancialVisibility();
+  const masked = !visible;
+  return (
+  <div className="@container bg-bokka-surface border border-bokka-border rounded-2xl p-5 lg:p-6 tv:p-9 flex flex-col justify-between min-h-[180px] tv:min-h-[220px] shadow-sm min-w-0">
     <div className="flex items-start justify-between gap-3">
       <div>
-        <div className="inline-flex items-center gap-2 text-bokka-ink-3 text-xs font-semibold uppercase tracking-wider">
+        <div className="inline-flex items-center gap-2 text-bokka-ink-3 text-xs tv:text-sm font-semibold uppercase tracking-wider">
           <Package className="w-4 h-4" strokeWidth={2} />
           Investimento em estoque
+          <VisibilityToggle className="normal-case tracking-normal" />
         </div>
-        <p className="text-bokka-ink-3 text-xs mt-2">
+        <p className="text-bokka-ink-3 text-xs tv:text-sm mt-2">
           Valor total imobilizado em materiais no depósito.
         </p>
       </div>
-      <span className="w-10 h-10 rounded-xl bg-bokka-primary-soft text-bokka-primary flex items-center justify-center shrink-0">
+      <span className="w-10 h-10 tv:w-12 tv:h-12 rounded-xl bg-bokka-primary-soft text-bokka-primary flex items-center justify-center shrink-0">
         <Package className="w-5 h-5" strokeWidth={1.75} />
       </span>
     </div>
@@ -1348,11 +1370,14 @@ const EstoqueIntegracaoCard = ({
       {loading ? (
         <span className="inline-block w-40 h-9 rounded-md bg-bokka-surface-3 animate-pulse" />
       ) : (
-        <span className="block text-2xl sm:text-3xl font-bold text-bokka-ink tabular-nums leading-tight tracking-tight break-words">
-          {formatCurrency(investimento)}
+        <span
+          key={masked ? 'masked' : 'visible'}
+          className="block text-[clamp(1.375rem,8cqw,1.875rem)] tv:text-[clamp(1.75rem,4.5cqw,3rem)] font-bold text-bokka-ink tabular-nums leading-tight tracking-tight break-words animate-[bokka-eye-pop_200ms_ease-out]"
+        >
+          {masked ? MASKED_CURRENCY : formatCurrency(investimento)}
         </span>
       )}
-      <div className="flex items-center gap-3 mt-3 text-xs text-bokka-ink-3">
+      <div className="flex items-center gap-3 mt-3 text-xs tv:text-sm text-bokka-ink-3">
         <span className="tabular-nums font-semibold text-bokka-ink-2">
           {totalItens} {totalItens === 1 ? 'item' : 'itens'}
         </span>
@@ -1365,4 +1390,5 @@ const EstoqueIntegracaoCard = ({
       </div>
     </div>
   </div>
-);
+  );
+};

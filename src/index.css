@@ -2,6 +2,10 @@
 @import "tailwindcss";
 
 @theme {
+  /* Breakpoint extra pra TV / monitores muito largos (leitura à distância) — acima do
+     xl (1280px) padrão do Tailwind, então widescreens comuns de trabalho não são afetados. */
+  --breakpoint-tv: 1600px;
+
   /* Bokka palette — see DESIGN.md */
   --color-bokka-primary: #2A6BF2;
   --color-bokka-primary-hover: #1E56D6;
@@ -54,6 +58,19 @@ html,
 body,
 #root {
   height: 100%;
+}
+
+/* Transição do toggle de privacidade financeira (olho + valor mascarado) — pequeno "pop"
+   ao trocar de estado, pra não ser uma troca seca de texto. */
+@keyframes bokka-eye-pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0.35;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* Rede de segurança contra overflow horizontal — sem isso, um `position: fixed` como a

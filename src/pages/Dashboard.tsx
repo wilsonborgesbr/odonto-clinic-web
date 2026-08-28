@@ -263,6 +263,12 @@ export const Dashboard = () => {
   // Conta quantos KPIs vão renderizar (pra ajustar grid)
   const kpisVisiveis =
     (canAgendamentos ? 2 : 0) + (canFinanceiro ? 2 : 0) + (canDentistas ? 1 : 0);
+  // Com 5 KPIs, uma contagem fixa de colunas por breakpoint de LARGURA DA VIEWPORT (ex.
+  // lg:grid-cols-5) ignora que a área útil também encolhe com sidebar/monitor em retrato —
+  // em ~1080px de viewport isso sobrava ~140px por card e cortava valores como "R$ 2.100,00"
+  // (o próximo card, opaco, pintava por cima do overflow). auto-fit/minmax dimensiona pela
+  // largura real disponível: garante um mínimo de 180px por card e quebra linha sozinho
+  // quando não cabem todos, em qualquer largura (retrato, tablet, desktop ou TV).
   const kpiGridCols = kpisVisiveis <= 1
     ? 'grid-cols-1'
     : kpisVisiveis === 2
@@ -271,7 +277,7 @@ export const Dashboard = () => {
         ? 'grid-cols-1 sm:grid-cols-3'
         : kpisVisiveis === 4
           ? 'grid-cols-2 sm:grid-cols-4'
-          : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5';
+          : 'grid-cols-2 sm:grid-cols-[repeat(auto-fit,minmax(180px,1fr))]';
 
   return (
     <div className="space-y-4">
@@ -290,7 +296,7 @@ export const Dashboard = () => {
 
       {/* KPIs — filtrados por permissão */}
       {kpisVisiveis > 0 && (
-        <div className={cn('grid gap-4', kpiGridCols)}>
+        <div className={cn('grid gap-4 tv:gap-6', kpiGridCols)}>
           {canAgendamentos && (
             <KpiCard
               label="Agendamentos hoje"
@@ -317,6 +323,7 @@ export const Dashboard = () => {
               icon={<Wallet className="w-5 h-5" strokeWidth={1.75} />}
               tone="success"
               loading={loading}
+              sensitive
             />
           )}
           {canFinanceiro && (
@@ -327,6 +334,7 @@ export const Dashboard = () => {
               icon={<Wallet className="w-5 h-5" strokeWidth={1.75} />}
               tone="warning"
               loading={loading}
+              sensitive
             />
           )}
           {canDentistas && (
@@ -762,10 +770,10 @@ interface HighlightKpiProps {
 }
 
 const HighlightKpi = ({ label, value, hint, icon, loading }: HighlightKpiProps) => (
-  <div className="bg-bokka-primary rounded-2xl p-5 shadow-sm text-white flex flex-col gap-4 min-w-0">
+  <div className="@container bg-bokka-primary rounded-2xl p-5 tv:p-7 shadow-sm text-white flex flex-col gap-4 tv:gap-5 min-w-0">
     <div className="flex items-start justify-between">
-      <span className="text-sm font-semibold text-white/85">{label}</span>
-      <span className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
+      <span className="text-sm tv:text-base font-semibold text-white/85">{label}</span>
+      <span className="w-9 h-9 tv:w-11 tv:h-11 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
         {icon}
       </span>
     </div>
@@ -773,11 +781,11 @@ const HighlightKpi = ({ label, value, hint, icon, loading }: HighlightKpiProps) 
       {loading ? (
         <span className="inline-block w-20 h-9 rounded-md bg-white/15 animate-pulse" />
       ) : (
-        <span className="block text-xl sm:text-2xl lg:text-[30px] font-bold tabular-nums leading-tight tracking-tight break-words">
+        <span className="block text-[clamp(1.125rem,9cqw,1.875rem)] tv:text-[clamp(1.75rem,4.5cqw,3rem)] font-bold tabular-nums leading-tight tracking-tight break-words">
           {value}
         </span>
       )}
-      {hint && <p className="text-xs text-white/80 mt-2">{hint}</p>}
+      {hint && <p className="text-xs tv:text-sm text-white/80 mt-2">{hint}</p>}
     </div>
   </div>
 );
@@ -802,11 +810,11 @@ const TeamCard = ({
   return (
     <Link
       to="/dentistas"
-      className="bg-bokka-surface border border-bokka-border rounded-2xl p-5 shadow-sm flex flex-col gap-4 hover:border-bokka-primary/40 transition-colors min-h-[140px]"
+      className="bg-bokka-surface border border-bokka-border rounded-2xl p-5 tv:p-7 shadow-sm flex flex-col gap-4 tv:gap-5 hover:border-bokka-primary/40 transition-colors min-h-[140px]"
     >
       <div className="flex items-start justify-between">
-        <span className="text-sm font-semibold text-bokka-ink-3">{label}</span>
-        <span className="text-xs font-semibold text-bokka-primary">Ver</span>
+        <span className="text-sm tv:text-base font-semibold text-bokka-ink-3">{label}</span>
+        <span className="text-xs tv:text-sm font-semibold text-bokka-primary">Ver</span>
       </div>
       {loading ? (
         <div className="flex -space-x-2">
