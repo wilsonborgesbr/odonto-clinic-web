@@ -9,6 +9,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { Card } from '../../components/ui/Card';
 import { bokkaToast } from '../../components/ui/Toast';
 import { AgendamentoForm } from './AgendamentoForm';
+import { PacienteDetalheModal } from '../pacientes/PacienteDetalheModal';
 import {
   useAgendamentos,
   useAtualizarAgendamento,
@@ -18,7 +19,7 @@ import {
 import { useDentistasAtivos } from '../../services/dentistaService';
 import { usePacientes } from '../../services/pacienteService';
 import { ApiError } from '../../lib/api';
-import { formatDateLong, formatTime } from '../../lib/utils';
+import { cn, formatDateLong, formatTime } from '../../lib/utils';
 import type { Agendamento } from '../../types';
 
 const todayIso = () => {
@@ -42,6 +43,7 @@ export const AgendaPage = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [formInitial, setFormInitial] = useState<Agendamento | null>(null);
   const [confirmar, setConfirmar] = useState<Agendamento | null>(null);
+  const [detalheId, setDetalheId] = useState<string | null>(null);
 
   const listQuery = useAgendamentos({ pagina: 0, tamanho: 500, ordem: 'dataHoraInicio' });
   const dentistasQ = useDentistasAtivos();
@@ -205,7 +207,14 @@ export const AgendaPage = () => {
               </thead>
               <tbody className="divide-y divide-bokka-border">
                 {doDia.map((ag) => (
-                  <tr key={ag.id} className="hover:bg-bokka-surface-3">
+                  <tr
+                    key={ag.id}
+                    onClick={ag.pacienteId ? () => setDetalheId(ag.pacienteId!) : undefined}
+                    className={cn(
+                      'hover:bg-bokka-surface-3',
+                      ag.pacienteId && 'cursor-pointer hover:bg-bokka-primary-soft/40',
+                    )}
+                  >
                     <td className="px-4 py-3 font-semibold text-bokka-ink tabular-nums">
                       {formatTime(ag.dataHoraInicio)}
                       <span className="text-bokka-ink-3 font-normal">
@@ -228,7 +237,10 @@ export const AgendaPage = () => {
                       <AgendamentoStatusBadge status={ag.status} />
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <div className="inline-flex items-center gap-1">
+                      <div
+                        className="inline-flex items-center gap-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <button
                           type="button"
                           onClick={() => {
@@ -285,6 +297,12 @@ export const AgendaPage = () => {
         confirmLabel="Excluir"
         danger
         loading={excluirM.isPending}
+      />
+
+      <PacienteDetalheModal
+        pacienteId={detalheId}
+        open={!!detalheId}
+        onClose={() => setDetalheId(null)}
       />
     </div>
   );
