@@ -4,6 +4,11 @@ import type { ApiErrorResponse } from '../types';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export const TOKEN_STORAGE_KEY = 'token';
+/** Cache otimista (por navegador) do toggle de visibilidade financeira — o backend
+ * (`/api/usuarios/me/preferences`) é a fonte de verdade por usuário; esta chave só
+ * evita "piscar" valores visíveis antes do /me responder, e é limpa no logout para
+ * não vazar a preferência de um usuário para o próximo que logar no mesmo navegador. */
+export const FINANCIAL_VISIBILITY_STORAGE_KEY = 'bokka:financeiro-visivel';
 
 export const api = axios.create({
   baseURL: API_URL,
