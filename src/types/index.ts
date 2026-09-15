@@ -295,10 +295,6 @@ export interface Clinica {
   createdAt?: string;
 }
 
-export interface UsuarioPreferencesDTO {
-  hideFinancialInfo?: boolean;
-}
-
 export interface UsuarioDTO {
   id: string;
   name: string;
@@ -307,7 +303,6 @@ export interface UsuarioDTO {
   permissoes: PermissaoEnum[];
   ativo: boolean;
   createdAt?: string;
-  preferences?: UsuarioPreferencesDTO;
 }
 
 export interface Agendamento {
