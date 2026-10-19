@@ -23,6 +23,7 @@ import {
   useCriarDocumento,
   useExcluirDocumento,
 } from '../../services/documentoService';
+import { PacienteCombobox } from '../../components/PacienteCombobox';
 import { usePacientes } from '../../services/pacienteService';
 import { ApiError } from '../../lib/api';
 import { cn, formatDate } from '../../lib/utils';
@@ -90,7 +91,7 @@ export const DocumentosPage = () => {
   const [confirmar, setConfirmar] = useState<{ id: string; desc: string } | null>(null);
 
   const documentosQ = useDocumentos();
-  const pacientesQ = usePacientes({ pagina: 0, tamanho: 200 });
+  const pacientesQ = usePacientes({ pagina: 0, tamanho: 2000 });
   const criarM = useCriarDocumento();
   const excluirM = useExcluirDocumento();
 
@@ -355,10 +356,6 @@ export const DocumentosPage = () => {
         size="lg"
       >
         <DocumentoForm
-          pacientes={(pacientesQ.data?.content ?? []).map((p) => ({
-            value: p.id,
-            label: p.nomeCompleto,
-          }))}
           onCancel={() => setFormOpen(false)}
           onSubmit={async (doc) => {
             await criarM.mutateAsync(doc);
@@ -382,11 +379,9 @@ export const DocumentosPage = () => {
 };
 
 const DocumentoForm = ({
-  pacientes,
   onSubmit,
   onCancel,
 }: {
-  pacientes: { value: string; label: string }[];
   onSubmit: (doc: Documento) => Promise<void>;
   onCancel: () => void;
 }) => {
@@ -423,13 +418,7 @@ const DocumentoForm = ({
           {globalError}
         </div>
       )}
-      <Select
-        label="Paciente"
-        required
-        value={pacienteId}
-        onChange={(e) => setPacienteId(e.target.value)}
-        options={[{ value: '', label: 'Selecione o paciente...' }, ...pacientes]}
-      />
+      <PacienteCombobox required value={pacienteId} onChange={setPacienteId} />
       <Select
         label="Tipo"
         required

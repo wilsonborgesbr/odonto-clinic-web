@@ -3,7 +3,7 @@ import type { FormEvent } from 'react';
 import { Button } from '../../components/ui/Button';
 import { CurrencyInput, Input, Select, Textarea } from '../../components/ui/Field';
 import { ApiError } from '../../lib/api';
-import { usePacientes } from '../../services/pacienteService';
+import { PacienteCombobox } from '../../components/PacienteCombobox';
 import { formatCurrency } from '../../lib/utils';
 import type {
   ContaReceber,
@@ -65,12 +65,6 @@ export const ContaReceberForm = ({ initial, onSubmit, onCancel }: ContaReceberFo
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
 
-  const pacientesQ = usePacientes({ pagina: 0, tamanho: 200, ordem: 'nomeCompleto' });
-  const pacienteOptions = [
-    { value: '', label: '— Selecione a paciente —' },
-    ...(pacientesQ.data?.content.map((p) => ({ value: p.id, label: p.nomeCompleto })) ?? []),
-  ];
-
   const set = <K extends keyof ContaReceber>(k: K, v: ContaReceber[K]) =>
     setValues((prev) => ({ ...prev, [k]: v }));
 
@@ -103,13 +97,10 @@ export const ContaReceberForm = ({ initial, onSubmit, onCancel }: ContaReceberFo
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Select
-          label="Paciente"
+        <PacienteCombobox
           required
           value={values.pacienteId}
-          onChange={(e) => set('pacienteId', e.target.value)}
-          options={pacienteOptions}
-          disabled={pacientesQ.isLoading}
+          onChange={(id) => set('pacienteId', id)}
           error={errors.pacienteId}
           containerClassName="sm:col-span-2"
         />

@@ -4,7 +4,8 @@ import { Button } from '../../components/ui/Button';
 import { CurrencyInput, Input, Select, Textarea } from '../../components/ui/Field';
 import { ApiError } from '../../lib/api';
 import { useDentistasAtivos } from '../../services/dentistaService';
-import { usePaciente, usePacientes } from '../../services/pacienteService';
+import { PacienteCombobox } from '../../components/PacienteCombobox';
+import { usePaciente } from '../../services/pacienteService';
 import { formatCurrency } from '../../lib/utils';
 import type {
   Agendamento,
@@ -127,21 +128,12 @@ export const AgendamentoForm = ({ initial, onSubmit, onCancel }: AgendamentoForm
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
 
-  const pacientesQ = usePacientes({ pagina: 0, tamanho: 200, ordem: 'nomeCompleto' });
   const dentistasQ = useDentistasAtivos();
   const pacienteSelecionadoQ = usePaciente(values.pacienteId || undefined);
 
   const isConveniado = pacienteSelecionadoQ.data?.tipoPaciente === 'CONVENIO';
   const showPagamento =
     values.tipoAgendamento === 'PROCEDIMENTO' && !!values.pacienteId && !isConveniado;
-
-  const pacienteOptions = [
-    { value: '', label: '— Selecione um paciente —' },
-    ...(pacientesQ.data?.content.map((p) => ({
-      value: p.id,
-      label: p.nomeCompleto,
-    })) ?? []),
-  ];
 
   const dentistaOptions = [
     { value: '', label: '— Selecione um dentista —' },
@@ -198,15 +190,12 @@ export const AgendamentoForm = ({ initial, onSubmit, onCancel }: AgendamentoForm
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Select
-          label="Paciente"
+        <PacienteCombobox
           required
           value={values.pacienteId}
-          onChange={(e) => set('pacienteId', e.target.value)}
-          options={pacienteOptions}
+          onChange={(id) => set('pacienteId', id)}
           error={errors.pacienteId}
           containerClassName="sm:col-span-2"
-          disabled={pacientesQ.isLoading}
         />
         <Select
           label="Dentista"

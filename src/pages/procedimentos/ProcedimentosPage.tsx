@@ -23,6 +23,7 @@ import {
   useAtualizarProcedimento,
   useExcluirProcedimento,
 } from '../../services/procedimentoService';
+import { PacienteCombobox } from '../../components/PacienteCombobox';
 import { usePacientes } from '../../services/pacienteService';
 import { ApiError } from '../../lib/api';
 import { formatDate, formatCurrency, nomeProcLabel } from '../../lib/utils';
@@ -174,7 +175,7 @@ export const ProcedimentosPage = () => {
   const [confirmar, setConfirmar] = useState<{ id: string; nome: string } | null>(null);
 
   const procedimentosQ = useProcedimentos();
-  const pacientesQ = usePacientes({ pagina: 0, tamanho: 200 });
+  const pacientesQ = usePacientes({ pagina: 0, tamanho: 2000 });
   const criarM = useCriarProcedimento();
   const atualizarM = useAtualizarProcedimento();
   const excluirM = useExcluirProcedimento();
@@ -186,17 +187,6 @@ export const ProcedimentosPage = () => {
     (pacientesQ.data?.content ?? []).forEach((p) => map.set(p.id, p.nomeCompleto));
     return map;
   }, [pacientesQ.data]);
-
-  const pacienteOptions = useMemo(
-    () => [
-      { value: '', label: '— Selecione um paciente —' },
-      ...(pacientesQ.data?.content ?? []).map((p) => ({
-        value: p.id,
-        label: p.nomeCompleto,
-      })),
-    ],
-    [pacientesQ.data],
-  );
 
   const filtrados = useMemo(() => {
     let list = todos;
@@ -482,7 +472,6 @@ export const ProcedimentosPage = () => {
       >
         <ProcedimentoForm
           initial={formInitial}
-          pacienteOptions={pacienteOptions}
           onCancel={() => {
             setFormOpen(false);
             setFormInitial(null);
@@ -506,12 +495,11 @@ export const ProcedimentosPage = () => {
 
 interface ProcedimentoFormProps {
   initial: Procedimento | null;
-  pacienteOptions: { value: string; label: string }[];
   onSubmit: (values: Procedimento) => Promise<void>;
   onCancel: () => void;
 }
 
-const ProcedimentoForm = ({ initial, pacienteOptions, onSubmit, onCancel }: ProcedimentoFormProps) => {
+const ProcedimentoForm = ({ initial, onSubmit, onCancel }: ProcedimentoFormProps) => {
   const [values, setValues] = useState<Procedimento>(() => initial ?? emptyProcedimento);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -551,12 +539,10 @@ const ProcedimentoForm = ({ initial, pacienteOptions, onSubmit, onCancel }: Proc
       <section>
         <h3 className="text-sm font-semibold text-bokka-ink mb-3">Identificação</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Select
-            label="Paciente"
+          <PacienteCombobox
             required
             value={values.pacienteId ?? ''}
-            onChange={(e) => set('pacienteId', e.target.value)}
-            options={pacienteOptions}
+            onChange={(id) => set('pacienteId', id)}
             error={errors.pacienteId}
           />
           <Select

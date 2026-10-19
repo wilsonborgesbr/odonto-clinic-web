@@ -24,10 +24,11 @@ export const FieldWrap = ({
   required,
   className,
   children,
+  id,
 }: FieldWrapProps) => (
   <div className={cn('flex flex-col gap-1.5', className)}>
     {label && (
-      <label className="text-sm font-medium text-bokka-ink-2">
+      <label htmlFor={id} className="text-sm font-medium text-bokka-ink-2">
         {label}
         {required && <span className="text-bokka-danger ml-0.5">*</span>}
       </label>
@@ -53,7 +54,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   fullWidth?: boolean;
 }
 
-const inputBase =
+export const inputBase =
   'w-full bg-bokka-surface text-bokka-ink placeholder:text-bokka-ink-3 border rounded-md h-10 px-3 text-sm transition-colors ' +
   'focus:outline-none focus-visible:outline-2 focus-visible:outline-bokka-primary-ring focus-visible:outline-offset-2 ' +
   'disabled:bg-bokka-surface-3 disabled:text-bokka-ink-3 disabled:cursor-not-allowed';
@@ -393,7 +394,14 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   const autoId = useId();
   const inputId = id ?? autoId;
   return (
-    <FieldWrap label={label} hint={hint} error={error} required={rest.required} className={containerClassName}>
+    <FieldWrap
+      label={label}
+      hint={hint}
+      error={error}
+      required={rest.required}
+      className={containerClassName}
+      id={inputId}
+    >
       <textarea
         ref={ref}
         id={inputId}
@@ -415,6 +423,24 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
 
 // ============ SELECT ============
 
+/** Seta dos campos de seleção. Compartilhada por Select e PacienteCombobox. */
+export const SelectChevron = ({ className }: { className?: string }) => (
+  <svg
+    aria-hidden="true"
+    className={cn('w-4 h-4 text-bokka-ink-3 pointer-events-none', className)}
+    viewBox="0 0 20 20"
+    fill="none"
+  >
+    <path
+      d="m6 8 4 4 4-4"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   hint?: string;
@@ -431,7 +457,14 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
   const autoId = useId();
   const inputId = id ?? autoId;
   return (
-    <FieldWrap label={label} hint={hint} error={error} required={rest.required} className={containerClassName}>
+    <FieldWrap
+      label={label}
+      hint={hint}
+      error={error}
+      required={rest.required}
+      className={containerClassName}
+      id={inputId}
+    >
       <div className="relative">
         <select
           ref={ref}
@@ -457,20 +490,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
             </option>
           ))}
         </select>
-        <svg
-          aria-hidden="true"
-          className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bokka-ink-3 pointer-events-none"
-          viewBox="0 0 20 20"
-          fill="none"
-        >
-          <path
-            d="m6 8 4 4 4-4"
-            stroke="currentColor"
-            strokeWidth="1.75"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <SelectChevron className="absolute right-3 top-1/2 -translate-y-1/2" />
       </div>
     </FieldWrap>
   );
