@@ -111,7 +111,7 @@ export const AuditoriaPage = () => {
   // Queries
   const receberQ = useContasReceber();
   const pagarQ = useContasPagar();
-  const pacientesQ = usePacientes({ pagina: 0, tamanho: 200 });
+  const pacientesQ = usePacientes({ pagina: 0, tamanho: 2000 });
   const estoqueQ = useEstoque();
 
   // Mutations

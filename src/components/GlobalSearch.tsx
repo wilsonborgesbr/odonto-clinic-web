@@ -45,7 +45,7 @@ export const GlobalSearch = () => {
   const mobileInputRef = useRef<HTMLInputElement>(null);
 
   // Data — fetched once with large page sizes, cached by react-query
-  const pacientesQ = usePacientes({ pagina: 0, tamanho: 500, ordem: 'nomeCompleto' });
+  const pacientesQ = usePacientes({ pagina: 0, tamanho: 2000, ordem: 'nomeCompleto' });
   const dentistasQ = useDentistas({ pagina: 0, tamanho: 200 });
   const funcionariosQ = useFuncionarios({ pagina: 0, tamanho: 200 });
   const agendamentosQ = useAgendamentos({ pagina: 0, tamanho: 300, ordem: 'dataHoraInicio' });

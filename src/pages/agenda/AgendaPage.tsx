@@ -47,7 +47,8 @@ export const AgendaPage = () => {
 
   const listQuery = useAgendamentos({ pagina: 0, tamanho: 500, ordem: 'dataHoraInicio' });
   const dentistasQ = useDentistasAtivos();
-  const pacientesQ = usePacientes({ pagina: 0, tamanho: 200 });
+  // Só alimenta o mapa id → nome da tabela. 2000 = teto padrão do Spring (max-page-size).
+  const pacientesQ = usePacientes({ pagina: 0, tamanho: 2000 });
 
   const criarM = useCriarAgendamento();
   const atualizarM = useAtualizarAgendamento();

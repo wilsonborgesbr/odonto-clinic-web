@@ -144,7 +144,7 @@ export const NotificationsPanel = () => {
   );
   const estoqueQ = useEstoque({ enabled: canEstoque });
   const pacientesQ = usePacientes(
-    { pagina: 0, tamanho: 100, ordem: 'nomeCompleto' },
+    { pagina: 0, tamanho: 2000, ordem: 'nomeCompleto' },
     { enabled: canPacientes },
   );
 

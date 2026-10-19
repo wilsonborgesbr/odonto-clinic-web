@@ -82,7 +82,7 @@ export const Dashboard = () => {
     { enabled: canAgendamentos },
   );
   const contasQ = useContasReceber({ enabled: canFinanceiro });
-  const pacientesQ = usePacientes({ pagina: 0, tamanho: 200 }, { enabled: canPacientes });
+  const pacientesQ = usePacientes({ pagina: 0, tamanho: 2000 }, { enabled: canPacientes });
   const dentistasQ = useDentistasAtivos({ enabled: canDentistas });
   const estoqueQ = useEstoque({ enabled: canEstoque });
   const criarM = useCriarAgendamento();
