@@ -32,7 +32,7 @@ import {
   useCriarAgendamento,
 } from '../services/agendamentoService';
 import { useContasReceber } from '../services/financeiroService';
-import { usePacientes } from '../services/pacienteService';
+import { usePacienteNomes } from '../services/pacienteService';
 import { useDentistasAtivos } from '../services/dentistaService';
 import { useEstoque } from '../services/estoqueService';
 import { useAuth } from '../context/AuthContext';
@@ -82,7 +82,6 @@ export const Dashboard = () => {
     { enabled: canAgendamentos },
   );
   const contasQ = useContasReceber({ enabled: canFinanceiro });
-  const pacientesQ = usePacientes({ pagina: 0, tamanho: 2000 }, { enabled: canPacientes });
   const dentistasQ = useDentistasAtivos({ enabled: canDentistas });
   const estoqueQ = useEstoque({ enabled: canEstoque });
   const criarM = useCriarAgendamento();
@@ -123,11 +122,11 @@ export const Dashboard = () => {
     [contas],
   );
 
-  const pacienteMap = useMemo(() => {
-    const map = new Map<string, string>();
-    (pacientesQ.data?.content ?? []).forEach((p) => map.set(p.id, p.nomeCompleto));
-    return map;
-  }, [pacientesQ.data]);
+  // Só os pacientes dos agendamentos de hoje (timeline e lista do dia)
+  const { nomes: pacienteMap, isLoading: nomesLoading } = usePacienteNomes(
+    agendamentosHoje.map((a) => a.pacienteId),
+    { enabled: canPacientes },
+  );
 
   const [estoquePage, setEstoquePage] = useState(0);
   const ESTOQUE_PER_PAGE = 6;
@@ -255,7 +254,7 @@ export const Dashboard = () => {
   const loading =
     (canAgendamentos && agendamentosQ.isLoading) ||
     (canFinanceiro && contasQ.isLoading) ||
-    (canPacientes && pacientesQ.isLoading) ||
+    (canPacientes && nomesLoading) ||
     (canDentistas && dentistasQ.isLoading) ||
     (canEstoque && estoqueQ.isLoading);
   const dentistasAtivos = dentistasQ.data ?? [];

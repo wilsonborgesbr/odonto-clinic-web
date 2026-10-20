@@ -102,6 +102,13 @@ const parseTs = (iso: string | undefined | null): number => {
   return Number.isFinite(t) ? t : 0;
 };
 
+// YYYY-MM-DD no fuso local (formato esperado por ?desde=)
+const toDateIso = (d: Date): string => {
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+};
+
 const relativeTime = (ts: number, now: number): string => {
   const diff = now - ts;
   if (diff < 0) {
@@ -143,8 +150,10 @@ export const NotificationsPanel = () => {
     { enabled: canAgendamentos },
   );
   const estoqueQ = useEstoque({ enabled: canEstoque });
+  // Só cadastros dos últimos 14 dias (a regra fina de 14 dias continua no filtro abaixo)
+  const desde = useMemo(() => toDateIso(new Date(now - 14 * 86_400_000)), [now]);
   const pacientesQ = usePacientes(
-    { pagina: 0, tamanho: 2000, ordem: 'nomeCompleto' },
+    { pagina: 0, tamanho: 50, desde, sort: 'createdAt,desc' },
     { enabled: canPacientes },
   );
 

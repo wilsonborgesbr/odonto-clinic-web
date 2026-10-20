@@ -49,7 +49,7 @@ import {
   useExcluirContaReceber,
   useRegistrarPagamento,
 } from '../../services/financeiroService';
-import { usePacientes } from '../../services/pacienteService';
+import { usePacienteNomes } from '../../services/pacienteService';
 import { useEstoque } from '../../services/estoqueService';
 import { ApiError } from '../../lib/api';
 import { cn, formatCurrency, formatDate, formatDescricaoFinanceira, MASKED_CURRENCY } from '../../lib/utils';
@@ -111,7 +111,6 @@ export const AuditoriaPage = () => {
   // Queries
   const receberQ = useContasReceber();
   const pagarQ = useContasPagar();
-  const pacientesQ = usePacientes({ pagina: 0, tamanho: 2000 });
   const estoqueQ = useEstoque();
 
   // Mutations
@@ -142,11 +141,8 @@ export const AuditoriaPage = () => {
 
   const receber = receberQ.data ?? [];
   const pagar = pagarQ.data ?? [];
-  const pacienteMap = useMemo(() => {
-    const m = new Map<string, string>();
-    (pacientesQ.data?.content ?? []).forEach((p) => m.set(p.id, p.nomeCompleto));
-    return m;
-  }, [pacientesQ.data]);
+  // Só os pacientes das contas a receber exibidas (tabela e próximos vencimentos)
+  const { nomes: pacienteMap } = usePacienteNomes(receber.map((c) => c.pacienteId));
 
   // ============ KPIs ============
   const receitaMes = useMemo(

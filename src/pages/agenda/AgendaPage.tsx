@@ -17,7 +17,7 @@ import {
   useExcluirAgendamento,
 } from '../../services/agendamentoService';
 import { useDentistasAtivos } from '../../services/dentistaService';
-import { usePacientes } from '../../services/pacienteService';
+import { usePacienteNomes } from '../../services/pacienteService';
 import { ApiError } from '../../lib/api';
 import { cn, formatDateLong, formatTime } from '../../lib/utils';
 import type { Agendamento } from '../../types';
@@ -47,8 +47,6 @@ export const AgendaPage = () => {
 
   const listQuery = useAgendamentos({ pagina: 0, tamanho: 500, ordem: 'dataHoraInicio' });
   const dentistasQ = useDentistasAtivos();
-  // Só alimenta o mapa id → nome da tabela. 2000 = teto padrão do Spring (max-page-size).
-  const pacientesQ = usePacientes({ pagina: 0, tamanho: 2000 });
 
   const criarM = useCriarAgendamento();
   const atualizarM = useAtualizarAgendamento();
@@ -69,11 +67,7 @@ export const AgendaPage = () => {
     return m;
   }, [dentistasQ.data]);
 
-  const pacienteMap = useMemo(() => {
-    const m = new Map<string, string>();
-    (pacientesQ.data?.content ?? []).forEach((p) => m.set(p.id, p.nomeCompleto));
-    return m;
-  }, [pacientesQ.data]);
+  const { nomes: pacienteMap } = usePacienteNomes(doDia.map((a) => a.pacienteId));
 
   const dentistaOptions = [
     { value: '', label: 'Todos os dentistas' },

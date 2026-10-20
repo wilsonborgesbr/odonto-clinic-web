@@ -412,6 +412,8 @@ export interface Dentista {
   id?: string;
   nomeCompleto: string;
   cro: string;
+  /** Opcional. Formato 000.000.000-00; nunca bloqueia o cadastro. */
+  cpf?: string;
   especialidades?: EspecialidadeEnum[];
   email?: string;
   telefoneCelular?: string;
@@ -477,7 +479,11 @@ export interface Paciente {
   nomeCompleto: string;
   cpf: string;
   rg?: string;
-  dataNascimento: string;
+  /** 'YYYY-MM-DD'. Opcional: sem ela não há como saber se o paciente é menor de idade. */
+  dataNascimento?: string;
+  /** Responsável de paciente menor de idade; nome e CPF vão sempre em par. */
+  responsavelNome?: string;
+  responsavelCpf?: string;
   sexo: SexoEnum;
   estadoCivil?: EstadoCivil;
   profissao?: string;
@@ -553,6 +559,7 @@ export interface DentistaListagemDTO {
   id: string;
   nomeCompleto: string;
   cro: string;
+  cpf?: string;
   especialidades: EspecialidadeEnum[];
   email: string;
   telefoneCelular: string;
@@ -582,8 +589,16 @@ export interface PacienteListagemDTO {
   email: string;
   telefoneCelular: string;
   ativo: boolean;
+  /** Calculado pelo backend a partir da data de nascimento (< 18 anos). */
+  menorDeIdade?: boolean;
   createdAt?: string;
   fotoUrl?: string;
+}
+
+// GET /api/pacientes/resumo?ids= — usado só para resolver id → nome
+export interface PacienteResumo {
+  id: string;
+  nomeCompleto: string;
 }
 
 // Erro padronizado do backend (GlobalExceptionHandler.ErroPadrao)
@@ -625,4 +640,26 @@ export interface PageResponse<T> {
   first: boolean;
   numberOfElements: number;
   empty: boolean;
+}
+
+// ---- Cadastros com dados a corrigir (GET /api/cadastros/pendencias) ----
+export type EntidadePendencia = 'PACIENTE' | 'FUNCIONARIO' | 'DENTISTA' | 'CONVENIO' | 'CLINICA';
+
+export interface PendenciaCampo {
+  campo: string;
+  valor?: string | null;
+  motivo: string;
+}
+
+export interface PendenciaItem {
+  entidade: EntidadePendencia;
+  id: string;
+  nome: string;
+  campos: PendenciaCampo[];
+}
+
+export interface PendenciasCadastro {
+  total: number;
+  porEntidade: Partial<Record<EntidadePendencia, number>>;
+  itens: PendenciaItem[];
 }

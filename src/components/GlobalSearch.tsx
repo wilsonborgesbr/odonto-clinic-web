@@ -8,7 +8,7 @@ import {
   CalendarDays,
   X,
 } from 'lucide-react';
-import { usePacientes } from '../services/pacienteService';
+import { usePacienteNomes, usePacientes } from '../services/pacienteService';
 import { useDentistas } from '../services/dentistaService';
 import { useFuncionarios } from '../services/funcionarioService';
 import { useAgendamentos } from '../services/agendamentoService';
@@ -44,33 +44,42 @@ export const GlobalSearch = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const mobileInputRef = useRef<HTMLInputElement>(null);
 
-  // Data — fetched once with large page sizes, cached by react-query
-  const pacientesQ = usePacientes({ pagina: 0, tamanho: 2000, ordem: 'nomeCompleto' });
+  // Pacientes: busca por nome no servidor (debounce). Demais dados: baixados uma vez, em cache.
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query.trim()), 250);
+    return () => clearTimeout(t);
+  }, [query]);
+  const searching = query.trim().length >= 2;
+
+  const pacientesQ = usePacientes(
+    { pagina: 0, tamanho: 20, nome: debouncedQuery },
+    { enabled: debouncedQuery.length >= 2 },
+  );
   const dentistasQ = useDentistas({ pagina: 0, tamanho: 200 });
   const funcionariosQ = useFuncionarios({ pagina: 0, tamanho: 200 });
   const agendamentosQ = useAgendamentos({ pagina: 0, tamanho: 300, ordem: 'dataHoraInicio' });
 
-  const pacienteMap = useMemo(() => {
-    const m = new Map<string, string>();
-    (pacientesQ.data?.content ?? []).forEach((p) => m.set(p.id, p.nomeCompleto));
-    return m;
-  }, [pacientesQ.data]);
+  // Nomes dos pacientes dos agendamentos (para buscar agendamento pelo nome do paciente)
+  const { nomes: pacienteMap, isLoading: nomesLoading } = usePacienteNomes(
+    (agendamentosQ.data?.content ?? []).map((a) => a.pacienteId),
+    { enabled: searching },
+  );
 
   const results = useMemo<SearchResult[]>(() => {
     const q = norm(query.trim());
     if (q.length < 2) return [];
     const out: SearchResult[] = [];
 
+    // Já filtrados pelo servidor (?nome=)
     (pacientesQ.data?.content ?? []).forEach((p) => {
-      if (norm(p.nomeCompleto).includes(q) || norm(p.cpf).includes(q) || norm(p.email).includes(q)) {
-        out.push({
-          id: p.id,
-          tipo: 'paciente',
-          titulo: p.nomeCompleto,
-          subtitulo: p.cpf || p.email || '—',
-          to: `/pacientes/${p.id}`,
-        });
-      }
+      out.push({
+        id: p.id,
+        tipo: 'paciente',
+        titulo: p.nomeCompleto,
+        subtitulo: p.cpf || p.email || '—',
+        to: `/pacientes/${p.id}`,
+      });
     });
 
     (dentistasQ.data?.content ?? []).forEach((d) => {
@@ -182,7 +191,11 @@ export const GlobalSearch = () => {
   const showDropdown = open && query.trim().length >= 2;
   const hasResults = groupedResults.length > 0;
   const loading =
-    pacientesQ.isLoading || dentistasQ.isLoading || funcionariosQ.isLoading || agendamentosQ.isLoading;
+    pacientesQ.isLoading ||
+    nomesLoading ||
+    dentistasQ.isLoading ||
+    funcionariosQ.isLoading ||
+    agendamentosQ.isLoading;
 
   const renderResultsPanel = (scrollClassName: string) => {
     let flatIndex = -1;
