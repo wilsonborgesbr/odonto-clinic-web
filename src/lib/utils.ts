@@ -300,6 +300,19 @@ const timeFormatter = new Intl.DateTimeFormat('pt-BR', {
   minute: '2-digit',
 });
 
+// ORDENAÇÃO DE NOMES
+
+// sensitivity 'base': "Álvaro" = "alvaro" = "ALVARO"; o Collator é criado uma vez (reaproveitado em cada sort).
+const colatorNomes = new Intl.Collator('pt-BR', { sensitivity: 'base' });
+
+/** Compara textos no padrão pt-BR, ignorando acento e maiúsculas/minúsculas. Aceita vazio/nulo (vai pro começo). */
+export const compararNomes = (a?: string | null, b?: string | null): number =>
+  colatorNomes.compare(a ?? '', b ?? '');
+
+/** Cópia da lista ordenada por nome (pt-BR, sem acento/caixa); não altera a original. */
+export const ordenarPorNome = <T,>(lista: readonly T[], nomeDe: (item: T) => string | null | undefined): T[] =>
+  [...lista].sort((x, y) => compararNomes(nomeDe(x), nomeDe(y)));
+
 const DATA_PURA = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 /** Data de calendário 'YYYY-MM-DD' válida, sem passar por Date/UTC. Ano < 1900 não conta. */

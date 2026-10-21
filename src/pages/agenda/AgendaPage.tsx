@@ -19,7 +19,7 @@ import {
 import { useDentistasAtivos } from '../../services/dentistaService';
 import { usePacienteNomes } from '../../services/pacienteService';
 import { ApiError } from '../../lib/api';
-import { cn, formatDateLong, formatTime } from '../../lib/utils';
+import { cn, formatDateLong, formatTime, ordenarPorNome } from '../../lib/utils';
 import type { Agendamento } from '../../types';
 
 const todayIso = () => {
@@ -71,7 +71,10 @@ export const AgendaPage = () => {
 
   const dentistaOptions = [
     { value: '', label: 'Todos os dentistas' },
-    ...(dentistasQ.data?.map((d) => ({ value: d.id, label: `Dr(a). ${d.nomeCompleto}` })) ?? []),
+    ...ordenarPorNome(dentistasQ.data ?? [], (d) => d.nomeCompleto).map((d) => ({
+      value: d.id,
+      label: `Dr(a). ${d.nomeCompleto}`,
+    })),
   ];
 
   const abrirNovo = () => {

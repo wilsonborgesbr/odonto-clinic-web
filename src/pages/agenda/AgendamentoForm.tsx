@@ -6,7 +6,7 @@ import { ApiError } from '../../lib/api';
 import { useDentistasAtivos } from '../../services/dentistaService';
 import { PacienteCombobox } from '../../components/PacienteCombobox';
 import { usePaciente } from '../../services/pacienteService';
-import { formatCro, formatCurrency } from '../../lib/utils';
+import { compararNomes, formatCro, formatCurrency, ordenarPorNome } from '../../lib/utils';
 import type {
   Agendamento,
   NomeProcedimentoEnum,
@@ -76,7 +76,7 @@ const nomeProcedimentoOptions = (
   Object.entries(nomeProcedimentoLabel) as [NomeProcedimentoEnum, string][]
 )
   .map(([value, label]) => ({ value, label }))
-  .sort((a, b) => a.label.localeCompare(b.label));
+  .sort((a, b) => compararNomes(a.label, b.label));
 
 const tipoAgendamentoOptions: { value: TipoAgendamentoEnum; label: string }[] = [
   { value: 'AVALIACAO', label: 'Avaliação' },
@@ -137,10 +137,10 @@ export const AgendamentoForm = ({ initial, onSubmit, onCancel }: AgendamentoForm
 
   const dentistaOptions = [
     { value: '', label: '— Selecione um dentista —' },
-    ...(dentistasQ.data?.map((d) => ({
+    ...ordenarPorNome(dentistasQ.data ?? [], (d) => d.nomeCompleto).map((d) => ({
       value: d.id,
       label: `Dr(a). ${d.nomeCompleto} · ${formatCro(d.cro)}`,
-    })) ?? []),
+    })),
   ];
 
   const set = <K extends keyof Agendamento>(k: K, v: Agendamento[K]) =>

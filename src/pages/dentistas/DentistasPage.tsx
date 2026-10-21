@@ -32,7 +32,7 @@ import {
   useReativarDentista,
 } from '../../services/dentistaService';
 import { ApiError } from '../../lib/api';
-import { formatCro, formatPhone, sanitizeEnderecoPayload } from '../../lib/utils';
+import { formatCro, formatPhone, ordenarPorNome, sanitizeEnderecoPayload } from '../../lib/utils';
 import type { Dentista, EspecialidadeEnum } from '../../types';
 
 const espLabel: Record<EspecialidadeEnum, string> = {
@@ -78,7 +78,7 @@ export const DentistasPage = () => {
           (d.email && d.email.toLowerCase().includes(q)),
       );
     }
-    return list;
+    return ordenarPorNome(list, (d) => d.nomeCompleto);
   }, [todos, filter, search]);
 
   const stats = useMemo(() => {

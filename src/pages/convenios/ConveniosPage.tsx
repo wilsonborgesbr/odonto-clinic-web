@@ -40,6 +40,7 @@ import { ApiError } from '../../lib/api';
 import { applyApiError } from '../../lib/formErrors';
 import {
   coletarErros,
+  compararNomes,
   formatCnpj,
   formatDate,
   formatPhone,
@@ -605,9 +606,7 @@ export const ConveniosPage = () => {
           (c.registroANS ?? '').toLowerCase().includes(q),
       );
     }
-    list.sort((a, b) =>
-      (a.nome ?? '').localeCompare(b.nome ?? '', 'pt-BR'),
-    );
+    list.sort((a, b) => compararNomes(a.nome, b.nome));
     return list;
   }, [todos, filter, search]);
 

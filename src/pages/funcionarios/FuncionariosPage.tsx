@@ -30,7 +30,7 @@ import {
   useReativarFuncionario,
 } from '../../services/funcionarioService';
 import { ApiError } from '../../lib/api';
-import { formatCpf, formatPhone, sanitizeEnderecoPayload } from '../../lib/utils';
+import { formatCpf, formatPhone, ordenarPorNome, sanitizeEnderecoPayload } from '../../lib/utils';
 import type { Funcionario, CargoFuncionarioEnum } from '../../types';
 
 const cargoLabel: Record<CargoFuncionarioEnum, string> = {
@@ -84,7 +84,7 @@ export const FuncionariosPage = () => {
           (f.email && f.email.toLowerCase().includes(q)),
       );
     }
-    return list;
+    return ordenarPorNome(list, (f) => f.nomeCompleto);
   }, [todos, filter, search]);
 
   const stats = useMemo(() => {
