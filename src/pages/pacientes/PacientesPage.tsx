@@ -8,6 +8,7 @@ import { Pagination } from '../../components/ui/Pagination';
 import { SkeletonTableRows } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { bokkaToast } from '../../components/ui/Toast';
+import { useEditarPorUrl } from '../../hooks/useEditarPorUrl';
 import { PacienteForm } from './PacienteForm';
 import { PacienteDetalheModal } from './PacienteDetalheModal';
 import {
@@ -25,6 +26,12 @@ import { cn, formatCpf, formatPhone, sanitizeEnderecoPayload } from '../../lib/u
 import type { Paciente, PacienteListagemDTO } from '../../types';
 
 const PAGE_SIZE = 10;
+
+const BadgeMenor = () => (
+  <Badge tone="info" className="shrink-0">
+    Menor<span className="sr-only"> de idade</span>
+  </Badge>
+);
 
 const useDebounce = <T,>(value: T, delay = 350): T => {
   const [debounced, setDebounced] = useState(value);
@@ -72,9 +79,9 @@ export const PacientesPage = () => {
     setFormOpen(true);
   };
 
-  const abrirEdicao = async (item: PacienteListagemDTO) => {
+  const abrirEdicaoPorId = async (id: string) => {
     try {
-      const completo = await pacienteService.buscarPorId(item.id);
+      const completo = await pacienteService.buscarPorId(id);
       setFormInitial(completo);
       setFormOpen(true);
     } catch (err) {
@@ -83,6 +90,8 @@ export const PacientesPage = () => {
       );
     }
   };
+  const abrirEdicao = (item: PacienteListagemDTO) => abrirEdicaoPorId(item.id);
+  useEditarPorUrl(abrirEdicaoPorId);
 
   const handleSubmit = async (paciente: Paciente) => {
     const payload = sanitizeEnderecoPayload(paciente);
@@ -201,6 +210,7 @@ export const PacientesPage = () => {
                       <span className="text-sm font-semibold text-bokka-ink truncate">
                         {p.nomeCompleto}
                       </span>
+                      {p.menorDeIdade && <BadgeMenor />}
                       <Badge tone={p.ativo ? 'success' : 'neutral'} dot>
                         {p.ativo ? 'Ativo' : 'Inativo'}
                       </Badge>
@@ -269,6 +279,7 @@ export const PacientesPage = () => {
                         <span className="font-semibold text-bokka-ink group-hover:text-bokka-primary">
                           {p.nomeCompleto}
                         </span>
+                        {p.menorDeIdade && <BadgeMenor />}
                       </button>
                     </td>
                     <td className="px-4 py-3 text-bokka-ink-2 tabular-nums">

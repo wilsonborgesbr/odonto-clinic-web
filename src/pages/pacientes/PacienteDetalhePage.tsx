@@ -13,6 +13,7 @@ import {
   Grid3X3,
   CalendarDays,
   User as UserIcon,
+  UserRound,
   ShieldCheck,
   ChevronRight,
   Search,
@@ -39,13 +40,16 @@ import { ApiError } from '../../lib/api';
 import { Avatar } from '../../components/ui/Avatar';
 import { photoKeys } from '../../lib/profilePhotos';
 import {
+  calcularIdade,
   cn,
   formatCpf,
   formatDate,
+  formatNascimento,
   formatPhone,
   formatTime,
   sanitizeEnderecoPayload,
 } from '../../lib/utils';
+import { ResponsavelValor } from './ResponsavelValor';
 import type { Paciente } from '../../types';
 
 export const PacienteDetalhePage = () => {
@@ -121,6 +125,10 @@ export const PacienteDetalhePage = () => {
       </div>
     );
   }
+
+  const idade = calcularIdade(paciente.dataNascimento);
+  const menorDeIdade = idade !== null && idade < 18;
+  const temResponsavel = Boolean(paciente.responsavelNome || paciente.responsavelCpf);
 
   const enderecoLinha = paciente.endereco
     ? [
@@ -260,6 +268,7 @@ export const PacienteDetalhePage = () => {
                     <Badge tone={paciente.ativo ? 'success' : 'neutral'} dot>
                       {paciente.ativo ? 'Ativo' : 'Inativo'}
                     </Badge>
+                    {menorDeIdade && <Badge tone="info">Menor de idade</Badge>}
                   </div>
                   <p className="text-sm text-bokka-ink-3 mt-1 flex items-center gap-1.5">
                     <ShieldCheck className="w-3.5 h-3.5" strokeWidth={2} />
@@ -329,8 +338,15 @@ export const PacienteDetalhePage = () => {
                 <BasicRow
                   icon={<Cake className="w-4 h-4" strokeWidth={1.75} />}
                   label="Nascimento"
-                  value={formatDate(paciente.dataNascimento)}
+                  value={formatNascimento(paciente.dataNascimento, idade)}
                 />
+                {(temResponsavel || menorDeIdade) && (
+                  <BasicRow
+                    icon={<UserRound className="w-4 h-4" strokeWidth={1.75} />}
+                    label="Responsável"
+                    value={<ResponsavelValor nome={paciente.responsavelNome} cpf={paciente.responsavelCpf} />}
+                  />
+                )}
                 <BasicRow
                   icon={<Phone className="w-4 h-4" strokeWidth={1.75} />}
                   label="Celular"

@@ -1,10 +1,23 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { FormEvent } from 'react';
+import { UserRound } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
-import { CepInput, CpfInput, Input, PhoneInput, Select } from '../../components/ui/Field';
+import { CepInput, CpfInput, EmailInput, Input, PhoneInput, Select } from '../../components/ui/Field';
 import { Avatar } from '../../components/ui/Avatar';
 import { processImageFile, setPhoto } from '../../lib/profilePhotos';
-import { ApiError } from '../../lib/api';
+import { applyApiError } from '../../lib/formErrors';
+import {
+  calcularIdade,
+  coletarErros,
+  hojeIso,
+  omitirVazios,
+  onlyDigits,
+  validateCep,
+  validateCpf,
+  validateDataNascimento,
+  validateEmail,
+  validatePhone,
+} from '../../lib/utils';
 import { useConvenios } from '../../services/convenioService';
 import type { Paciente, SexoEnum, TipoPaciente } from '../../types';
 
@@ -14,6 +27,9 @@ interface PacienteFormProps {
   onSubmit: (paciente: Paciente) => Promise<void>;
   onCancel: () => void;
 }
+
+// Campos do formulário que exibem erro do backend (as demais chaves vão para o aviso geral)
+const CAMPOS_API = ['nomeCompleto', 'cpf', 'dataNascimento', 'responsavelNome', 'responsavelCpf', 'sexo', 'tipoPaciente', 'convenioId', 'email', 'telefoneCelular', 'telefoneFixo', 'telefoneEmergencia', 'endereco.cep'] as const;
 
 const emptyPaciente: Paciente = {
   nomeCompleto: '',
@@ -55,8 +71,52 @@ const estadoCivilOptions = [
   { value: 'OUTRO', label: 'Outro' },
 ];
 
+const IDADE_MAIORIDADE = 18;
+
+/** Nome e CPF do responsável são opcionais, mas só valem em par; CPF não pode ser o do paciente. */
+const validarResponsavel = (v: Paciente): Record<string, string | undefined> => {
+  const nome = (v.responsavelNome ?? '').trim();
+  const cpf = onlyDigits(v.responsavelCpf);
+  if (!nome && !cpf) return {};
+  if (nome && !cpf) return { responsavelCpf: 'Informe o CPF do responsável.' };
+  if (!nome) return { responsavelNome: 'Informe o nome do responsável.' };
+  const erroCpf = validateCpf(v.responsavelCpf);
+  if (erroCpf) return { responsavelCpf: erroCpf };
+  if (cpf === onlyDigits(v.cpf)) {
+    return { responsavelCpf: 'O CPF do responsável deve ser diferente do CPF do paciente.' };
+  }
+  return {};
+};
+
+const AVISO_BLOCO_VISIVEL =
+  'Paciente menor de idade. Campos do responsável disponíveis abaixo da data de nascimento.';
+const AVISO_BLOCO_OCULTO = 'Campos do responsável ocultados.';
+
+// Cadastros legados podem vir sem CPF/data (null); o formulário trabalha sempre com string.
+const iniciar = (initial: Paciente | null): Paciente =>
+  initial
+    ? { ...initial, cpf: initial.cpf ?? '', dataNascimento: initial.dataNascimento ?? '' }
+    : emptyPaciente;
+
 export const PacienteForm = ({ initial, photoKey, onSubmit, onCancel }: PacienteFormProps) => {
-  const [values, setValues] = useState<Paciente>(() => initial ?? emptyPaciente);
+  const [values, setValues] = useState<Paciente>(() => iniciar(initial));
+  const [aviso, setAviso] = useState('');
+  const idBloco = useId();
+
+  // O bloco do responsável aparece para menor de 18 anos (com data preenchida) ou quando o
+  // cadastro já tem responsável gravado — esse nunca some da tela sem o usuário perceber.
+  const temResponsavelGravado = Boolean(initial?.responsavelNome || initial?.responsavelCpf);
+  const blocoVisivelPara = (dataNascimento?: string) => {
+    const idade = calcularIdade(dataNascimento);
+    return temResponsavelGravado || (idade !== null && idade < IDADE_MAIORIDADE);
+  };
+  const mostrarResponsavel = blocoVisivelPara(values.dataNascimento);
+
+  const mudarDataNascimento = (novaData: string) => {
+    const depois = blocoVisivelPara(novaData);
+    if (depois !== mostrarResponsavel) setAviso(depois ? AVISO_BLOCO_VISIVEL : AVISO_BLOCO_OCULTO);
+    set('dataNascimento', novaData);
+  };
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
@@ -79,20 +139,39 @@ export const PacienteForm = ({ initial, photoKey, onSubmit, onCancel }: Paciente
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
-    setErrors({});
     setGlobalError(null);
+
+    const errosResponsavel = mostrarResponsavel ? validarResponsavel(values) : {};
+
+    const errosCliente = coletarErros({
+      cpf: validateCpf(values.cpf, { required: true }),
+      dataNascimento: validateDataNascimento(values.dataNascimento),
+      ...errosResponsavel,
+      email: validateEmail(values.email),
+      telefoneCelular: validatePhone(values.telefoneCelular, { variant: 'celular' }),
+      telefoneFixo: validatePhone(values.telefoneFixo, { variant: 'fixo' }),
+      telefoneEmergencia: validatePhone(values.telefoneEmergencia),
+      'endereco.cep': validateCep(values.endereco?.cep),
+    });
+    setErrors(errosCliente);
+    if (Object.keys(errosCliente).length) return;
+
+    setSubmitting(true);
     try {
       if (pendingPhoto && photoKey) setPhoto(photoKey, pendingPhoto);
-      await onSubmit(values);
-    } catch (err) {
-      if (err instanceof ApiError) {
-        const fe = err.fieldErrors();
-        if (Object.keys(fe).length) setErrors(fe);
-        else setGlobalError(err.friendlyMessage());
-      } else {
-        setGlobalError('Não foi possível salvar. Tente novamente.');
+      // Bloco oculto: o que foi digitado ali fica só na tela, não vai (nem é validado) no envio
+      const payload: Paciente = { ...values };
+      if (!mostrarResponsavel) {
+        delete payload.responsavelNome;
+        delete payload.responsavelCpf;
       }
+      await onSubmit(omitirVazios(payload));
+    } catch (err) {
+      applyApiError(err, {
+        campos: CAMPOS_API,
+        setErrors,
+        setGlobalError,
+      });
     } finally {
       setSubmitting(false);
     }
@@ -100,6 +179,11 @@ export const PacienteForm = ({ initial, photoKey, onSubmit, onCancel }: Paciente
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Sempre montada, para o leitor de tela anunciar só quando o texto mudar após uma ação do usuário */}
+      <div role="status" aria-live="polite" className="sr-only">
+        {aviso}
+      </div>
+
       {globalError && (
         <div className="text-sm text-bokka-danger-ink bg-bokka-danger-soft border border-bokka-danger/20 rounded-md px-3 py-2">
           {globalError}
@@ -159,11 +243,49 @@ export const PacienteForm = ({ initial, photoKey, onSubmit, onCancel }: Paciente
           <Input
             label="Data de nascimento"
             type="date"
-            required
-            value={values.dataNascimento}
-            onChange={(e) => set('dataNascimento', e.target.value)}
+            min="1900-01-01"
+            max={hojeIso()}
+            value={values.dataNascimento ?? ''}
+            onChange={(e) => mudarDataNascimento(e.target.value)}
             error={errors.dataNascimento}
           />
+          {mostrarResponsavel && (
+            <div
+              role="group"
+              aria-labelledby={`${idBloco}-titulo`}
+              aria-describedby={`${idBloco}-apoio`}
+              className="sm:col-span-2 rounded-lg border border-bokka-border bg-bokka-surface-2 p-4 space-y-4"
+            >
+              <div className="flex items-start gap-3">
+                <span className="w-8 h-8 rounded-lg bg-bokka-primary-soft text-bokka-primary flex items-center justify-center shrink-0">
+                  <UserRound className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <h4 id={`${idBloco}-titulo`} className="text-sm font-semibold text-bokka-ink">
+                    Paciente menor de idade
+                  </h4>
+                  <p id={`${idBloco}-apoio`} className="text-xs text-bokka-ink-2 mt-0.5">
+                    Se houver, informe quem é o responsável. Nome e CPF devem ser preenchidos juntos.
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label="Nome do responsável"
+                  autoComplete="off"
+                  value={values.responsavelNome ?? ''}
+                  onChange={(e) => set('responsavelNome', e.target.value)}
+                  error={errors.responsavelNome}
+                />
+                <CpfInput
+                  label="CPF do responsável"
+                  value={values.responsavelCpf}
+                  onChange={(v) => set('responsavelCpf', v)}
+                  error={errors.responsavelCpf}
+                />
+              </div>
+            </div>
+          )}
           <Select
             label="Sexo"
             required
@@ -214,15 +336,15 @@ export const PacienteForm = ({ initial, photoKey, onSubmit, onCancel }: Paciente
       <section>
         <h3 className="text-sm font-semibold text-bokka-ink mb-3">Contato</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input
+          <EmailInput
             label="E-mail"
-            type="email"
             value={values.email ?? ''}
-            onChange={(e) => set('email', e.target.value)}
+            onChange={(v) => set('email', v)}
             error={errors.email}
           />
           <PhoneInput
             label="Celular"
+            variant="celular"
             value={values.telefoneCelular ?? ''}
             onChange={(v) => set('telefoneCelular', v)}
             error={errors.telefoneCelular}
@@ -232,6 +354,7 @@ export const PacienteForm = ({ initial, photoKey, onSubmit, onCancel }: Paciente
             variant="fixo"
             value={values.telefoneFixo ?? ''}
             onChange={(v) => set('telefoneFixo', v)}
+            error={errors.telefoneFixo}
           />
           <Input
             label="Contato de emergência"
@@ -242,6 +365,7 @@ export const PacienteForm = ({ initial, photoKey, onSubmit, onCancel }: Paciente
             label="Telefone de emergência"
             value={values.telefoneEmergencia ?? ''}
             onChange={(v) => set('telefoneEmergencia', v)}
+            error={errors.telefoneEmergencia}
           />
         </div>
       </section>
@@ -253,6 +377,7 @@ export const PacienteForm = ({ initial, photoKey, onSubmit, onCancel }: Paciente
             label="CEP"
             value={values.endereco?.cep ?? ''}
             onChange={(v) => setEnd('cep', v)}
+            error={errors['endereco.cep']}
             containerClassName="sm:col-span-2"
           />
           <Input
