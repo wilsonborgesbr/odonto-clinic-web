@@ -289,7 +289,7 @@ export const PacienteForm = ({ initial, photoKey, onSubmit, onCancel }: Paciente
           <Select
             label="Sexo"
             required
-            value={values.sexo}
+            value={values.sexo ?? ''}
             onChange={(e) => set('sexo', e.target.value as SexoEnum)}
             options={sexoOptions}
             error={errors.sexo}
@@ -297,7 +297,7 @@ export const PacienteForm = ({ initial, photoKey, onSubmit, onCancel }: Paciente
           <Select
             label="Tipo de paciente"
             required
-            value={values.tipoPaciente}
+            value={values.tipoPaciente ?? ''}
             onChange={(e) => {
               const v = e.target.value as TipoPaciente;
               set('tipoPaciente', v);

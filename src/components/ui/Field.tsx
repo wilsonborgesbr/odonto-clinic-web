@@ -457,11 +457,13 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
-  { label, hint, error, containerClassName, options, placeholder, className, id, ...rest },
+  { label, hint, error, containerClassName, options, placeholder, className, id, value, ...rest },
   ref,
 ) {
   const autoId = useId();
   const inputId = id ?? autoId;
+  // Cadastros vindos da API podem trazer campo nulo; select controlado não aceita null (só '' ou undefined).
+  const valor = value === null ? '' : value;
   return (
     <FieldWrap
       label={label}
@@ -475,6 +477,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
         <select
           ref={ref}
           id={inputId}
+          value={valor}
           className={cn(
             inputBase,
             'appearance-none pr-9 bg-bokka-surface',
@@ -486,7 +489,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
           {...rest}
         >
           {placeholder && (
-            <option value="" disabled hidden={rest.value !== ''}>
+            <option value="" disabled hidden={valor !== ''}>
               {placeholder}
             </option>
           )}
