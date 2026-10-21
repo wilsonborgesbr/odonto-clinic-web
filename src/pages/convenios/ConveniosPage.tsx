@@ -18,9 +18,18 @@ import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Modal, ConfirmModal } from '../../components/ui/Modal';
 import { Pagination } from '../../components/ui/Pagination';
-import { Input, Textarea } from '../../components/ui/Field';
-import { bokkaToast } from '../../components/ui/Toast';
 import {
+  CepInput,
+  CnpjInput,
+  EmailInput,
+  Input,
+  PhoneInput,
+  Textarea,
+} from '../../components/ui/Field';
+import { bokkaToast } from '../../components/ui/Toast';
+import { useEditarPorUrl } from '../../hooks/useEditarPorUrl';
+import {
+  convenioService,
   useConvenios,
   useCriarConvenio,
   useAtualizarConvenio,
@@ -28,15 +37,19 @@ import {
   useReativarConvenio,
 } from '../../services/convenioService';
 import { ApiError } from '../../lib/api';
-import { formatPhone, formatDate } from '../../lib/utils';
+import { applyApiError } from '../../lib/formErrors';
+import {
+  coletarErros,
+  formatCnpj,
+  formatDate,
+  formatPhone,
+  omitirVazios,
+  validateCep,
+  validateCnpj,
+  validateEmail,
+  validatePhone,
+} from '../../lib/utils';
 import type { Convenio, NomeProcedimentoEnum, Endereco } from '../../types';
-
-const formatCnpj = (cnpj?: string | null): string => {
-  if (!cnpj) return '—';
-  const d = cnpj.replace(/\D/g, '');
-  if (d.length !== 14) return cnpj;
-  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
-};
 
 const procLabel: Record<NomeProcedimentoEnum, string> = {
   RESTAURACAO_RESINA: 'Restauração em Resina',
@@ -164,6 +177,9 @@ const procedureGroups: ProcedureGroup[] = [
 ];
 
 const ITEMS_PER_PAGE = 10;
+
+// Campos do formulário que exibem erro do backend (as demais chaves vão para o aviso geral)
+const CAMPOS_API = ['nome', 'cnpj', 'registroANS', 'nomeContato', 'telefone', 'email', 'website', 'endereco.cep'] as const;
 
 const emptyConvenio: Convenio = {
   nome: '',
@@ -320,19 +336,26 @@ const ConvenioForm = ({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
-    setErrors({});
     setGlobalError(null);
+
+    const errosCliente = coletarErros({
+      cnpj: validateCnpj(values.cnpj, { required: true }),
+      telefone: validatePhone(values.telefone, { variant: 'servico' }),
+      email: validateEmail(values.email),
+      'endereco.cep': validateCep(values.endereco?.cep),
+    });
+    setErrors(errosCliente);
+    if (Object.keys(errosCliente).length) return;
+
+    setSubmitting(true);
     try {
-      await onSubmit(values);
+      await onSubmit(omitirVazios(values));
     } catch (err) {
-      if (err instanceof ApiError) {
-        const fe = err.fieldErrors();
-        if (Object.keys(fe).length) setErrors(fe);
-        else setGlobalError(err.friendlyMessage());
-      } else {
-        setGlobalError('Não foi possível salvar. Tente novamente.');
-      }
+      applyApiError(err, {
+        campos: CAMPOS_API,
+        setErrors,
+        setGlobalError,
+      });
     } finally {
       setSubmitting(false);
     }
@@ -359,12 +382,11 @@ const ConvenioForm = ({
             error={errors.nome}
             containerClassName="sm:col-span-2"
           />
-          <Input
+          <CnpjInput
             label="CNPJ"
             required
             value={values.cnpj ?? ''}
-            onChange={(e) => set('cnpj', e.target.value)}
-            placeholder="00.000.000/0000-00"
+            onChange={(v) => set('cnpj', v)}
             error={errors.cnpj}
           />
           <Input
@@ -379,18 +401,18 @@ const ConvenioForm = ({
             onChange={(e) => set('nomeContato', e.target.value)}
             error={errors.nomeContato}
           />
-          <Input
+          <PhoneInput
             label="Telefone"
+            variant="servico"
+            hint="Celular, fixo ou 0800/0300."
             value={values.telefone ?? ''}
-            onChange={(e) => set('telefone', e.target.value)}
-            placeholder="(00) 00000-0000"
+            onChange={(v) => set('telefone', v)}
             error={errors.telefone}
           />
-          <Input
+          <EmailInput
             label="E-mail"
-            type="email"
             value={values.email ?? ''}
-            onChange={(e) => set('email', e.target.value)}
+            onChange={(v) => set('email', v)}
             error={errors.email}
           />
           <Input
@@ -408,10 +430,11 @@ const ConvenioForm = ({
           Endereço
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-6 gap-4">
-          <Input
+          <CepInput
             label="CEP"
             value={values.endereco?.cep ?? ''}
-            onChange={(e) => setEnd('cep', e.target.value)}
+            onChange={(v) => setEnd('cep', v)}
+            error={errors['endereco.cep']}
             containerClassName="sm:col-span-2"
           />
           <Input
@@ -646,6 +669,17 @@ export const ConveniosPage = () => {
       );
     }
   };
+
+  const editarPorId = async (id: string) => {
+    try {
+      openEdit(await convenioService.buscarPorId(id));
+    } catch (err) {
+      bokkaToast.error(
+        err instanceof ApiError ? err.friendlyMessage() : 'Erro ao carregar convênio.',
+      );
+    }
+  };
+  useEditarPorUrl(editarPorId);
 
   const openEdit = (c: Convenio) => {
     setFormInitial({

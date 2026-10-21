@@ -28,7 +28,7 @@ import {
 } from '../services/usuarioService';
 import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../lib/api';
-import { cn } from '../lib/utils';
+import { cn, normalizeEmail } from '../lib/utils';
 import type { PermissaoEnum, RoleEnum, UsuarioDTO } from '../types';
 
 // Rótulos exibidos ao usuário
@@ -428,7 +428,7 @@ const UsuarioForm = ({
       await onSubmit(
         {
           name: name.trim(),
-          email: email.trim(),
+          email: normalizeEmail(email),
           role,
           permissoes: Array.from(permissoes),
           novaSenha: novaSenha || undefined,

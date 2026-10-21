@@ -1,10 +1,18 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Button } from '../../components/ui/Button';
-import { CepInput, CpfInput, Input, PhoneInput, Select } from '../../components/ui/Field';
+import { CepInput, CpfInput, EmailInput, Input, PhoneInput, Select } from '../../components/ui/Field';
 import { Avatar } from '../../components/ui/Avatar';
 import { processImageFile, setPhoto } from '../../lib/profilePhotos';
-import { ApiError } from '../../lib/api';
+import { applyApiError } from '../../lib/formErrors';
+import {
+  coletarErros,
+  omitirVazios,
+  validateCep,
+  validateCpf,
+  validateEmail,
+  validatePhone,
+} from '../../lib/utils';
 import type { Funcionario, SexoEnum, CargoFuncionarioEnum } from '../../types';
 
 interface FuncionarioFormProps {
@@ -13,6 +21,9 @@ interface FuncionarioFormProps {
   onSubmit: (funcionario: Funcionario) => Promise<void>;
   onCancel: () => void;
 }
+
+// Campos do formulário que exibem erro do backend (as demais chaves vão para o aviso geral)
+const CAMPOS_API = ['nomeCompleto', 'cpf', 'sexo', 'cargo', 'email', 'telefoneCelular', 'endereco.cep'] as const;
 
 const emptyFuncionario: Funcionario = {
   nomeCompleto: '',
@@ -78,20 +89,27 @@ export const FuncionarioForm = ({ initial, photoKey, onSubmit, onCancel }: Funci
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
-    setErrors({});
     setGlobalError(null);
+
+    const errosCliente = coletarErros({
+      cpf: validateCpf(values.cpf, { required: true }),
+      email: validateEmail(values.email),
+      telefoneCelular: validatePhone(values.telefoneCelular, { variant: 'celular' }),
+      'endereco.cep': validateCep(values.endereco?.cep),
+    });
+    setErrors(errosCliente);
+    if (Object.keys(errosCliente).length) return;
+
+    setSubmitting(true);
     try {
       if (pendingPhoto && photoKey) setPhoto(photoKey, pendingPhoto);
-      await onSubmit(values);
+      await onSubmit(omitirVazios(values));
     } catch (err) {
-      if (err instanceof ApiError) {
-        const fe = err.fieldErrors();
-        if (Object.keys(fe).length) setErrors(fe);
-        else setGlobalError(err.friendlyMessage());
-      } else {
-        setGlobalError('Não foi possível salvar. Tente novamente.');
-      }
+      applyApiError(err, {
+        campos: CAMPOS_API,
+        setErrors,
+        setGlobalError,
+      });
     } finally {
       setSubmitting(false);
     }
@@ -183,15 +201,15 @@ export const FuncionarioForm = ({ initial, photoKey, onSubmit, onCancel }: Funci
       <section>
         <h3 className="text-sm font-semibold text-bokka-ink mb-3">Contato</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input
+          <EmailInput
             label="E-mail"
-            type="email"
             value={values.email ?? ''}
-            onChange={(e) => set('email', e.target.value)}
+            onChange={(v) => set('email', v)}
             error={errors.email}
           />
           <PhoneInput
             label="Celular"
+            variant="celular"
             value={values.telefoneCelular ?? ''}
             onChange={(v) => set('telefoneCelular', v)}
             error={errors.telefoneCelular}
@@ -206,6 +224,7 @@ export const FuncionarioForm = ({ initial, photoKey, onSubmit, onCancel }: Funci
             label="CEP"
             value={values.endereco?.cep ?? ''}
             onChange={(v) => setEnd('cep', v)}
+            error={errors['endereco.cep']}
             containerClassName="sm:col-span-2"
           />
           <Input

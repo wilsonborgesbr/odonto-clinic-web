@@ -1,10 +1,20 @@
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Button } from '../../components/ui/Button';
-import { CepInput, Input, PhoneInput, Select } from '../../components/ui/Field';
+import { CepInput, CpfInput, EmailInput, Input, PhoneInput, Select } from '../../components/ui/Field';
 import { Avatar } from '../../components/ui/Avatar';
 import { processImageFile, setPhoto } from '../../lib/profilePhotos';
-import { ApiError } from '../../lib/api';
+import { applyApiError } from '../../lib/formErrors';
+import {
+  buildCro,
+  coletarErros,
+  omitirVazios,
+  parseCro,
+  validateCep,
+  validateCpf,
+  validateEmail,
+  validatePhone,
+} from '../../lib/utils';
 import type { Dentista, SexoEnum, EspecialidadeEnum } from '../../types';
 
 // UFs do Brasil (27 = 26 estados + DF) — usado no seletor do CRO
@@ -15,19 +25,20 @@ const UFS = [
 
 const ufOptions = UFS.map((uf) => ({ value: uf, label: uf }));
 
-// Parseia string tipo "CRO-SE 12345" ou "CRO-SE 12345/2022" em partes editáveis
-const parseCro = (cro: string | undefined): { uf: string; numero: string; ano: string } => {
-  if (!cro) return { uf: 'SP', numero: '', ano: '' };
-  const m = cro.match(/^CRO-([A-Z]{2})\s+(\d{4,6})(?:\/(\d{4}))?$/);
-  if (!m) return { uf: 'SP', numero: '', ano: '' };
-  return { uf: m[1], numero: m[2], ano: m[3] ?? '' };
+// Parte o CRO ("CRO-SE 12345" ou "CRO-SE 12345/2022", inclusive variações antigas) em campos editáveis
+const croPartes = (cro: string | undefined): { uf: string; numero: string; ano: string } => {
+  const p = parseCro(cro);
+  if (!p) return { uf: 'SP', numero: '', ano: '' };
+  return (UFS as readonly string[]).includes(p.uf) ? p : { ...p, uf: 'SP' };
 };
 
-// Monta string no formato exigido pelo backend
-const buildCro = (uf: string, numero: string, ano: string): string => {
-  if (!numero) return '';
-  const base = `CRO-${uf} ${numero}`;
-  return ano ? `${base}/${ano}` : base;
+const validarCro = (numero: string, ano: string): string | undefined => {
+  if (!numero) return 'Informe o número do CRO.';
+  if (!/^\d{4,6}$/.test(numero)) return 'Número do CRO deve ter entre 4 e 6 dígitos.';
+  if (ano && (!/^\d{4}$/.test(ano) || Number(ano) < 1900 || Number(ano) > new Date().getFullYear())) {
+    return 'Ano do CRO inválido. Use 4 dígitos, ex.: 2022.';
+  }
+  return undefined;
 };
 
 interface DentistaFormProps {
@@ -37,9 +48,13 @@ interface DentistaFormProps {
   onCancel: () => void;
 }
 
+// Campos do formulário que exibem erro do backend (as demais chaves vão para o aviso geral)
+const CAMPOS_API = ['nomeCompleto', 'sexo', 'cro', 'cpf', 'especialidades', 'email', 'telefoneCelular', 'endereco.cep'] as const;
+
 const emptyDentista: Dentista = {
   nomeCompleto: '',
   cro: '',
+  cpf: '',
   especialidades: [],
   email: '',
   telefoneCelular: '',
@@ -82,7 +97,7 @@ export const DentistaForm = ({ initial, photoKey, onSubmit, onCancel }: Dentista
   const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
 
   // CRO editado como 3 campos separados; parseia o valor inicial se existir
-  const initialCro = useMemo(() => parseCro(initial?.cro), [initial?.cro]);
+  const initialCro = useMemo(() => croPartes(initial?.cro), [initial?.cro]);
   const [croUf, setCroUf] = useState<string>(initialCro.uf);
   const [croNumero, setCroNumero] = useState<string>(initialCro.numero);
   const [croAno, setCroAno] = useState<string>(initialCro.ano);
@@ -108,41 +123,34 @@ export const DentistaForm = ({ initial, photoKey, onSubmit, onCancel }: Dentista
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
-    setErrors({});
     setGlobalError(null);
 
-    // Valida CRO local antes de enviar (backend também valida via @Pattern)
-    if (!croNumero) {
-      setErrors({ cro: 'Informe o número do CRO.' });
-      setSubmitting(false);
-      return;
-    }
-    if (!/^\d{4,6}$/.test(croNumero)) {
-      setErrors({ cro: 'Número do CRO deve ter entre 4 e 6 dígitos.' });
-      setSubmitting(false);
-      return;
-    }
-    if (croAno && !/^\d{4}$/.test(croAno)) {
-      setErrors({ cro: 'Ano deve ter 4 dígitos (ex: 2022).' });
-      setSubmitting(false);
-      return;
-    }
+    // Valida no cliente antes de enviar (o backend também valida o formato canônico)
+    const errosCliente = coletarErros({
+      cro: validarCro(croNumero, croAno),
+      cpf: validateCpf(values.cpf), // opcional: só valida se preenchido
+      email: validateEmail(values.email),
+      telefoneCelular: validatePhone(values.telefoneCelular, { variant: 'celular' }),
+      'endereco.cep': validateCep(values.endereco?.cep),
+    });
+    setErrors(errosCliente);
+    if (Object.keys(errosCliente).length) return;
 
-    const croCompleto = buildCro(croUf, croNumero, croAno);
-    const payload: Dentista = { ...values, cro: croCompleto };
+    const payload: Dentista = omitirVazios({
+      ...values,
+      cro: buildCro(croUf, croNumero, croAno),
+    });
 
+    setSubmitting(true);
     try {
       if (pendingPhoto && photoKey) setPhoto(photoKey, pendingPhoto);
       await onSubmit(payload);
     } catch (err) {
-      if (err instanceof ApiError) {
-        const fe = err.fieldErrors();
-        if (Object.keys(fe).length) setErrors(fe);
-        else setGlobalError(err.friendlyMessage());
-      } else {
-        setGlobalError('Não foi possível salvar. Tente novamente.');
-      }
+      applyApiError(err, {
+        campos: CAMPOS_API,
+        setErrors,
+        setGlobalError,
+      });
     } finally {
       setSubmitting(false);
     }
@@ -209,6 +217,15 @@ export const DentistaForm = ({ initial, photoKey, onSubmit, onCancel }: Dentista
             error={errors.sexo}
           />
 
+          <CpfInput
+            label="CPF (opcional)"
+            value={values.cpf ?? ''}
+            onChange={(v) => set('cpf', v)}
+            error={errors.cpf}
+            hint="Não é obrigatório para cadastrar o dentista."
+            containerClassName="sm:col-span-6"
+          />
+
           {/* CRO: UF + número + ano opcional (padrão dos sistemas brasileiros) */}
           <Select
             label="CRO — UF"
@@ -238,6 +255,12 @@ export const DentistaForm = ({ initial, photoKey, onSubmit, onCancel }: Dentista
             containerClassName="sm:col-span-2"
           />
         </div>
+        {initial?.cro && !parseCro(initial.cro) && (
+          <p className="text-xs text-bokka-ink-3 mt-2">
+            CRO anterior fora do padrão: <span className="font-mono">{initial.cro}</span>. Confira UF
+            e número acima.
+          </p>
+        )}
         {croNumero && (
           <p className="text-xs text-bokka-ink-3 mt-2">
             Registro completo:{' '}
@@ -277,15 +300,15 @@ export const DentistaForm = ({ initial, photoKey, onSubmit, onCancel }: Dentista
       <section>
         <h3 className="text-sm font-semibold text-bokka-ink mb-3">Contato</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input
+          <EmailInput
             label="E-mail"
-            type="email"
             value={values.email ?? ''}
-            onChange={(e) => set('email', e.target.value)}
+            onChange={(v) => set('email', v)}
             error={errors.email}
           />
           <PhoneInput
             label="Celular"
+            variant="celular"
             value={values.telefoneCelular ?? ''}
             onChange={(v) => set('telefoneCelular', v)}
             error={errors.telefoneCelular}
@@ -300,6 +323,7 @@ export const DentistaForm = ({ initial, photoKey, onSubmit, onCancel }: Dentista
             label="CEP"
             value={values.endereco?.cep ?? ''}
             onChange={(v) => setEnd('cep', v)}
+            error={errors['endereco.cep']}
             containerClassName="sm:col-span-2"
           />
           <Input

@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { BottomNav } from './BottomNav';
+import { PendenciasBanner } from './PendenciasBanner';
 
 export const AppLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -15,6 +16,7 @@ export const AppLayout = () => {
         <Header onToggleSidebar={() => setSidebarOpen((v) => !v)} />
         <main className="flex-1 px-4 lg:px-8 py-6 lg:py-8 pb-20 lg:pb-8">
           <div className="mx-auto max-w-[1440px]">
+            <PendenciasBanner />
             <Outlet />
           </div>
         </main>

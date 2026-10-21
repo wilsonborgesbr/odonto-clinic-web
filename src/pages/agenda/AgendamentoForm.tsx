@@ -6,7 +6,7 @@ import { ApiError } from '../../lib/api';
 import { useDentistasAtivos } from '../../services/dentistaService';
 import { PacienteCombobox } from '../../components/PacienteCombobox';
 import { usePaciente } from '../../services/pacienteService';
-import { formatCurrency } from '../../lib/utils';
+import { formatCro, formatCurrency } from '../../lib/utils';
 import type {
   Agendamento,
   NomeProcedimentoEnum,
@@ -139,7 +139,7 @@ export const AgendamentoForm = ({ initial, onSubmit, onCancel }: AgendamentoForm
     { value: '', label: '— Selecione um dentista —' },
     ...(dentistasQ.data?.map((d) => ({
       value: d.id,
-      label: `Dr(a). ${d.nomeCompleto} · ${d.cro}`,
+      label: `Dr(a). ${d.nomeCompleto} · ${formatCro(d.cro)}`,
     })) ?? []),
   ];
 

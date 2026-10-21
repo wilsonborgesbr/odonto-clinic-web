@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
   Search,
@@ -18,9 +19,12 @@ import { Modal, ConfirmModal } from '../../components/ui/Modal';
 import { bokkaToast } from '../../components/ui/Toast';
 import { Avatar } from '../../components/ui/Avatar';
 import { photoKeys } from '../../lib/profilePhotos';
+import { useEditarPorUrl } from '../../hooks/useEditarPorUrl';
 import { DentistaForm } from './DentistaForm';
 import { DentistaDetalheModal } from './DentistaDetalheModal';
 import {
+  dentistaKeys,
+  dentistaService,
   useDentistas,
   useCriarDentista,
   useAtualizarDentista,
@@ -28,7 +32,7 @@ import {
   useReativarDentista,
 } from '../../services/dentistaService';
 import { ApiError } from '../../lib/api';
-import { formatPhone, sanitizeEnderecoPayload } from '../../lib/utils';
+import { formatCro, formatPhone, sanitizeEnderecoPayload } from '../../lib/utils';
 import type { Dentista, EspecialidadeEnum } from '../../types';
 
 const espLabel: Record<EspecialidadeEnum, string> = {
@@ -52,6 +56,7 @@ export const DentistasPage = () => {
   const [confirmar, setConfirmar] = useState<{ id: string; nome: string } | null>(null);
   const [detalheId, setDetalheId] = useState<string | null>(null);
 
+  const qc = useQueryClient();
   const dentistasQ = useDentistas({ pagina: 0, tamanho: 100 });
   const criarM = useCriarDentista();
   const atualizarM = useAtualizarDentista();
@@ -123,11 +128,43 @@ export const DentistasPage = () => {
     }
   };
 
-  const openEdit = (d: typeof todos[0]) => {
+  const editarPorId = async (id: string) => {
+    try {
+      const completo = await qc.fetchQuery({
+        queryKey: dentistaKeys.detail(id),
+        queryFn: () => dentistaService.buscarPorId(id),
+        staleTime: 0,
+      });
+      setFormInitial(completo);
+      setFormOpen(true);
+    } catch (err) {
+      bokkaToast.error(
+        err instanceof ApiError ? err.friendlyMessage() : 'Erro ao carregar dentista.',
+      );
+    }
+  };
+  useEditarPorUrl(editarPorId);
+
+  const openEdit = async (d: typeof todos[0]) => {
+    // A listagem não traz todos os campos (ex.: CPF); edita sobre o cadastro completo para
+    // não apagar nada no PUT. Se a busca falhar, cai para os dados da listagem.
+    const completo = await qc
+      .fetchQuery({
+        queryKey: dentistaKeys.detail(d.id),
+        queryFn: () => dentistaService.buscarPorId(d.id),
+        staleTime: 0,
+      })
+      .catch(() => null);
+    if (completo) {
+      setFormInitial(completo);
+      setFormOpen(true);
+      return;
+    }
     setFormInitial({
       id: d.id,
       nomeCompleto: d.nomeCompleto,
       cro: d.cro,
+      cpf: d.cpf,
       especialidades: d.especialidades,
       email: d.email,
       telefoneCelular: d.telefoneCelular,
@@ -248,7 +285,7 @@ export const DentistasPage = () => {
                       {d.ativo ? 'Ativo' : 'Inativo'}
                     </Badge>
                   </div>
-                  <p className="text-xs text-bokka-ink-3 mt-0.5 tabular-nums">{d.cro}</p>
+                  <p className="text-xs text-bokka-ink-3 mt-0.5 tabular-nums">{formatCro(d.cro)}</p>
                   <div className="flex flex-wrap gap-1 mt-1.5">
                     {(d.especialidades ?? []).slice(0, 3).map((esp) => (
                       <span

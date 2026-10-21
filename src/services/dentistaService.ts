@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import type { Dentista, DentistaListagemDTO, PageResponse } from '../types';
+import { cadastroKeys } from './cadastroService';
 
 export interface ListarDentistasParams {
   pagina?: number;
@@ -66,7 +67,10 @@ export const useCriarDentista = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: dentistaService.criar,
-    onSuccess: () => qc.invalidateQueries({ queryKey: dentistaKeys.all }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: dentistaKeys.all });
+      qc.invalidateQueries({ queryKey: cadastroKeys.pendencias() });
+    },
   });
 };
 
@@ -76,6 +80,7 @@ export const useAtualizarDentista = () => {
     mutationFn: ({ id, dentista }: { id: string; dentista: Dentista }) =>
       dentistaService.atualizar(id, dentista),
     onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: cadastroKeys.pendencias() });
       qc.invalidateQueries({ queryKey: dentistaKeys.all });
       qc.invalidateQueries({ queryKey: dentistaKeys.detail(vars.id) });
     },
@@ -86,7 +91,10 @@ export const useInativarDentista = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: dentistaService.inativar,
-    onSuccess: () => qc.invalidateQueries({ queryKey: dentistaKeys.all }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: dentistaKeys.all });
+      qc.invalidateQueries({ queryKey: cadastroKeys.pendencias() });
+    },
   });
 };
 
@@ -94,6 +102,9 @@ export const useReativarDentista = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: dentistaService.reativar,
-    onSuccess: () => qc.invalidateQueries({ queryKey: dentistaKeys.all }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: dentistaKeys.all });
+      qc.invalidateQueries({ queryKey: cadastroKeys.pendencias() });
+    },
   });
 };

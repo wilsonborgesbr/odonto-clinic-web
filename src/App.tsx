@@ -20,6 +20,7 @@ const EstoquePage = lazy(() => import('./pages/estoque/EstoquePage').then(m => (
 const ConveniosPage = lazy(() => import('./pages/convenios/ConveniosPage').then(m => ({ default: m.ConveniosPage })));
 const Usuarios = lazy(() => import('./pages/Usuarios').then(m => ({ default: m.Usuarios })));
 const Perfil = lazy(() => import('./pages/Perfil').then(m => ({ default: m.Perfil })));
+const PendenciasPage = lazy(() => import('./pages/cadastros/PendenciasPage').then(m => ({ default: m.PendenciasPage })));
 const Configuracoes = lazy(() => import('./pages/Configuracoes').then(m => ({ default: m.Configuracoes })));
 
 const PageFallback = () => (
@@ -58,6 +59,7 @@ const AppRoutes = () => (
         <Route element={<AppLayout />}>
           <Route path="/perfil" element={<Perfil />} />
           <Route path="/configuracoes" element={<Configuracoes />} />
+          <Route path="/cadastros/pendencias" element={<PendenciasPage />} />
 
           <Route
             path="/"

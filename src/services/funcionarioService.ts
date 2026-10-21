@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import type { Funcionario, FuncionarioListagemDTO, PageResponse } from '../types';
+import { cadastroKeys } from './cadastroService';
 
 export interface ListarFuncionariosParams {
   pagina?: number;
@@ -52,7 +53,10 @@ export const useCriarFuncionario = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: funcionarioService.criar,
-    onSuccess: () => qc.invalidateQueries({ queryKey: funcionarioKeys.all }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: funcionarioKeys.all });
+      qc.invalidateQueries({ queryKey: cadastroKeys.pendencias() });
+    },
   });
 };
 
@@ -62,6 +66,7 @@ export const useAtualizarFuncionario = () => {
     mutationFn: ({ id, funcionario }: { id: string; funcionario: Funcionario }) =>
       funcionarioService.atualizar(id, funcionario),
     onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: cadastroKeys.pendencias() });
       qc.invalidateQueries({ queryKey: funcionarioKeys.all });
       qc.invalidateQueries({ queryKey: funcionarioKeys.detail(vars.id) });
     },
@@ -72,7 +77,10 @@ export const useInativarFuncionario = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: funcionarioService.inativar,
-    onSuccess: () => qc.invalidateQueries({ queryKey: funcionarioKeys.all }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: funcionarioKeys.all });
+      qc.invalidateQueries({ queryKey: cadastroKeys.pendencias() });
+    },
   });
 };
 
@@ -80,6 +88,9 @@ export const useReativarFuncionario = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: funcionarioService.reativar,
-    onSuccess: () => qc.invalidateQueries({ queryKey: funcionarioKeys.all }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: funcionarioKeys.all });
+      qc.invalidateQueries({ queryKey: cadastroKeys.pendencias() });
+    },
   });
 };

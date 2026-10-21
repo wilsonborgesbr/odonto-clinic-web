@@ -9,6 +9,17 @@ export const TOKEN_STORAGE_KEY = 'token';
  * evita "piscar" valores visíveis antes do /me responder, e é limpa no logout para
  * não vazar a preferência de um usuário para o próximo que logar no mesmo navegador. */
 export const FINANCIAL_VISIBILITY_STORAGE_KEY = 'bokka:financeiro-visivel';
+/** Total de pendências de cadastro que o usuário dispensou no aviso (sessionStorage). */
+export const PENDENCIAS_DISPENSADO_KEY = 'bokka:pendencias-dispensado';
+
+/** Limpa o "dispensar" do aviso de pendências, para não valer para o próximo usuário do navegador. */
+export const limparPendenciasDispensado = () => {
+  try {
+    sessionStorage.removeItem(PENDENCIAS_DISPENSADO_KEY);
+  } catch {
+    /* sessionStorage indisponível: nada a limpar */
+  }
+};
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -23,12 +34,32 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Endpoints complementares cujo 403 significa só "sem permissão para isto" — não é sessão inválida.
+const IGNORAR_403 = ['/api/cadastros/pendencias'];
+
+// Aceita URL relativa ou absoluta da própria API; compara só o pathname (sem query string) e
+// uma URL absoluta de outro host nunca é isenta.
+const isento403 = (url: string): boolean => {
+  try {
+    const alvo = new URL(url, API_URL);
+    if (alvo.origin !== new URL(API_URL, window.location.origin).origin) return false;
+    return IGNORAR_403.some((p) => alvo.pathname === p);
+  } catch {
+    return false;
+  }
+};
+
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError<ApiErrorResponse>) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
+    const url = error.config?.url ?? '';
+    const sessaoInvalida =
+      error.response?.status === 401 ||
+      (error.response?.status === 403 && !isento403(url));
+    if (sessaoInvalida) {
       if (localStorage.getItem(TOKEN_STORAGE_KEY)) {
         localStorage.removeItem(TOKEN_STORAGE_KEY);
+        limparPendenciasDispensado();
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';
         }

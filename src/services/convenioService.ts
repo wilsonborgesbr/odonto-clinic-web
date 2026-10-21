@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import type { Convenio } from '../types';
+import { cadastroKeys } from './cadastroService';
 
 export const convenioService = {
   listar: async () => (await api.get<Convenio[]>('/api/convenios')).data,
@@ -35,7 +36,10 @@ export const useCriarConvenio = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: convenioService.criar,
-    onSuccess: () => qc.invalidateQueries({ queryKey: convenioKeys.all }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: convenioKeys.all });
+      qc.invalidateQueries({ queryKey: cadastroKeys.pendencias() });
+    },
   });
 };
 
@@ -44,7 +48,10 @@ export const useAtualizarConvenio = () => {
   return useMutation({
     mutationFn: ({ id, convenio }: { id: string; convenio: Convenio }) =>
       convenioService.atualizar(id, convenio),
-    onSuccess: () => qc.invalidateQueries({ queryKey: convenioKeys.all }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: convenioKeys.all });
+      qc.invalidateQueries({ queryKey: cadastroKeys.pendencias() });
+    },
   });
 };
 
@@ -52,7 +59,10 @@ export const useInativarConvenio = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: convenioService.inativar,
-    onSuccess: () => qc.invalidateQueries({ queryKey: convenioKeys.all }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: convenioKeys.all });
+      qc.invalidateQueries({ queryKey: cadastroKeys.pendencias() });
+    },
   });
 };
 
@@ -60,6 +70,9 @@ export const useReativarConvenio = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: convenioService.reativar,
-    onSuccess: () => qc.invalidateQueries({ queryKey: convenioKeys.all }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: convenioKeys.all });
+      qc.invalidateQueries({ queryKey: cadastroKeys.pendencias() });
+    },
   });
 };

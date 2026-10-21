@@ -5,7 +5,8 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from 'react';
-import { cn } from '../../lib/utils';
+import { cn, maskCep, maskCnpj, maskCpf, maskPhone, normalizeEmail } from '../../lib/utils';
+import type { PhoneVariant } from '../../lib/utils';
 
 interface FieldWrapProps {
   label?: string;
@@ -212,117 +213,97 @@ interface MaskedInputProps
   onChange: (value: string) => void;
 }
 
-const onlyDigits = (s: string) => s.replace(/\D/g, '');
+// Todos emitem o valor já no formato canônico (ex.: "123.456.789-09"); vazio vira "".
 
-// CPF: XXX.XXX.XXX-XX (11 dígitos)
-const formatCpf = (v: string): string => {
-  const d = onlyDigits(v).slice(0, 11);
-  if (d.length <= 3) return d;
-  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
-  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
-  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+const maskedInputClass = (error?: string, className?: string) =>
+  cn(
+    inputBase,
+    'tabular-nums',
+    error
+      ? 'border-bokka-danger focus-visible:outline-bokka-danger'
+      : 'border-bokka-border-strong',
+    className,
+  );
+
+interface MaskedFieldConfig {
+  mask: (v: string) => string;
+  placeholder: string;
+  maxLength: number;
+  autoComplete: string;
+  /** Padrão 'numeric'; use 'text' quando o campo aceita letras (CNPJ alfanumérico). */
+  inputMode?: 'numeric' | 'text';
+}
+
+const createMaskedInput = (displayName: string, cfg: MaskedFieldConfig) => {
+  const Component = forwardRef<HTMLInputElement, MaskedInputProps>(function MaskedField(
+    { label, hint, error, containerClassName, value, onChange, className, id, ...rest },
+    ref,
+  ) {
+    const autoId = useId();
+    const inputId = id ?? autoId;
+    return (
+      <FieldWrap
+        label={label}
+        hint={hint}
+        error={error}
+        required={rest.required}
+        className={containerClassName}
+        id={inputId}
+      >
+        <input
+          ref={ref}
+          id={inputId}
+          type="text"
+          inputMode={cfg.inputMode ?? 'numeric'}
+          autoCapitalize={cfg.inputMode === 'text' ? 'characters' : undefined}
+          autoComplete={cfg.autoComplete}
+          placeholder={cfg.placeholder}
+          maxLength={cfg.maxLength}
+          value={cfg.mask(value ?? '')}
+          onChange={(e) => onChange(cfg.mask(e.target.value))}
+          className={maskedInputClass(error, className)}
+          {...rest}
+        />
+      </FieldWrap>
+    );
+  });
+  Component.displayName = displayName;
+  return Component;
 };
 
-export const CpfInput = forwardRef<HTMLInputElement, MaskedInputProps>(function CpfInput(
-  { label, hint, error, containerClassName, value, onChange, className, id, ...rest },
-  ref,
-) {
-  const autoId = useId();
-  const inputId = id ?? autoId;
-  return (
-    <FieldWrap
-      label={label}
-      hint={hint}
-      error={error}
-      required={rest.required}
-      className={containerClassName}
-      id={inputId}
-    >
-      <input
-        ref={ref}
-        id={inputId}
-        type="text"
-        inputMode="numeric"
-        autoComplete="off"
-        placeholder="000.000.000-00"
-        maxLength={14}
-        value={formatCpf(value ?? '')}
-        onChange={(e) => onChange(onlyDigits(e.target.value))}
-        className={cn(
-          inputBase,
-          'tabular-nums',
-          error
-            ? 'border-bokka-danger focus-visible:outline-bokka-danger'
-            : 'border-bokka-border-strong',
-          className,
-        )}
-        {...rest}
-      />
-    </FieldWrap>
-  );
+// CPF: 000.000.000-00
+export const CpfInput = createMaskedInput('CpfInput', {
+  mask: maskCpf,
+  placeholder: '000.000.000-00',
+  maxLength: 14,
+  autoComplete: 'off',
 });
 
-// CEP: XXXXX-XXX (8 dígitos)
-const formatCep = (v: string): string => {
-  const d = onlyDigits(v).slice(0, 8);
-  if (d.length <= 5) return d;
-  return `${d.slice(0, 5)}-${d.slice(5)}`;
-};
-
-export const CepInput = forwardRef<HTMLInputElement, MaskedInputProps>(function CepInput(
-  { label, hint, error, containerClassName, value, onChange, className, id, ...rest },
-  ref,
-) {
-  const autoId = useId();
-  const inputId = id ?? autoId;
-  return (
-    <FieldWrap
-      label={label}
-      hint={hint}
-      error={error}
-      required={rest.required}
-      className={containerClassName}
-      id={inputId}
-    >
-      <input
-        ref={ref}
-        id={inputId}
-        type="text"
-        inputMode="numeric"
-        autoComplete="postal-code"
-        placeholder="00000-000"
-        maxLength={9}
-        value={formatCep(value ?? '')}
-        onChange={(e) => onChange(onlyDigits(e.target.value))}
-        className={cn(
-          inputBase,
-          'tabular-nums',
-          error
-            ? 'border-bokka-danger focus-visible:outline-bokka-danger'
-            : 'border-bokka-border-strong',
-          className,
-        )}
-        {...rest}
-      />
-    </FieldWrap>
-  );
+// CNPJ: 00.000.000/0000-00 — aceita letras maiúsculas nas 12 primeiras posições (CNPJ alfanumérico)
+export const CnpjInput = createMaskedInput('CnpjInput', {
+  mask: maskCnpj,
+  placeholder: '00.000.000/0000-00',
+  maxLength: 18,
+  autoComplete: 'off',
+  inputMode: 'text',
 });
 
-// Telefone/celular BR:
-//  - Fixo: (XX) XXXX-XXXX — 10 dígitos
-//  - Celular: (XX) XXXXX-XXXX — 11 dígitos (9 como primeiro do número)
-const formatPhoneBr = (v: string): string => {
-  const d = onlyDigits(v).slice(0, 11);
-  if (d.length === 0) return '';
-  if (d.length <= 2) return `(${d}`;
-  if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
-  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
-};
+// CEP: 00000-000
+export const CepInput = createMaskedInput('CepInput', {
+  mask: maskCep,
+  placeholder: '00000-000',
+  maxLength: 9,
+  autoComplete: 'postal-code',
+});
 
+// Telefone BR:
+//  - celular: (XX) 9XXXX-XXXX — 11 dígitos
+//  - fixo: (XX) XXXX-XXXX — 10 dígitos
+//  - auto: celular se o número começa com 9 depois do DDD, senão fixo
+//  - servico: como auto, e também 0800/0300 ("0800 123 4567")
 interface PhoneInputProps extends MaskedInputProps {
-  /** Padrão: 'celular'. Use 'fixo' para (XX) XXXX-XXXX ou 'auto' para detectar. */
-  variant?: 'celular' | 'fixo' | 'auto';
+  /** Padrão: 'auto'. 'celular' força (XX) 9XXXX-XXXX; 'fixo' força (XX) XXXX-XXXX; 'servico' aceita também 0800/0300. */
+  variant?: PhoneVariant;
 }
 
 export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(function PhoneInput(
@@ -343,8 +324,7 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(function
 ) {
   const autoId = useId();
   const inputId = id ?? autoId;
-  const defaultPlaceholder =
-    variant === 'fixo' ? '(00) 0000-0000' : '(00) 00000-0000';
+  const defaultPlaceholder = variant === 'fixo' ? '(00) 0000-0000' : '(00) 00000-0000';
   return (
     <FieldWrap
       label={label}
@@ -362,16 +342,42 @@ export const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(function
         autoComplete="tel"
         placeholder={placeholder ?? defaultPlaceholder}
         maxLength={15}
-        value={formatPhoneBr(value ?? '')}
-        onChange={(e) => onChange(onlyDigits(e.target.value))}
-        className={cn(
-          inputBase,
-          'tabular-nums',
-          error
-            ? 'border-bokka-danger focus-visible:outline-bokka-danger'
-            : 'border-bokka-border-strong',
-          className,
-        )}
+        value={maskPhone(value ?? '', variant)}
+        onChange={(e) => onChange(maskPhone(e.target.value, variant))}
+        className={maskedInputClass(error, className)}
+        {...rest}
+      />
+    </FieldWrap>
+  );
+});
+
+// E-mail: sempre minúsculo e sem espaços nas pontas.
+export const EmailInput = forwardRef<HTMLInputElement, MaskedInputProps>(function EmailInput(
+  { label, hint, error, containerClassName, value, onChange, className, id, ...rest },
+  ref,
+) {
+  const autoId = useId();
+  const inputId = id ?? autoId;
+  return (
+    <FieldWrap
+      label={label}
+      hint={hint}
+      error={error}
+      required={rest.required}
+      className={containerClassName}
+      id={inputId}
+    >
+      <input
+        ref={ref}
+        id={inputId}
+        type="email"
+        inputMode="email"
+        autoComplete="email"
+        autoCapitalize="none"
+        spellCheck={false}
+        value={value ?? ''}
+        onChange={(e) => onChange(normalizeEmail(e.target.value))}
+        className={maskedInputClass(error, className)}
         {...rest}
       />
     </FieldWrap>

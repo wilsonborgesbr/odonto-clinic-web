@@ -20,7 +20,9 @@ import { Avatar } from '../../components/ui/Avatar';
 import { photoKeys } from '../../lib/profilePhotos';
 import { FuncionarioForm } from './FuncionarioForm';
 import { FuncionarioDetalheModal } from './FuncionarioDetalheModal';
+import { useEditarPorUrl } from '../../hooks/useEditarPorUrl';
 import {
+  funcionarioService,
   useFuncionarios,
   useCriarFuncionario,
   useAtualizarFuncionario,
@@ -28,7 +30,7 @@ import {
   useReativarFuncionario,
 } from '../../services/funcionarioService';
 import { ApiError } from '../../lib/api';
-import { formatPhone, sanitizeEnderecoPayload } from '../../lib/utils';
+import { formatCpf, formatPhone, sanitizeEnderecoPayload } from '../../lib/utils';
 import type { Funcionario, CargoFuncionarioEnum } from '../../types';
 
 const cargoLabel: Record<CargoFuncionarioEnum, string> = {
@@ -131,6 +133,18 @@ export const FuncionariosPage = () => {
       );
     }
   };
+
+  const editarPorId = async (id: string) => {
+    try {
+      setFormInitial(await funcionarioService.buscarPorId(id));
+      setFormOpen(true);
+    } catch (err) {
+      bokkaToast.error(
+        err instanceof ApiError ? err.friendlyMessage() : 'Erro ao carregar funcionário.',
+      );
+    }
+  };
+  useEditarPorUrl(editarPorId);
 
   const openEdit = (f: typeof todos[0]) => {
     setFormInitial({
@@ -257,7 +271,7 @@ export const FuncionariosPage = () => {
                       {f.ativo ? 'Ativo' : 'Inativo'}
                     </Badge>
                   </div>
-                  <p className="text-xs text-bokka-ink-3 mt-0.5 tabular-nums">{f.cpf}</p>
+                  <p className="text-xs text-bokka-ink-3 mt-0.5 tabular-nums">{formatCpf(f.cpf)}</p>
                   <span className="inline-block mt-1.5 px-2 py-0.5 rounded-full bg-bokka-primary-soft text-bokka-primary text-[10px] font-semibold">
                     {cargoLabel[f.cargo] ?? f.cargo}
                   </span>

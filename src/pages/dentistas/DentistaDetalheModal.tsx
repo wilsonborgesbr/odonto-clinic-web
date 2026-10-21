@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   User as UserIcon,
   Award,
+  IdCard,
 } from 'lucide-react';
 import { Badge, AgendamentoStatusBadge } from '../../components/ui/Badge';
 import { Skeleton } from '../../components/ui/Skeleton';
@@ -22,7 +23,15 @@ import { useDentista, useAtualizarDentista } from '../../services/dentistaServic
 import { useAgendamentosPorDentista } from '../../services/agendamentoService';
 import { Avatar } from '../../components/ui/Avatar';
 import { photoKeys } from '../../lib/profilePhotos';
-import { cn, formatDate, formatPhone, formatTime, sanitizeEnderecoPayload } from '../../lib/utils';
+import {
+  cn,
+  formatCpf,
+  formatCro,
+  formatDate,
+  formatPhone,
+  formatTime,
+  sanitizeEnderecoPayload,
+} from '../../lib/utils';
 import type { Dentista, EspecialidadeEnum } from '../../types';
 
 const espLabel: Record<EspecialidadeEnum, string> = {
@@ -149,7 +158,7 @@ export const DentistaDetalheModal = ({ dentistaId, open, onClose }: DentistaDeta
                   </div>
                   <p className="text-sm text-bokka-ink-3 mt-1 flex items-center gap-1.5">
                     <Award className="w-3.5 h-3.5" strokeWidth={2} />
-                    {dentista.cro}
+                    {formatCro(dentista.cro)}
                   </p>
                 </div>
               </div>
@@ -208,6 +217,13 @@ export const DentistaDetalheModal = ({ dentistaId, open, onClose }: DentistaDeta
                     label="Sexo"
                     value={dentista.sexo === 'FEMININO' ? 'Feminino' : dentista.sexo === 'MASCULINO' ? 'Masculino' : 'Outro'}
                   />
+                  {dentista.cpf && (
+                    <BasicRow
+                      icon={<IdCard className="w-4 h-4" strokeWidth={1.75} />}
+                      label="CPF"
+                      value={formatCpf(dentista.cpf)}
+                    />
+                  )}
                   <BasicRow
                     icon={<Phone className="w-4 h-4" strokeWidth={1.75} />}
                     label="Celular"
@@ -309,7 +325,7 @@ export const DentistaDetalheModal = ({ dentistaId, open, onClose }: DentistaDeta
                   </div>
                 </div>
                 <p className="text-2xl font-bold tabular-nums tracking-wider mt-6">
-                  {dentista.cro || '•••• ••••'}
+                  {dentista.cro ? formatCro(dentista.cro) : '•••• ••••'}
                 </p>
                 <div className="flex justify-between items-end mt-6">
                   <div>

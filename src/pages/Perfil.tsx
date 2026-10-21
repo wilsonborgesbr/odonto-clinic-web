@@ -7,6 +7,7 @@ import { ConfirmModal } from '../components/ui/Modal';
 import { bokkaToast } from '../components/ui/Toast';
 import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../lib/api';
+import { normalizeEmail } from '../lib/utils';
 import { photoKeys, removePhoto } from '../lib/profilePhotos';
 import type { RoleEnum } from '../types';
 
@@ -112,7 +113,7 @@ export const Perfil = () => {
     }
     setSavingEmail(true);
     try {
-      await updateEmail(trimmed);
+      await updateEmail(normalizeEmail(trimmed));
       bokkaToast.success('E-mail atualizado.');
       setEditingEmail(false);
     } catch (err) {

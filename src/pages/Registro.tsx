@@ -5,7 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import { BokkaMark } from '../components/BokkaMark';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Field';
-import { ApiError } from '../lib/api';
+import { applyApiError } from '../lib/formErrors';
+import { normalizeEmail } from '../lib/utils';
 import { bokkaToast } from '../components/ui/Toast';
 
 export const Registro = () => {
@@ -30,19 +31,18 @@ export const Registro = () => {
         clinicaCodigo: clinicaCodigo.trim().toLowerCase(),
         clinicaNome: clinicaNome.trim(),
         adminNome: adminNome.trim(),
-        adminEmail: adminEmail.trim(),
+        adminEmail: normalizeEmail(adminEmail),
         adminPassword,
       });
       bokkaToast.success('Clínica criada — você é a proprietária.');
       navigate('/', { replace: true });
     } catch (err) {
-      if (err instanceof ApiError) {
-        const fe = err.fieldErrors();
-        if (Object.keys(fe).length) setFieldErrors(fe);
-        else setError(err.friendlyMessage());
-      } else {
-        setError('Não foi possível criar a clínica.');
-      }
+      applyApiError(err, {
+        campos: ['clinicaCodigo', 'clinicaNome', 'adminNome', 'adminEmail', 'adminPassword'],
+        setErrors: setFieldErrors,
+        setGlobalError: setError,
+        fallback: 'Não foi possível criar a clínica.',
+      });
     } finally {
       setLoading(false);
     }

@@ -1,7 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { jwtDecode } from 'jwt-decode';
-import { api, FINANCIAL_VISIBILITY_STORAGE_KEY, TOKEN_STORAGE_KEY } from '../lib/api';
+import {
+  api,
+  FINANCIAL_VISIBILITY_STORAGE_KEY,
+  limparPendenciasDispensado,
+  TOKEN_STORAGE_KEY,
+} from '../lib/api';
 import type {
   AuthResponseDTO,
   LoginRequestDTO,
@@ -99,6 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Evita que a preferência de visibilidade financeira do usuário que saiu "vaze"
     // (via flash visual) para o próximo usuário que logar neste mesmo navegador.
     localStorage.removeItem(FINANCIAL_VISIBILITY_STORAGE_KEY);
+    limparPendenciasDispensado();
     setToken(null);
     setUser(null);
   }, []);
