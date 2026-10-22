@@ -22,7 +22,7 @@ import {
 } from '../../services/estoqueService';
 import { useCriarContaPagar } from '../../services/financeiroService';
 import { ApiError } from '../../lib/api';
-import { cn, formatDate } from '../../lib/utils';
+import { cn, formatDate, hojeIso } from '../../lib/utils';
 import type { Estoque, CategoriaEstoqueEnum } from '../../types';
 
 const allCategorias: CategoriaEstoqueEnum[] = [
@@ -83,9 +83,9 @@ export const EstoquePage = () => {
               categoria: 'MATERIAL_ODONTOLOGICO',
               fornecedor: values.fornecedor || undefined,
               valor: total,
-              dataVencimento: new Date().toISOString().slice(0, 10),
+              dataVencimento: hojeIso(),
               status: 'PAGO',
-              dataPagamento: new Date().toISOString().slice(0, 10),
+              dataPagamento: hojeIso(),
             });
             bokkaToast.success(`Item cadastrado. Despesa de R$ ${total.toFixed(2)} lançada na Auditoria.`);
           } catch {

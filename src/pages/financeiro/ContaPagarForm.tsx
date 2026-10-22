@@ -3,7 +3,7 @@ import type { FormEvent } from 'react';
 import { Button } from '../../components/ui/Button';
 import { CurrencyInput, Input, Select, Textarea } from '../../components/ui/Field';
 import { ApiError } from '../../lib/api';
-import { formatCurrency } from '../../lib/utils';
+import { formatCurrency, hojeIso } from '../../lib/utils';
 import type {
   CategoriaContaPagarEnum,
   ContaPagar,
@@ -83,7 +83,7 @@ export const ContaPagarForm = ({ initial, onSubmit, onCancel }: ContaPagarFormPr
       const payload: ContaPagar = {
         ...values,
         dataPagamento: values.status === 'PAGO' && !values.dataPagamento
-          ? new Date().toISOString().slice(0, 10)
+          ? hojeIso()
           : values.dataPagamento || undefined,
       };
       await onSubmit(payload);

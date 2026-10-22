@@ -300,6 +300,44 @@ const timeFormatter = new Intl.DateTimeFormat('pt-BR', {
   minute: '2-digit',
 });
 
+// FORÇA DE SENHA
+
+export type NivelSenha = 'vazia' | 'fraca' | 'media' | 'forte';
+
+export interface AvaliacaoSenha {
+  nivel: NivelSenha;
+  /** Único requisito que bloqueia o envio. */
+  minimo: boolean;
+  oitoOuMais: boolean;
+  letrasENumeros: boolean;
+  maiusculaEMinuscula: boolean;
+  simbolo: boolean;
+}
+
+export const SENHA_MIN_CARACTERES = 6;
+
+/**
+ * Orienta quem escolhe a senha (o backend é quem decide o que aceita). Extras = 8+ caracteres,
+ * letras e números, maiúscula e minúscula, símbolo: Fraca (< 6 caracteres ou até 1 extra),
+ * Média (2 extras), Forte (3 ou mais).
+ */
+export const avaliarSenha = (senha: string): AvaliacaoSenha => {
+  const minimo = senha.length >= SENHA_MIN_CARACTERES;
+  const oitoOuMais = senha.length >= 8;
+  const letrasENumeros = /[A-Za-zÀ-ÿ]/.test(senha) && /\d/.test(senha);
+  const maiusculaEMinuscula = /\p{Ll}/u.test(senha) && /\p{Lu}/u.test(senha);
+  const simbolo = /[^\p{L}\d\s]/u.test(senha);
+  const extras = [oitoOuMais, letrasENumeros, maiusculaEMinuscula, simbolo].filter(Boolean).length;
+
+  let nivel: NivelSenha;
+  if (senha.length === 0) nivel = 'vazia';
+  else if (!minimo || extras <= 1) nivel = 'fraca';
+  else if (extras === 2) nivel = 'media';
+  else nivel = 'forte';
+
+  return { nivel, minimo, oitoOuMais, letrasENumeros, maiusculaEMinuscula, simbolo };
+};
+
 // ORDENAÇÃO DE NOMES
 
 // sensitivity 'base': "Álvaro" = "alvaro" = "ALVARO"; o Collator é criado uma vez (reaproveitado em cada sort).
@@ -325,6 +363,24 @@ const partesDataPura = (iso?: string | null): { ano: number; mes: number; dia: n
   if (ano < 1900 || mes < 1 || mes > 12 || dia < 1) return null;
   if (dia > new Date(Date.UTC(ano, mes, 0)).getUTCDate()) return null;
   return { ano, mes, dia };
+};
+
+/**
+ * A data 'AAAA-MM-DD' (ou 'AAAA-MM-DDTHH:mm...') cai no mês (mes0 = 0 a 11) do ano? Lê o texto: NÃO passa por
+ * new Date(string), que trata 'AAAA-MM-DD' como UTC e, no fuso de Brasília, joga o dia 1 para o mês anterior.
+ */
+export const mesmoMes = (iso: string | undefined | null, ano: number, mes0: number): boolean => {
+  const m = /^([0-9]{4})-([0-9]{2})/.exec(iso ?? '');
+  return !!m && Number(m[1]) === ano && Number(m[2]) === mes0 + 1;
+};
+
+/** Dias de hoje (dia local) até a data de calendário 'AAAA-MM-DD' (negativo = já passou). null se vazia/inválida. */
+export const diasAteData = (iso: string | undefined | null): number | null => {
+  const p = partesDataPura(iso);
+  if (!p) return null;
+  const h = new Date();
+  const hoje = Date.UTC(h.getFullYear(), h.getMonth(), h.getDate());
+  return Math.round((Date.UTC(p.ano, p.mes - 1, p.dia) - hoje) / 86400000);
 };
 
 /** Hoje (fuso local) no formato 'YYYY-MM-DD', como o <input type="date"> espera em min/max. */

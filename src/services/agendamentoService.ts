@@ -1,17 +1,28 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import { produtividadeKeys } from './produtividadeService';
 import type { Agendamento, PageResponse } from '../types';
 
 export interface ListarAgendamentosParams {
   pagina?: number;
   tamanho?: number;
   ordem?: string;
+  /** Dia inicial (AAAA-MM-DD, inclusivo), no calendário da clínica. */
+  de?: string;
+  /** Dia final (AAAA-MM-DD, inclusivo). */
+  ate?: string;
 }
 
 export const agendamentoService = {
   listar: async (params: ListarAgendamentosParams = {}) => {
     const { data } = await api.get<PageResponse<Agendamento>>('/api/agendamentos', {
-      params: { pagina: params.pagina, tamanho: params.tamanho, ordem: params.ordem },
+      params: {
+        pagina: params.pagina,
+        tamanho: params.tamanho,
+        ordem: params.ordem,
+        de: params.de,
+        ate: params.ate,
+      },
     });
     return data;
   },
@@ -74,7 +85,10 @@ export const useCriarAgendamento = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: agendamentoService.criar,
-    onSuccess: () => qc.invalidateQueries({ queryKey: agendamentoKeys.all }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: agendamentoKeys.all });
+      qc.invalidateQueries({ queryKey: produtividadeKeys.all });
+    },
   });
 };
 
@@ -83,7 +97,10 @@ export const useAtualizarAgendamento = () => {
   return useMutation({
     mutationFn: ({ id, agendamento }: { id: string; agendamento: Agendamento }) =>
       agendamentoService.atualizar(id, agendamento),
-    onSuccess: () => qc.invalidateQueries({ queryKey: agendamentoKeys.all }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: agendamentoKeys.all });
+      qc.invalidateQueries({ queryKey: produtividadeKeys.all });
+    },
   });
 };
 
@@ -91,6 +108,9 @@ export const useExcluirAgendamento = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: agendamentoService.excluir,
-    onSuccess: () => qc.invalidateQueries({ queryKey: agendamentoKeys.all }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: agendamentoKeys.all });
+      qc.invalidateQueries({ queryKey: produtividadeKeys.all });
+    },
   });
 };

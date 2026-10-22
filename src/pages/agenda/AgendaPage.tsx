@@ -30,10 +30,14 @@ const todayIso = () => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
+// Soma dias no calendário LOCAL: Date ao meio-dia (longe de qualquer virada de dia por fuso ou horário de verão)
+// e a data volta montada com getFullYear/getMonth/getDate, nunca com toISOString (que é UTC).
 const shiftDay = (dateStr: string, delta: number) => {
-  const d = new Date(`${dateStr}T00:00:00`);
-  d.setDate(d.getDate() + delta);
-  return d.toISOString().slice(0, 10);
+  const [ano, mes, dia] = dateStr.split('-').map(Number);
+  const d = new Date(ano, mes - 1, dia + delta, 12, 0, 0);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
 };
 
 export const AgendaPage = () => {

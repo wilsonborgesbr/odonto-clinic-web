@@ -27,7 +27,7 @@ import {
   useCriarProcedimento,
 } from '../../services/procedimentoService';
 import { ApiError } from '../../lib/api';
-import { cn, formatDate, formatCurrency, initials } from '../../lib/utils';
+import { cn, formatDate, formatCurrency, hojeIso, initials } from '../../lib/utils';
 import type {
   CondicaoDenteEnum,
   DenteStatus,
@@ -195,7 +195,7 @@ export const OdontogramaPacientePage = () => {
     try {
       return await criarM.mutateAsync({
         pacienteId: id,
-        dataAvaliacao: new Date().toISOString().slice(0, 10),
+        dataAvaliacao: hojeIso(),
         dentes: Array.from(dentes.values()),
         observacoes: observacoes || undefined,
       } as Odontograma);
