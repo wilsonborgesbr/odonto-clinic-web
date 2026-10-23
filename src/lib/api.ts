@@ -12,10 +12,14 @@ export const FINANCIAL_VISIBILITY_STORAGE_KEY = 'bokka:financeiro-visivel';
 /** Total de pendências de cadastro que o usuário dispensou no aviso (sessionStorage). */
 export const PENDENCIAS_DISPENSADO_KEY = 'bokka:pendencias-dispensado';
 
-/** Limpa o "dispensar" do aviso de pendências, para não valer para o próximo usuário do navegador. */
+/** O usuário dispensou o aviso "e-mail ainda não confirmado" nesta sessão (sessionStorage). */
+export const EMAIL_AVISO_DISPENSADO_KEY = 'bokka:email-aviso-dispensado';
+
+/** Limpa o "dispensar" dos avisos do painel, para não valer para o próximo usuário do navegador. */
 export const limparPendenciasDispensado = () => {
   try {
     sessionStorage.removeItem(PENDENCIAS_DISPENSADO_KEY);
+    sessionStorage.removeItem(EMAIL_AVISO_DISPENSADO_KEY);
   } catch {
     /* sessionStorage indisponível: nada a limpar */
   }

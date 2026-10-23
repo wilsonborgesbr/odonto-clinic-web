@@ -7,9 +7,12 @@ import {
   limparPendenciasDispensado,
   TOKEN_STORAGE_KEY,
 } from '../lib/api';
+import { salvarClinica } from '../lib/clinicaStorage';
+import { authService, loginTemToken } from '../services/authService';
 import type {
   AuthResponseDTO,
   LoginRequestDTO,
+  LoginResultadoDTO,
   PermissaoEnum,
   RegisterClinicaRequestDTO,
   RoleEnum,
@@ -20,7 +23,9 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
-  login: (data: LoginRequestDTO) => Promise<void>;
+  /** Devolve SELECAO_CLINICA (ainda sem sessão) quando a senha vale em mais de uma clínica. */
+  login: (data: LoginRequestDTO) => Promise<LoginResultadoDTO>;
+  selecionarClinica: (ticket: string, clinicaId: string) => Promise<void>;
   registerClinica: (data: RegisterClinicaRequestDTO) => Promise<void>;
   logout: () => void;
   updateName: (name: string) => Promise<void>;
@@ -38,6 +43,7 @@ interface JwtClaims {
   userId?: string;
   clinicaId?: string;
   clinicaCodigo?: string;
+  clinicaNome?: string;
   role?: RoleEnum;
   permissoes?: PermissaoEnum[];
 }
@@ -51,6 +57,7 @@ const decodeUser = (token: string): User | null => {
       name: decoded.name || undefined,
       clinicaId: decoded.clinicaId,
       clinicaCodigo: decoded.clinicaCodigo,
+      clinicaNome: decoded.clinicaNome,
       role: decoded.role,
       permissoes: decoded.permissoes ?? [],
     };
@@ -83,13 +90,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [token]);
 
-  const login = useCallback(async (credentials: LoginRequestDTO) => {
-    const { data } = await api.post<AuthResponseDTO>('/auth/login', credentials);
-    if (data.token) {
-      localStorage.setItem(TOKEN_STORAGE_KEY, data.token);
-      setToken(data.token);
-    }
+  const iniciarSessao = useCallback((jwt: string) => {
+    localStorage.setItem(TOKEN_STORAGE_KEY, jwt);
+    // Lembra a clínica de quem entrou sem digitar o código (pré-preenche o próximo login)
+    salvarClinica(decodeUser(jwt)?.clinicaCodigo);
+    setToken(jwt);
   }, []);
+
+  const login = useCallback(
+    async (credentials: LoginRequestDTO) => {
+      const resultado = await authService.login(credentials);
+      if (loginTemToken(resultado) && resultado.token) iniciarSessao(resultado.token);
+      return resultado;
+    },
+    [iniciarSessao],
+  );
+
+  const selecionarClinica = useCallback(
+    async (ticket: string, clinicaId: string) => {
+      const { token: jwt } = await authService.selecionarClinica({ ticket, clinicaId });
+      if (jwt) iniciarSessao(jwt);
+    },
+    [iniciarSessao],
+  );
 
   const registerClinica = useCallback(async (payload: RegisterClinicaRequestDTO) => {
     const { data } = await api.post<AuthResponseDTO>('/auth/register-clinica', payload);
@@ -153,13 +176,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       token,
       isAuthenticated: !!token,
       login,
+      selecionarClinica,
       registerClinica,
       logout,
       updateName,
       updateEmail,
       hasPermissao,
     }),
-    [user, token, login, registerClinica, logout, updateName, updateEmail, hasPermissao],
+    [user, token, login, selecionarClinica, registerClinica, logout, updateName, updateEmail, hasPermissao],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

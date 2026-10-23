@@ -34,14 +34,14 @@ export const Registro = () => {
         adminEmail: normalizeEmail(adminEmail),
         adminPassword,
       });
-      bokkaToast.success('Clínica criada — você é a proprietária.');
+      bokkaToast.success('Conta criada! Você tem acesso total como responsável.');
       navigate('/', { replace: true });
     } catch (err) {
       applyApiError(err, {
         campos: ['clinicaCodigo', 'clinicaNome', 'adminNome', 'adminEmail', 'adminPassword'],
         setErrors: setFieldErrors,
         setGlobalError: setError,
-        fallback: 'Não foi possível criar a clínica.',
+        fallback: 'Não foi possível criar a conta.',
       });
     } finally {
       setLoading(false);
@@ -54,10 +54,11 @@ export const Registro = () => {
         <div className="flex flex-col items-center mb-8">
           <BokkaMark size={44} />
           <h1 className="text-2xl font-bold tracking-tight text-bokka-ink mt-4">
-            Cadastrar nova clínica
+            Criar sua conta no Bokka
           </h1>
           <p className="text-sm text-bokka-ink-3 mt-1 text-center max-w-xs">
-            Você será a proprietária, com acesso total. Adicione outros usuários depois em Configurações.
+            Para clínicas, consultórios e dentistas autônomos. Você terá acesso total e poderá
+            adicionar outros usuários depois em Configurações.
           </p>
         </div>
 
@@ -73,7 +74,7 @@ export const Registro = () => {
 
           <div>
             <h2 className="text-xs font-semibold uppercase tracking-wider text-bokka-ink-3 mb-3">
-              Sobre a clínica
+              Sobre a clínica ou consultório
             </h2>
             <div className="space-y-4">
               <Input
@@ -89,11 +90,11 @@ export const Registro = () => {
                 maxLength={40}
               />
               <Input
-                label="Nome da clínica"
+                label="Nome da clínica ou consultório"
                 required
                 value={clinicaNome}
                 onChange={(e) => setClinicaNome(e.target.value)}
-                placeholder="Ex.: Odonto Socorro Ltda"
+                placeholder="Ex.: Odonto Socorro ou Consultório Silva"
                 error={fieldErrors.clinicaNome}
               />
             </div>
@@ -101,7 +102,7 @@ export const Registro = () => {
 
           <div className="border-t border-bokka-border pt-5">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-bokka-ink-3 mb-3">
-              Sua conta (proprietário)
+              Seus dados de acesso
             </h2>
             <div className="space-y-4">
               <Input
@@ -121,7 +122,7 @@ export const Registro = () => {
                 autoComplete="email"
                 value={adminEmail}
                 onChange={(e) => setAdminEmail(e.target.value)}
-                placeholder="voce@clinica.com"
+                placeholder="voce@email.com"
                 leadingIcon={<Mail className="w-4 h-4" strokeWidth={1.75} />}
                 error={fieldErrors.adminEmail}
               />
@@ -141,11 +142,11 @@ export const Registro = () => {
           </div>
 
           <Button type="submit" loading={loading} fullWidth size="lg">
-            Criar clínica
+            Criar minha conta
           </Button>
 
           <p className="text-sm text-bokka-ink-3 text-center">
-            Já tem clínica cadastrada?{' '}
+            Já tem conta?{' '}
             <Link
               to="/login"
               className="text-bokka-primary font-semibold hover:text-bokka-primary-hover"

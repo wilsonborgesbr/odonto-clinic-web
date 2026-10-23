@@ -8,6 +8,9 @@ import { RequirePermission } from './components/RequirePermission';
 
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
 const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
+const RecuperarSenha = lazy(() => import('./pages/RecuperarSenha').then(m => ({ default: m.RecuperarSenha })));
+const RedefinirSenha = lazy(() => import('./pages/RedefinirSenha').then(m => ({ default: m.RedefinirSenha })));
+const ConfirmarEmail = lazy(() => import('./pages/ConfirmarEmail').then(m => ({ default: m.ConfirmarEmail })));
 const Registro = lazy(() => import('./pages/Registro').then(m => ({ default: m.Registro })));
 const PacientesPage = lazy(() => import('./pages/pacientes/PacientesPage').then(m => ({ default: m.PacientesPage })));
 const PacienteDetalhePage = lazy(() => import('./pages/pacientes/PacienteDetalhePage').then(m => ({ default: m.PacienteDetalhePage })));
@@ -46,6 +49,10 @@ const AppRoutes = () => (
           </RedirectIfAuthed>
         }
       />
+      {/* Públicas e sem redirecionar quem já está logado: o link do e-mail abre em qualquer sessão */}
+      <Route path="/recuperar-senha" element={<RecuperarSenha />} />
+      <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+      <Route path="/confirmar-email" element={<ConfirmarEmail />} />
       <Route
         path="/registro"
         element={

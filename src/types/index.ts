@@ -277,6 +277,8 @@ export interface User {
   password?: string;
   /** Código legível da clínica (ex.: "odontosocorro") — vem do JWT. */
   clinicaCodigo?: string;
+  /** Nome da clínica, quando o JWT trouxer a claim clinicaNome (usado nos relatórios exportados). */
+  clinicaNome?: string;
   /** ID interno da clínica (ObjectId Mongo). */
   clinicaId?: string;
   role?: RoleEnum;
@@ -306,6 +308,8 @@ export interface UsuarioDTO {
   role: RoleEnum;
   permissoes: PermissaoEnum[];
   ativo: boolean;
+  /** Só o proprietário precisa confirmar o e-mail; ausente = nada a confirmar. */
+  emailConfirmado?: boolean;
   createdAt?: string;
   preferences?: UsuarioPreferencesDTO;
 }
@@ -534,7 +538,8 @@ export interface Procedimento {
 // ==========================================
 
 export interface LoginRequestDTO {
-  clinicaCodigo: string;
+  /** Opcional: sem ele, o backend acha a clínica pelo e-mail + senha. */
+  clinicaCodigo?: string;
   email: string;
   password: string;
 }
@@ -553,6 +558,66 @@ export interface RegisterClinicaRequestDTO {
 
 export interface AuthResponseDTO {
   token: string;
+  emailConfirmado?: boolean;
+}
+
+export interface ClinicaOpcaoDTO {
+  id: string;
+  codigo: string;
+  nome: string;
+}
+
+/** Login com a mesma senha em mais de uma clínica: o usuário escolhe onde entrar. */
+export interface SelecaoClinicaDTO {
+  status: 'SELECAO_CLINICA';
+  ticket: string;
+  clinicas: ClinicaOpcaoDTO[];
+}
+
+export type LoginResultadoDTO = AuthResponseDTO | SelecaoClinicaDTO;
+
+export interface SelecionarClinicaRequestDTO {
+  ticket: string;
+  clinicaId: string;
+}
+
+export interface MensagemDTO {
+  mensagem: string;
+}
+
+export interface RecuperarSenhaRequestDTO {
+  email: string;
+  clinicaCodigo?: string;
+}
+
+/** Espelha TipoTokenAuthEnum do backend. */
+export type TipoTokenAuth = 'RESET_SENHA' | 'CONFIRMAR_EMAIL_DONO' | 'ATIVACAO_CONTA';
+
+export interface ValidarTokenRequestDTO {
+  token: string;
+  tipo: TipoTokenAuth;
+}
+
+export interface ValidarTokenResponseDTO {
+  valido: boolean;
+  nomeUsuario?: string;
+  clinicaNome?: string;
+  clinicaCodigo?: string;
+}
+
+export interface RedefinirSenhaRequestDTO {
+  token: string;
+  novaSenha: string;
+}
+
+export interface ConfirmarEmailRequestDTO {
+  token: string;
+}
+
+/** `jaConfirmado` é opcional: se o backend o enviar, a tela mostra "E-mail já confirmado". */
+export interface ConfirmarEmailResponseDTO {
+  mensagem?: string;
+  jaConfirmado?: boolean;
 }
 
 export interface DentistaListagemDTO {
@@ -662,4 +727,48 @@ export interface PendenciasCadastro {
   total: number;
   porEntidade: Partial<Record<EntidadePendencia, number>>;
   itens: PendenciaItem[];
+}
+
+// ---- Produtividade do painel (GET /api/dashboard/produtividade) ----
+export type MetricaProdutividade =
+  | 'CONSULTAS_REALIZADAS'
+  | 'AGENDAMENTOS'
+  | 'FALTAS'
+  | 'COMPARECIMENTO'
+  | 'CANCELAMENTOS'
+  | 'NOVOS_PACIENTES'
+  | 'FATURAMENTO'
+  | 'TICKET_MEDIO'
+  | 'A_RECEBER';
+
+export type PeriodoProdutividade = 'SEMANA' | 'MES' | 'ANO' | 'TODOS';
+
+export type UnidadeProdutividade = 'CONTAGEM' | 'MOEDA' | 'PERCENTUAL';
+
+export interface PontoProdutividade {
+  /** AAAA-MM-DD (primeiro dia do mês/ano nos agrupamentos por mês e ano). */
+  chave: string;
+  rotulo: string;
+  rotuloSecundario: string | null;
+  valor: number | null;
+  anterior: number | null;
+  semExpediente: boolean;
+  futuro: boolean;
+  detalhes: Record<string, number> | null;
+}
+
+export interface ProdutividadeDTO {
+  metrica: MetricaProdutividade;
+  periodo: PeriodoProdutividade;
+  referencia: string;
+  rotuloPeriodo: string;
+  unidade: UnidadeProdutividade;
+  total: number | null;
+  totalAnterior: number | null;
+  variacaoPercentual: number | null;
+  textoVariacao: string | null;
+  inadimplenciaHistorica?: { totalAtrasado: number; quantidadeTitulos: number } | null;
+  pontos: PontoProdutividade[];
+  anosDisponiveis: number[];
+  metricasPermitidas: MetricaProdutividade[];
 }
