@@ -1,11 +1,5 @@
 import { useMemo, useState } from 'react';
 import {
-  Bar,
-  Line,
-  ComposedChart,
-  XAxis,
-  YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   Cell,
@@ -22,7 +16,6 @@ import {
   Scale,
   Clock,
   TrendingUp,
-  Download,
   Check,
   Vault,
   Package,
@@ -35,6 +28,8 @@ import { FinanceiroStatusBadge } from '../../components/ui/Badge';
 import { SkeletonTableRows } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { bokkaToast } from '../../components/ui/Toast';
+import { FluxoCaixaCard } from '../../components/fluxo/FluxoCaixaCard';
+import type { MesFluxo } from '../../lib/fluxoCaixa';
 import { ContaReceberForm } from './ContaReceberForm';
 import { ContaPagarForm, categoriaPagarLabel } from './ContaPagarForm';
 import { PagamentoModal } from './PagamentoModal';
@@ -52,7 +47,16 @@ import {
 import { usePacienteNomes } from '../../services/pacienteService';
 import { useEstoque } from '../../services/estoqueService';
 import { ApiError } from '../../lib/api';
-import { cn, formatCurrency, formatDate, formatDescricaoFinanceira, MASKED_CURRENCY } from '../../lib/utils';
+import {
+  cn,
+  diasAteData,
+  formatCurrency,
+  formatDate,
+  formatDescricaoFinanceira,
+  hojeIso,
+  MASKED_CURRENCY,
+  mesmoMes,
+} from '../../lib/utils';
 import type {
   CategoriaContaPagarEnum,
   ContaPagar,
@@ -64,20 +68,9 @@ import type {
 
 const monthLabels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-const isSameMonth = (iso: string | undefined | null, year: number, month: number) => {
-  if (!iso) return false;
-  const d = new Date(iso);
-  return d.getFullYear() === year && d.getMonth() === month;
-};
-
-const daysUntil = (iso: string | undefined | null): number | null => {
-  if (!iso) return null;
-  const d = new Date(iso);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  d.setHours(0, 0, 0, 0);
-  return Math.round((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-};
+// Datas de vencimento e pagamento são LocalDate ('AAAA-MM-DD'): nunca passar por new Date(string) (UTC).
+const isSameMonth = mesmoMes;
+const daysUntil = diasAteData;
 
 type StatusFilter = 'todos' | StatusFinanceiroEnum;
 
@@ -206,7 +199,7 @@ export const AuditoriaPage = () => {
 
   // ============ Fluxo de caixa — últimos 6 meses ============
   const fluxo = useMemo(() => {
-    const data: { mes: string; receita: number; despesa: number; lucro: number }[] = [];
+    const data: MesFluxo[] = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const y = d.getFullYear();
@@ -218,6 +211,7 @@ export const AuditoriaPage = () => {
         .filter((c) => c.status === 'PAGO' && isSameMonth(c.dataPagamento, y, m))
         .reduce((s, c) => s + (c.valor ?? 0), 0);
       data.push({
+        chave: `${y}-${String(m + 1).padStart(2, '0')}`,
         mes: monthLabels[m],
         receita: rec,
         despesa: desp,
@@ -344,7 +338,7 @@ export const AuditoriaPage = () => {
         conta: {
           ...c,
           status: 'PAGO',
-          dataPagamento: new Date().toISOString().slice(0, 10),
+          dataPagamento: hojeIso(),
         },
       });
       bokkaToast.success('Despesa quitada.');
@@ -488,73 +482,15 @@ export const AuditoriaPage = () => {
       </div>
 
       {/* ============ Fluxo de caixa ============ */}
-      <div className="bg-bokka-ink rounded-2xl p-5 lg:p-6 text-white">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h2 className="text-base font-semibold">Fluxo de caixa</h2>
-            <p className="text-xs text-white/60 mt-0.5">Últimos 6 meses · receitas, despesas e lucro líquido</p>
-          </div>
-          <button
-            type="button"
-            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition-colors"
-            aria-label="Exportar"
-            title="Exportar"
-          >
-            <Download className="w-4 h-4" strokeWidth={2} />
-          </button>
-        </div>
-        <div className="h-64">
-          {loading ? (
-            <div className="w-full h-full bg-white/5 rounded-lg animate-pulse" />
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={fluxo} margin={{ top: 12, right: 8, bottom: 0, left: -14 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
-                <XAxis
-                  dataKey="mes"
-                  tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 500 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={62}
-                  tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))}
-                />
-                <Tooltip
-                  cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                  contentStyle={{
-                    background: '#0B1220',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    borderRadius: '10px',
-                    fontSize: '12px',
-                    color: 'white',
-                  }}
-                  labelStyle={{ color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}
-                  formatter={(v) => [formatCurrency(v as number), undefined]}
-                />
-                <Bar dataKey="receita" name="Receita" radius={[8, 8, 0, 0]} fill="#10B981" maxBarSize={26} />
-                <Bar dataKey="despesa" name="Despesa" radius={[8, 8, 0, 0]} fill="#EF4444" maxBarSize={26} />
-                <Line
-                  type="monotone"
-                  dataKey="lucro"
-                  name="Lucro"
-                  stroke="#93B8FC"
-                  strokeWidth={2.5}
-                  dot={{ r: 3, fill: '#93B8FC' }}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-5 mt-4 text-xs">
-          <LegendDot color="#10B981" label="Receita" />
-          <LegendDot color="#EF4444" label="Despesa" />
-          <LegendDot color="#93B8FC" label="Lucro líquido" />
-        </div>
-      </div>
+      <FluxoCaixaCard
+        fluxo={fluxo}
+        loading={loading}
+        erro={receberQ.isError || pagarQ.isError}
+        onTentarDeNovo={() => {
+          void receberQ.refetch();
+          void pagarQ.refetch();
+        }}
+      />
 
       {/* ============ Receitas + Despesas ============ */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -1265,13 +1201,6 @@ const LucroCard = ({ value, loading }: { value: number; loading: boolean }) => {
     </div>
   );
 };
-
-const LegendDot = ({ color, label }: { color: string; label: string }) => (
-  <span className="inline-flex items-center gap-2">
-    <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
-    <span className="text-white/70">{label}</span>
-  </span>
-);
 
 const CaixaHero = ({
   value,

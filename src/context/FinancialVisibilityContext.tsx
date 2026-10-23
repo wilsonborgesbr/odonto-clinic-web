@@ -8,6 +8,12 @@ import { FINANCIAL_VISIBILITY_STORAGE_KEY as STORAGE_KEY } from '../lib/api';
 interface FinancialVisibilityContextType {
   visible: boolean;
   toggleVisible: () => void;
+  /**
+   * true só depois que o /api/usuarios/me confirmou a preferência do usuário. Antes disso `visible`
+   * vem do cache local (ou do padrão "visível" num navegador sem cache), então quem mostra dados
+   * sensíveis a terceiros (ex.: card Produtividade) deve tratar o financeiro como oculto até ficar true.
+   */
+  pronto: boolean;
 }
 
 const FinancialVisibilityContext = createContext<FinancialVisibilityContextType | undefined>(
@@ -31,7 +37,7 @@ const writeStored = (visible: boolean) => {
 };
 
 export const FinancialVisibilityProvider = ({ children }: { children: ReactNode }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   // Estado inicial vem do localStorage — evita "piscar" valores visíveis enquanto o
   // /api/usuarios/me (fonte de verdade, por usuário) ainda não respondeu.
   const [visible, setVisible] = useState<boolean>(readStored);
@@ -79,9 +85,12 @@ export const FinancialVisibilityProvider = ({ children }: { children: ReactNode 
     );
   }, [visible, atualizarPreferencias]);
 
+  // O cache do React Query sobrevive ao logout: só vale o /me do mesmo usuário da sessão atual
+  const pronto = !!usuarioMe && (!user?.id || usuarioMe.id === user.id);
+
   const value = useMemo<FinancialVisibilityContextType>(
-    () => ({ visible, toggleVisible }),
-    [visible, toggleVisible],
+    () => ({ visible, toggleVisible, pronto }),
+    [visible, toggleVisible, pronto],
   );
 
   return (

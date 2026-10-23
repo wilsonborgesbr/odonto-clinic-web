@@ -42,6 +42,21 @@
   --color-bokka-neutral-soft: #F1F5F9;
   --color-bokka-neutral-ink: #475569;
 
+  /* Tokens semânticos para o modo escuro (valores do tema CLARO; o escuro sobrescreve as mesmas
+     variáveis em :root[data-theme="dark"], sem tocar nos componentes). Spec: docs/design-grafico-produtividade.md §14.2.
+     Hoje só os cards Produtividade e Fluxo de caixa os usam. */
+  --color-bokka-page: #F8FAFC; /* fundo da página (no escuro fica mais escuro que o card) */
+  --color-bokka-panel: #FFFFFF; /* menus e painéis flutuantes */
+  --color-bokka-hover: #F1F5F9; /* fundo de item transparente ao passar o mouse */
+  --color-bokka-hover-strong: #E2E8F0; /* fundo de botão preenchido ao passar o mouse */
+  --color-bokka-on-primary: #FFFFFF; /* texto/ícone sobre bokka-primary */
+  --color-bokka-link: #1E56D6; /* TEXTO azul (links, item selecionado); bokka-primary é só fundo */
+  --color-bokka-link-hover: #1747B0;
+  --color-bokka-focus: #2A6BF2; /* anel de foco do teclado */
+  --color-bokka-toast-bg: #0B1220;
+  --color-bokka-toast-fg: #FFFFFF;
+  --color-bokka-toast-err-bg: #B91C1C;
+
   /* DM Sans — fonte principal (estilo Moru) */
   --font-sans: "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
@@ -58,6 +73,34 @@ html,
 body,
 #root {
   height: 100%;
+}
+
+/* Variáveis dos cards de gráfico (Produtividade e Fluxo de caixa) — spec §14.3, valores do tema claro.
+   São lidas pelo CSS e pelo SVG do Recharts (style/classe com var()), por isso não viram utilities do
+   Tailwind. O modo escuro sobrescreve este bloco em :root[data-theme="dark"]. */
+:root {
+  color-scheme: light; /* por tema: o escuro troca para dark */
+
+  --grid: #E2E8F0;
+  --axis: #64748B;
+  --baseline: #64748B;
+  --line: #4C85F4;
+  --line-fill: #2A6BF2;
+  --line-fill-a: 0.22;
+  --cursor: #93B8FC;
+  --dot-bg: #FFFFFF;
+  --dot-ring: #2A6BF2;
+  --compare: #64748B;
+  --positive: #047857;
+  --negative: #EF4444;
+  --profit: #2A6BF2;
+  --tip-bg: #FFFFFF;
+  --tip-fg: #0B1220;
+  --tip-fg-3: #64748B;
+  --tip-border: #E2E8F0;
+  --tip-shadow: var(--shadow-md);
+  --band: rgb(42 107 242 / 0.06);
+  --skeleton: #F1F5F9;
 }
 
 /* Transição do toggle de privacidade financeira (olho + valor mascarado) — pequeno "pop"
@@ -90,10 +133,9 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: var(--color-bokka-ink);
-  background: var(--color-bokka-surface-2);
+  background: var(--color-bokka-page);
   text-rendering: optimizeLegibility;
   letter-spacing: -0.005em;
-  color-scheme: light;
 }
 
 body {

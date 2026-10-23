@@ -1,20 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Bar,
-  Line,
-  ComposedChart,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
-import {
   CalendarDays,
   Wallet,
   ArrowRight,
-  Download,
   ChevronLeft,
   ChevronRight,
   Package,
@@ -26,6 +15,7 @@ import { Skeleton } from '../components/ui/Skeleton';
 import { Avatar } from '../components/ui/Avatar';
 import { Modal } from '../components/ui/Modal';
 import { bokkaToast } from '../components/ui/Toast';
+import { ProdutividadeCard } from '../components/produtividade/ProdutividadeCard';
 import { AgendamentoForm } from './agenda/AgendamentoForm';
 import {
   useAgendamentos,
@@ -37,6 +27,7 @@ import { useDentistasAtivos } from '../services/dentistaService';
 import { useEstoque } from '../services/estoqueService';
 import { useAuth } from '../context/AuthContext';
 import { photoKeys } from '../lib/profilePhotos';
+import { hojeLocalIso, montarIso } from '../lib/produtividade';
 import {
   cn,
   formatCurrency,
@@ -44,18 +35,10 @@ import {
   formatTime,
   getGreeting,
   isSameDay,
+  mesmoMes,
 } from '../lib/utils';
 import type { Agendamento } from '../types';
 
-const startOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1);
-const endOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
-const inRange = (iso: string | undefined | null, from: Date, to: Date): boolean => {
-  if (!iso) return false;
-  const d = new Date(iso);
-  return d >= from && d <= to;
-};
-
-const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 const semanaLabels = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
@@ -77,8 +60,10 @@ export const Dashboard = () => {
     return () => clearInterval(id);
   }, []);
 
+  // Agenda e KPIs de hoje: só os agendamentos do dia (filtro de/ate, inclusivo, dia local), sem o teto de 300
+  const hojeStr = hojeLocalIso(now);
   const agendamentosQ = useAgendamentos(
-    { pagina: 0, tamanho: 300, ordem: 'dataHoraInicio' },
+    { pagina: 0, tamanho: 500, ordem: 'dataHoraInicio', de: hojeStr, ate: hojeStr },
     { enabled: canAgendamentos },
   );
   const contasQ = useContasReceber({ enabled: canFinanceiro });
@@ -91,6 +76,14 @@ export const Dashboard = () => {
 
   // Estado do mini-calendário (mês exibido)
   const [calMonth, setCalMonth] = useState<Date>(() => new Date(now.getFullYear(), now.getMonth(), 1));
+  // Mini-calendário: do primeiro ao último dia do mês exibido, para marcar os dias com consulta
+  const calInicio = montarIso(calMonth.getFullYear(), calMonth.getMonth() + 1, 1);
+  const calFim = montarIso(calMonth.getFullYear(), calMonth.getMonth() + 2, 0);
+  const agendamentosMesQ = useAgendamentos(
+    { pagina: 0, tamanho: 1000, ordem: 'dataHoraInicio', de: calInicio, ate: calFim },
+    { enabled: canAgendamentos },
+  );
+  const agendamentosMes = useMemo(() => agendamentosMesQ.data?.content ?? [], [agendamentosMesQ.data]);
   const [novoAgDate, setNovoAgDate] = useState<string | null>(null); // "YYYY-MM-DD"
 
   const agendamentosHoje = useMemo(
@@ -107,10 +100,9 @@ export const Dashboard = () => {
   );
 
   const receitaMes = useMemo(() => {
-    const from = startOfMonth(now);
-    const to = endOfMonth(now);
+    // dataPagamento é LocalDate: compara pelo texto (new Date(string) joga o dia 1 para o mês anterior em Brasília)
     return contas
-      .filter((c) => c.status === 'PAGO' && inRange(c.dataPagamento, from, to))
+      .filter((c) => c.status === 'PAGO' && mesmoMes(c.dataPagamento, now.getFullYear(), now.getMonth()))
       .reduce((sum, c) => sum + (c.valorPago ?? c.valorTotal ?? 0), 0);
   }, [contas, now]);
 
@@ -149,43 +141,6 @@ export const Dashboard = () => {
     [estoqueOrdenado],
   );
 
-  // Produtividade: consultas por mês nos últimos 12 meses
-  const produtividade = useMemo(() => {
-    const arr: { mes: string; anoAtual: number; anoAnterior: number }[] = [];
-    const y = now.getFullYear();
-    for (let m = 0; m < 12; m++) {
-      arr.push({ mes: meses[m], anoAtual: 0, anoAnterior: 0 });
-    }
-    agendamentos.forEach((a) => {
-      if (!a.dataHoraInicio) return;
-      const d = new Date(a.dataHoraInicio);
-      const dy = d.getFullYear();
-      const dm = d.getMonth();
-      if (dy === y) arr[dm].anoAtual += 1;
-      else if (dy === y - 1) arr[dm].anoAnterior += 1;
-    });
-    return arr;
-  }, [agendamentos, now]);
-
-  const exportProdutividadeCSV = () => {
-    const year = now.getFullYear();
-    const rows = [
-      ['Mês', String(year), String(year - 1)],
-      ...produtividade.map((r) => [r.mes, String(r.anoAtual), String(r.anoAnterior)]),
-    ];
-    const csv = rows.map((r) => r.join(';')).join('\n');
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `bokka-produtividade-${year}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    bokkaToast.success('CSV de produtividade baixado.');
-  };
-
   // Timeline horária de hoje
   const nowHour = now.getHours();
   const nowMin = now.getMinutes();
@@ -216,7 +171,7 @@ export const Dashboard = () => {
       cells.push(dayNum >= 1 && dayNum <= daysInMonth ? dayNum : null);
     }
     const daysWithEvents = new Set(
-      agendamentos
+      agendamentosMes
         .filter((a) => {
           if (!a.dataHoraInicio) return false;
           const d = new Date(a.dataHoraInicio);
@@ -234,7 +189,7 @@ export const Dashboard = () => {
       month: m,
       monthLabel: calMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
     };
-  }, [calMonth, now, agendamentos]);
+  }, [calMonth, now, agendamentosMes]);
 
   const shiftMonth = (delta: number) => {
     setCalMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
@@ -517,80 +472,8 @@ export const Dashboard = () => {
         )}
 
           {/* ═══════ LINHA 2 ═══════ */}
-          {/* Produtividade PRETO — chart (2/3) */}
-          {canAgendamentos && (
-          <div className="order-4 lg:order-3 bg-bokka-ink rounded-2xl p-5 lg:p-6 text-white lg:col-span-2 flex flex-col min-h-[440px]">
-            <div className="flex items-center justify-between mb-4 shrink-0">
-              <div>
-                <h2 className="text-base font-semibold">Produtividade</h2>
-                <p className="text-xs text-white/60 mt-0.5">Consultas por mês · este ano vs anterior</p>
-              </div>
-              <button
-                type="button"
-                onClick={exportProdutividadeCSV}
-                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/15 flex items-center justify-center transition-colors"
-                aria-label="Exportar CSV"
-                title="Exportar CSV (planilha)"
-              >
-                <Download className="w-4 h-4" strokeWidth={2} />
-              </button>
-            </div>
-            <div className="flex-1 min-h-0">
-              {loading ? (
-                <div className="w-full h-full bg-white/5 rounded-lg animate-pulse" />
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={produtividade} margin={{ top: 12, right: 8, bottom: 0, left: -22 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
-                    <XAxis
-                      dataKey="mes"
-                      tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 500 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 11 }}
-                      axisLine={false}
-                      tickLine={false}
-                      allowDecimals={false}
-                      width={30}
-                    />
-                    <Tooltip
-                      cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                      contentStyle={{
-                        background: '#0B1220',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        borderRadius: '10px',
-                        fontSize: '12px',
-                        color: 'white',
-                      }}
-                      labelStyle={{ color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}
-                    />
-                    <Bar dataKey="anoAtual" radius={[999, 999, 999, 999]} fill="white" maxBarSize={22} name="Este ano" />
-                    <Line
-                      type="monotone"
-                      dataKey="anoAnterior"
-                      stroke="#93B8FC"
-                      strokeWidth={2.5}
-                      dot={false}
-                      name="Ano anterior"
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-            <div className="flex items-center gap-5 mt-4 text-xs shrink-0">
-              <span className="inline-flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-white" />
-                <span className="text-white/70">Este ano</span>
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full border border-white/60 border-dashed" />
-                <span className="text-white/70">Ano anterior</span>
-              </span>
-            </div>
-          </div>
-          )}
+          {/* Produtividade — gráfico de área com 9 métricas (2/3); some se o usuário não tiver nenhuma */}
+          <ProdutividadeCard />
 
           {/* Estoque — card expandido paginado (1/3) */}
           {canEstoque && (
