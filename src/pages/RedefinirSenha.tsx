@@ -1,14 +1,23 @@
 import { useId, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { AlertTriangle, ArrowLeft, Building2, CheckCircle2, Eye, EyeOff, Lock } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Building2, CheckCircle2, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { AuthShell, PainelEstado } from '../components/AuthShell';
+import { CodigoRecuperacao } from '../components/CodigoRecuperacao';
 import { MedidorForcaSenha } from '../components/MedidorForcaSenha';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Field';
 import { Skeleton } from '../components/ui/Skeleton';
 import { ApiError } from '../lib/api';
+import { lerClinicaSalva } from '../lib/clinicaStorage';
+import {
+  guardarTicketRecuperacao,
+  lerTicketRecuperacao,
+  limparTicketRecuperacao,
+} from '../lib/ticketRecuperacao';
+import type { SessaoRecuperacao } from '../lib/ticketRecuperacao';
 import { SENHA_MIN_CARACTERES } from '../lib/utils';
 import { useRedefinirSenha, useValidarTokenReset } from '../services/authService';
+import type { ValidarCodigoRecuperacaoResponseDTO } from '../types';
 
 const MSG_FALHA = 'Não foi possível salvar a nova senha. Tente novamente.';
 
@@ -19,7 +28,7 @@ const VoltarLogin = ({ codigo }: { codigo: string }) => (
   <div className="flex justify-center">
     <Link
       to={comCodigo('/login', codigo)}
-      className="inline-flex items-center gap-1.5 text-sm font-semibold text-bokka-primary hover:text-bokka-primary-hover"
+      className="inline-flex items-center gap-1.5 text-sm font-semibold text-bokka-primary-text hover:text-bokka-primary-text-hover"
     >
       <ArrowLeft className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
       Voltar para o login
@@ -49,6 +58,14 @@ export const RedefinirSenha = () => {
   const token = params.get('token')?.trim() || null;
   const codigoUrl = params.get('c')?.trim().toLowerCase() ?? '';
 
+  // Sem token na URL a pessoa usa o código de 6 dígitos: o ticket que ele devolve (5 min, uso único) faz o
+  // papel do token e vive só em memória. Pode ter vindo da tela "Confira seu e-mail" ou ser digitado aqui.
+  const [sessao, setSessao] = useState<SessaoRecuperacao | null>(() => (token ? null : lerTicketRecuperacao()));
+  const [emailCodigo, setEmailCodigo] = useState('');
+  const [clinicaDigitada, setClinicaDigitada] = useState(() => codigoUrl || lerClinicaSalva());
+  const [ticketRejeitado, setTicketRejeitado] = useState(false);
+  const credencial = token ?? sessao?.ticket ?? null;
+
   const validarQ = useValidarTokenReset(token);
   const redefinirM = useRedefinirSenha();
   const idMedidor = useId();
@@ -63,7 +80,7 @@ export const RedefinirSenha = () => {
   const [concluido, setConcluido] = useState(false);
 
   const clinicaNome = validarQ.data?.clinicaNome;
-  const codigo = (validarQ.data?.clinicaCodigo ?? codigoUrl).toLowerCase();
+  const codigo = (validarQ.data?.clinicaCodigo ?? sessao?.clinicaCodigo ?? codigoUrl).toLowerCase();
 
   const validando = !!token && validarQ.isLoading;
   const linkValido = !!token && !tokenRejeitado && validarQ.data?.valido === true;
@@ -71,10 +88,27 @@ export const RedefinirSenha = () => {
   const erroConfirmacao = (valor: string, base: string) =>
     valor && valor !== base ? 'As senhas não coincidem.' : undefined;
 
+  const codigoAceito = (r: ValidarCodigoRecuperacaoResponseDTO) => {
+    guardarTicketRecuperacao({
+      ticket: r.ticket,
+      nomeUsuario: r.nomeUsuario,
+      clinicaNome: r.clinicaNome,
+      clinicaCodigo: r.clinicaCodigo,
+    });
+    setTicketRejeitado(false);
+    setSessao(lerTicketRecuperacao());
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) return;
+    if (!credencial) return;
     setErroGeral(null);
+
+    // O ticket vale 5 minutos: se já passou, nem tenta (o servidor recusaria de qualquer jeito).
+    if (!token && !lerTicketRecuperacao()) {
+      setTicketRejeitado(true);
+      return;
+    }
 
     const novos = {
       senha: senha.length < SENHA_MIN_CARACTERES
@@ -86,13 +120,20 @@ export const RedefinirSenha = () => {
     if (novos.senha || novos.confirmacao) return;
 
     try {
-      await redefinirM.mutateAsync({ token, novaSenha: senha });
+      await redefinirM.mutateAsync({ token: credencial, novaSenha: senha });
+      limparTicketRecuperacao();
       setConcluido(true);
     } catch (err) {
       if (err instanceof ApiError && err.status === 400) {
         const porCampo = err.fieldErrors();
         if (porCampo.novaSenha) {
           setErros({ senha: porCampo.novaSenha });
+          return;
+        }
+        // Ticket do código: 400 sem erro de campo = venceu ou já foi usado.
+        if (!token) {
+          limparTicketRecuperacao();
+          setTicketRejeitado(true);
           return;
         }
         // 400 também é "link já usado/expirado": confere o link de novo antes de culpar a senha.
@@ -140,7 +181,92 @@ export const RedefinirSenha = () => {
     );
   }
 
-  if (!linkValido) {
+  if (!token && (!sessao || ticketRejeitado)) {
+    const pedirNovo = () =>
+      navigate(comCodigo('/recuperar-senha', codigo || clinicaDigitada.trim().toLowerCase()));
+
+    if (ticketRejeitado) {
+      return (
+        <AuthShell title="Código vencido ou já usado" focusKey="ticket-vencido">
+          <PainelEstado
+            tom="aviso"
+            icone={AlertTriangle}
+            acoes={
+              <div className="space-y-3">
+                <Button type="button" fullWidth size="lg" onClick={pedirNovo}>
+                  Pedir novo código
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  fullWidth
+                  onClick={() => {
+                    setTicketRejeitado(false);
+                    setSessao(null);
+                  }}
+                >
+                  Digitar outro código
+                </Button>
+              </div>
+            }
+          >
+            Por segurança, depois de aceito o código vale por 5 minutos e só pode ser usado uma vez. Peça
+            um novo para continuar.
+          </PainelEstado>
+          <VoltarLogin codigo={codigo} />
+        </AuthShell>
+      );
+    }
+
+    return (
+      <AuthShell
+        title="Digite o código"
+        subtitle="Use o código de 6 dígitos do e-mail de recuperação."
+        focusKey="codigo"
+      >
+        <CodigoRecuperacao
+          email={emailCodigo}
+          clinicaCodigo={clinicaDigitada}
+          onValidado={codigoAceito}
+          campos={
+            <>
+              <Input
+                label="Código da clínica"
+                autoComplete="organization"
+                value={clinicaDigitada}
+                onChange={(e) => setClinicaDigitada(e.target.value)}
+                placeholder="minhaclinica"
+                hint="Opcional. Informe se você usa mais de uma clínica ou consultório."
+                leadingIcon={<Building2 className="w-4 h-4" strokeWidth={1.75} />}
+              />
+              <Input
+                label="E-mail"
+                type="email"
+                required
+                autoComplete="email"
+                value={emailCodigo}
+                onChange={(e) => setEmailCodigo(e.target.value)}
+                placeholder="voce@email.com"
+                leadingIcon={<Mail className="w-4 h-4" strokeWidth={1.75} />}
+              />
+            </>
+          }
+          ajudaVencido={<>Se o código venceu ou já foi usado, peça um novo.</>}
+        />
+        <div className="flex justify-center">
+          <Link
+            to={comCodigo('/recuperar-senha', codigo || clinicaDigitada.trim().toLowerCase())}
+            className="text-sm font-semibold text-bokka-primary-text hover:text-bokka-primary-text-hover"
+          >
+            Não recebeu o código? Pedir novo
+          </Link>
+        </div>
+        <VoltarLogin codigo={codigo} />
+      </AuthShell>
+    );
+  }
+
+  if (token && !linkValido) {
     return (
       <AuthShell title="Link inválido ou expirado" focusKey="invalido">
         <PainelEstado
@@ -171,6 +297,18 @@ export const RedefinirSenha = () => {
       subtitle="Escolha uma senha que você não usa em outros lugares."
       focusKey="formulario"
     >
+      {sessao && (
+        <p className="text-center text-sm text-bokka-ink-2">
+          Olá, <span className="font-semibold text-bokka-ink">{sessao.nomeUsuario ?? 'tudo certo'}</span>
+          {sessao.clinicaNome && (
+            <>
+              {' · '}
+              {sessao.clinicaNome}
+            </>
+          )}
+        </p>
+      )}
+
       {clinicaNome && (
         <div className="flex justify-center">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-bokka-surface-3 px-3 py-1 text-xs font-medium text-bokka-ink-2 max-w-full">

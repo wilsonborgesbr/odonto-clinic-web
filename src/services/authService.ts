@@ -11,6 +11,8 @@ import type {
   RedefinirSenhaRequestDTO,
   SelecionarClinicaRequestDTO,
   TipoTokenAuth,
+  ValidarCodigoRecuperacaoRequestDTO,
+  ValidarCodigoRecuperacaoResponseDTO,
   ValidarTokenResponseDTO,
 } from '../types';
 
@@ -32,6 +34,13 @@ export const authService = {
   /** 400 = token inválido, expirado ou já usado. */
   validarToken: async (token: string, tipo: TipoTokenAuth) =>
     (await api.post<ValidarTokenResponseDTO>('/auth/validar-token', { token, tipo })).data,
+
+  /**
+   * Troca o código de 6 dígitos do e-mail por um ticket de 5 minutos (uso único) para o redefinir-senha.
+   * 400 = código inválido/expirado (mensagem neutra, igual para qualquer falha); 429 = limite de tentativas.
+   */
+  validarCodigoRecuperacao: async (payload: ValidarCodigoRecuperacaoRequestDTO) =>
+    (await api.post<ValidarCodigoRecuperacaoResponseDTO>('/auth/validar-codigo-recuperacao', payload)).data,
 
   redefinirSenha: async (payload: RedefinirSenhaRequestDTO) =>
     (await api.post<MensagemDTO | undefined>('/auth/redefinir-senha', payload)).data,
@@ -86,6 +95,9 @@ export const useConfirmarEmail = (token: string | null) => {
 
 export const useRecuperarSenha = () =>
   useMutation({ mutationFn: authService.recuperarSenha });
+
+export const useValidarCodigoRecuperacao = () =>
+  useMutation({ mutationFn: authService.validarCodigoRecuperacao });
 
 export const useRedefinirSenha = () =>
   useMutation({ mutationFn: authService.redefinirSenha });

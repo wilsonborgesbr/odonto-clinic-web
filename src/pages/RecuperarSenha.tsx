@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Building2, Mail, MailCheck } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Building2, KeyRound, Mail, MailCheck } from 'lucide-react';
 import { AuthShell, PainelEstado } from '../components/AuthShell';
+import { CodigoRecuperacao } from '../components/CodigoRecuperacao';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Field';
 import { ApiError } from '../lib/api';
 import { lerClinicaSalva } from '../lib/clinicaStorage';
+import { guardarTicketRecuperacao } from '../lib/ticketRecuperacao';
 import { normalizeEmail, validateEmail } from '../lib/utils';
 import { useRecuperarSenha } from '../services/authService';
+import type { ValidarCodigoRecuperacaoResponseDTO } from '../types';
 
 const ESPERA_REENVIO_S = 60;
 const MSG_LIMITE = 'Muitas tentativas. Aguarde alguns minutos e tente de novo.';
@@ -17,7 +20,7 @@ const VoltarLogin = ({ codigo }: { codigo: string }) => (
   <div className="flex justify-center">
     <Link
       to={`/login${codigo ? `?c=${encodeURIComponent(codigo)}` : ''}`}
-      className="inline-flex items-center gap-1.5 text-sm font-semibold text-bokka-primary hover:text-bokka-primary-hover"
+      className="inline-flex items-center gap-1.5 text-sm font-semibold text-bokka-primary-text hover:text-bokka-primary-text-hover"
     >
       <ArrowLeft className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
       Voltar para o login
@@ -27,6 +30,7 @@ const VoltarLogin = ({ codigo }: { codigo: string }) => (
 
 export const RecuperarSenha = () => {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
   const [clinicaCodigo, setClinicaCodigo] = useState(
     () => params.get('c')?.trim() || lerClinicaSalva(),
   );
@@ -35,6 +39,9 @@ export const RecuperarSenha = () => {
   const [erro, setErro] = useState<string | null>(null);
   const [enviado, setEnviado] = useState(false);
   const [restante, setRestante] = useState(0);
+  const [mostrarCodigo, setMostrarCodigo] = useState(false);
+  // Cada envio gera um código novo e invalida o anterior: o campo recomeça vazio.
+  const [envios, setEnvios] = useState(0);
   const recuperarM = useRecuperarSenha();
 
   const codigoLimpo = clinicaCodigo.trim().toLowerCase();
@@ -54,10 +61,23 @@ export const RecuperarSenha = () => {
         clinicaCodigo: codigoLimpo || undefined,
       });
       setEnviado(true);
+      setEnvios((n) => n + 1);
       setRestante(ESPERA_REENVIO_S);
     } catch (err) {
       setErro(err instanceof ApiError && err.status === 429 ? MSG_LIMITE : MSG_FALHA);
     }
+  };
+
+  // O ticket vai só para a memória do app (nunca URL ou storage) e a tela de redefinição o recolhe de lá.
+  const codigoValidado = (r: ValidarCodigoRecuperacaoResponseDTO) => {
+    guardarTicketRecuperacao({
+      ticket: r.ticket,
+      nomeUsuario: r.nomeUsuario,
+      clinicaNome: r.clinicaNome,
+      clinicaCodigo: r.clinicaCodigo,
+    });
+    const clinica = (r.clinicaCodigo ?? codigoLimpo).toLowerCase();
+    navigate(`/redefinir-senha${clinica ? `?c=${encodeURIComponent(clinica)}` : ''}`);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -103,8 +123,33 @@ export const RecuperarSenha = () => {
           }
         >
           Se os dados estiverem corretos, enviamos as instruções de recuperação para o seu e-mail. O
-          link vale por 30 minutos.
+          link vale por 30 minutos e o código de 6 dígitos, por 15.
         </PainelEstado>
+
+        <div className="border-t border-bokka-border pt-5">
+          {mostrarCodigo ? (
+            <CodigoRecuperacao
+              key={envios}
+              email={email}
+              clinicaCodigo={codigoLimpo}
+              onValidado={codigoValidado}
+              autoFocus
+              ajudaVencido={
+                <>Se o código venceu ou já foi usado, use “Enviar novamente” acima para receber um novo.</>
+              }
+            />
+          ) : (
+            <Button
+              type="button"
+              fullWidth
+              size="lg"
+              onClick={() => setMostrarCodigo(true)}
+              icon={<KeyRound className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />}
+            >
+              Tenho um código
+            </Button>
+          )}
+        </div>
         <VoltarLogin codigo={codigoLimpo} />
       </AuthShell>
     );

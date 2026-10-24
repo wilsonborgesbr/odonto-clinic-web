@@ -607,6 +607,22 @@ export interface ValidarTokenResponseDTO {
   clinicaCodigo?: string;
 }
 
+/** POST /auth/validar-codigo-recuperacao: `codigo` são exatamente 6 dígitos, sem espaço nem hífen. */
+export interface ValidarCodigoRecuperacaoRequestDTO {
+  email: string;
+  clinicaCodigo?: string;
+  codigo: string;
+}
+
+/** O `ticket` vale 5 minutos, é de uso único e entra no `token` de POST /auth/redefinir-senha. */
+export interface ValidarCodigoRecuperacaoResponseDTO {
+  valido: boolean;
+  ticket: string;
+  nomeUsuario?: string;
+  clinicaNome?: string;
+  clinicaCodigo?: string;
+}
+
 export interface RedefinirSenhaRequestDTO {
   token: string;
   novaSenha: string;
