@@ -90,7 +90,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
             trailingIcon && 'pr-9',
             error
               ? 'border-bokka-danger focus-visible:outline-bokka-danger'
-              : 'border-bokka-border-strong',
+              : 'border-bokka-field-edge',
             className,
           )}
           {...rest}
@@ -188,7 +188,7 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
               'pl-10 tabular-nums text-right',
               error
                 ? 'border-bokka-danger focus-visible:outline-bokka-danger'
-                : 'border-bokka-border-strong',
+                : 'border-bokka-field-edge',
               className,
             )}
             value={display}
@@ -221,7 +221,7 @@ const maskedInputClass = (error?: string, className?: string) =>
     'tabular-nums',
     error
       ? 'border-bokka-danger focus-visible:outline-bokka-danger'
-      : 'border-bokka-border-strong',
+      : 'border-bokka-field-edge',
     className,
   );
 
@@ -418,7 +418,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
           'disabled:bg-bokka-surface-3 disabled:text-bokka-ink-3 disabled:cursor-not-allowed resize-y',
           error
             ? 'border-bokka-danger focus-visible:outline-bokka-danger'
-            : 'border-bokka-border-strong',
+            : 'border-bokka-field-edge',
           className,
         )}
         {...rest}
@@ -483,7 +483,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
             'appearance-none pr-9 bg-bokka-surface',
             error
               ? 'border-bokka-danger focus-visible:outline-bokka-danger'
-              : 'border-bokka-border-strong',
+              : 'border-bokka-field-edge',
             className,
           )}
           {...rest}

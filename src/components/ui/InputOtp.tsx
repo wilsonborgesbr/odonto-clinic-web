@@ -129,7 +129,7 @@ export const InputOtp = ({
               'disabled:bg-bokka-surface-3 disabled:text-bokka-ink-3 disabled:cursor-not-allowed',
               error
                 ? 'border-bokka-danger focus-visible:outline-bokka-danger'
-                : 'border-bokka-border-strong focus-visible:outline-bokka-primary-ring',
+                : 'border-bokka-field-edge focus-visible:outline-bokka-primary-ring',
             )}
           />
         ))}

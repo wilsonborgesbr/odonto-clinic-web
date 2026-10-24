@@ -21,7 +21,7 @@ interface ControlePeriodoProps {
 }
 
 const seta =
-  'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bokka-surface-3 text-bokka-ink-2 transition-colors hover:bg-bokka-hover-strong disabled:opacity-40 disabled:pointer-events-none';
+  'alvo-toque inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bokka-surface-3 text-bokka-ink-2 transition-colors hover:bg-bokka-hover-strong disabled:opacity-40 disabled:pointer-events-none';
 
 /** Um controle só: ‹ Outubro de 2026 ▾ ›. As setas navegam; o centro abre o painel de período. */
 export const ControlePeriodo = ({
@@ -44,7 +44,7 @@ export const ControlePeriodo = ({
   const anosOrdenados = [...anos].sort((a, b) => b - a);
 
   return (
-    <div className="flex w-full items-center gap-1 sm:w-auto">
+    <div className="flex w-full items-center gap-2 sm:w-auto lg:gap-1">
       {!todos && (
         <button
           type="button"
@@ -62,7 +62,7 @@ export const ControlePeriodo = ({
           <>
             <PopoverButton
               disabled={desabilitado}
-              className="inline-flex h-8 w-full min-w-0 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-bokka-ink transition-colors hover:bg-bokka-hover data-[open]:bg-bokka-hover disabled:opacity-60 sm:min-w-[9rem]"
+              className="alvo-toque inline-flex h-8 w-full min-w-0 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-bokka-ink transition-colors hover:bg-bokka-hover data-[open]:bg-bokka-hover disabled:opacity-60 sm:min-w-[9rem]"
             >
               <span className="truncate" aria-live="polite">
                 {rotulo}
@@ -72,7 +72,8 @@ export const ControlePeriodo = ({
             </PopoverButton>
             <PopoverPanel
               transition
-              className="absolute left-0 right-0 top-full z-40 mt-2 origin-top rounded-xl border border-bokka-border bg-bokka-panel p-3 shadow-md transition duration-100 ease-out focus:outline-none data-[closed]:scale-95 data-[closed]:opacity-0 sm:left-auto sm:w-72 motion-reduce:transition-none"
+              anchor={{ to: 'bottom', gap: 8, padding: 8 }}
+              className="z-50 w-72 max-w-[calc(100vw-1rem)] origin-top overflow-y-auto rounded-xl border border-bokka-border bg-bokka-panel p-3 shadow-md transition duration-100 ease-out focus:outline-none data-[closed]:scale-95 data-[closed]:opacity-0 motion-reduce:transition-none"
             >
               <div className="space-y-3">
                 <div
@@ -91,7 +92,7 @@ export const ControlePeriodo = ({
                         if (p.id === 'TODOS') close();
                       }}
                       className={cn(
-                        'h-8 rounded-md text-xs font-semibold transition-colors',
+                        'h-11 rounded-md text-xs font-semibold transition-colors lg:h-8',
                         periodo === p.id
                           ? 'bg-bokka-surface text-bokka-link shadow-sm'
                           : 'text-bokka-ink-2 hover:text-bokka-ink',
@@ -111,7 +112,7 @@ export const ControlePeriodo = ({
                         aria-pressed={ano === anoSelecionado}
                         onClick={() => onAno(ano)}
                         className={cn(
-                          'h-8 rounded-md text-xs font-semibold tabular-nums transition-colors',
+                          'h-11 rounded-md text-xs font-semibold tabular-nums transition-colors lg:h-8',
                           ano === anoSelecionado
                             ? 'bg-bokka-primary text-bokka-on-primary'
                             : 'bg-bokka-surface-3 text-bokka-ink-2 hover:bg-bokka-hover-strong',
@@ -133,7 +134,7 @@ export const ControlePeriodo = ({
                       onChange={onComparar}
                       disabled={todos}
                       aria-labelledby="produtividade-comparar"
-                      className="group relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border border-bokka-ink-3 bg-bokka-surface-3 transition-colors data-[checked]:border-bokka-primary data-[checked]:bg-bokka-primary data-[disabled]:opacity-50"
+                      className="alvo-toque group relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border border-bokka-ink-3 bg-bokka-surface-3 transition-colors data-[checked]:border-bokka-primary data-[checked]:bg-bokka-primary data-[disabled]:opacity-50"
                     >
                       <span className="inline-block h-3.5 w-3.5 translate-x-0.5 rounded-full bg-bokka-on-primary shadow transition-transform group-data-[checked]:translate-x-[18px] motion-reduce:transition-none" />
                     </Switch>

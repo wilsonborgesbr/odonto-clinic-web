@@ -26,9 +26,12 @@ export const SeletorMetrica = ({ metrica, disponiveis, onChange }: SeletorMetric
         <span className="truncate">{atual.rotulo}</span>
         <ChevronDown className="h-4 w-4 shrink-0 text-bokka-ink-3" strokeWidth={2} aria-hidden="true" />
       </ListboxButton>
+      {/* anchor: o menu sai do card e fica preso à janela (portal + posição fixa), com altura limitada ao espaço livre;
+          sem isso ele ficava cortado pelo fim da tela e a rolagem da página fica travada enquanto aberto. */}
       <ListboxOptions
         transition
-        className="absolute left-0 right-0 top-full z-40 mt-2 max-h-[60vh] origin-top-left overflow-y-auto rounded-xl border border-bokka-border bg-bokka-panel p-1.5 shadow-md transition duration-100 ease-out focus:outline-none data-[closed]:scale-95 data-[closed]:opacity-0 sm:right-auto sm:w-80 motion-reduce:transition-none"
+        anchor={{ to: 'bottom start', gap: 8, padding: 8 }}
+        className="z-50 w-80 max-w-[calc(100vw-1rem)] origin-top-left overflow-y-auto rounded-xl border border-bokka-border bg-bokka-panel p-1.5 shadow-md transition duration-100 ease-out focus:outline-none data-[closed]:scale-95 data-[closed]:opacity-0 motion-reduce:transition-none"
       >
         {GRUPOS_METRICA.map((grupo) => {
           const itens = disponiveis.filter((m) => m.grupo === grupo);

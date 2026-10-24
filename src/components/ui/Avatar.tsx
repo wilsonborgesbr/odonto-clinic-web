@@ -33,6 +33,10 @@ const cameraBoxSize: Record<Size, string> = {
   '2xl': 'w-9 h-9 right-0 bottom-0',
 };
 
+// Anel de separação do avatar: borda sólida (não box-shadow, que serrilha em curva) compensada por margem negativa,
+// então ocupa o mesmo espaço de antes e continua vazando 2 px para fora, por cima do vizinho da pilha.
+const RING_CLASSES = 'box-content -m-0.5 border-2 border-bokka-surface';
+
 const toneVariants = [
   'bg-bokka-tone-1 text-bokka-tone-1-ink',
   'bg-bokka-tone-2 text-bokka-tone-2-ink',
@@ -120,7 +124,7 @@ export const Avatar = ({
           className={cn(
             'rounded-full object-cover shrink-0',
             sizeClasses[size],
-            ring && 'ring-2 ring-bokka-surface',
+            ring && RING_CLASSES,
             className,
           )}
         />
@@ -130,7 +134,7 @@ export const Avatar = ({
             'rounded-full flex items-center justify-center font-bold shrink-0',
             sizeClasses[size],
             tone,
-            ring && 'ring-2 ring-bokka-surface',
+            ring && RING_CLASSES,
             className,
           )}
         >

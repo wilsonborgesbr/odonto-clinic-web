@@ -66,6 +66,39 @@
   --color-bokka-primary-text: #2A6BF2;
   --color-bokka-primary-text-hover: #1E56D6;
 
+  /* Bolinha dos dias do mini-calendário: cor SÓLIDA (antes era branco/preto com transparência sobre o azul do
+     card, o que dava borda irregular). Claro e escuro = o mesmo resultado visual de antes. */
+  --color-bokka-cal-dia: #F7F9FF;
+  /* Dia de outro mês (sem pontilhado) e dia sob o mouse: só mudança de preenchimento, sem anel nem aumento. */
+  --color-bokka-cal-vazio: #E6EEFE;
+  --color-bokka-cal-hover: #D9E6FF;
+
+  /* Card de destaque do Dashboard (Confirmadas). Claro = azul sólido de sempre; escuro = o padrão dos cards vizinhos. */
+  --color-bokka-hero: #2A6BF2;
+  --color-bokka-hero-edge: transparent;
+  --color-bokka-hero-fg: #FFFFFF;
+  --color-bokka-hero-fg-2: #FFFFFF; /* branco pleno: 85/80% sobre o azul davam 3,6/3,8:1 */
+  --color-bokka-hero-fg-3: #FFFFFF;
+  --color-bokka-hero-chip: rgb(255 255 255 / 0.15);
+  --color-bokka-hero-chip-fg: #FFFFFF;
+
+  /* Contraste (rodada 6). Badge numérico das notificações: o vermelho de perigo com texto branco dava 3,76:1; este dá 4,83:1. */
+  --color-bokka-badge: #DC2626;
+  /* Blocos de agendamento na timeline do dia (Confirmado e Faltou). Claro: mesmos fundos de antes com texto escuro (7,4 e 8,7:1);
+     escuro: fundo profundo com texto claro (7,3 e 6,8:1), sem mancha de claridade. */
+  --color-bokka-block-ok: #10B981;
+  --color-bokka-block-ok-fg: #0B1220;
+  --color-bokka-block-warn: #F59E0B;
+  --color-bokka-block-warn-fg: #0B1220;
+  /* CONTORNO DOS CAMPOS (input, select, textarea, caixas do código): um token só, contraste não-textual >= 3:1.
+     Para voltar ao visual antigo, basta trocar este valor por var(--color-bokka-border-strong) (#CBD5E1 claro / #33456B escuro). */
+  --color-bokka-field-edge: #7D8DA6;
+
+  /* Contorno do botão branco sobre card em degradê (Abrir, no Odontograma do paciente): some no claro, aparece no escuro. */
+  --color-bokka-edge: transparent;
+  /* Contorno das bolinhas de cor do Odontograma (a bolinha preta de Ausente/Dente incluso some no escuro sem ele). */
+  --color-bokka-swatch: #E2E8F0;
+
   /* Hover e clique do botão de perigo (iguais ao red-600/red-700 que o Button usava; nos dois temas). */
   --color-bokka-danger-hover: oklch(57.7% 0.245 27.325);
   --color-bokka-danger-active: oklch(50.5% 0.213 27.518);
@@ -129,6 +162,66 @@ body,
   --tip-shadow: var(--shadow-md);
   --band: rgb(42 107 242 / 0.06);
   --skeleton: #F1F5F9;
+
+  /* Categorias de despesa (Financeiro > Auditoria): gráfico de pizza e bolinhas das listas. */
+  --cat-aluguel: #2A6BF2;
+  --cat-material: #10B981;
+  --cat-equipamento: #8B5CF6;
+  --cat-salario: #F59E0B;
+  --cat-agua: #06B6D4;
+  --cat-luz: #EAB308;
+  --cat-internet: #EC4899;
+  --cat-manutencao: #F97316;
+  --cat-imposto: #EF4444;
+  --cat-outro: #64748B;
+
+  /* Degradês dos cards do paciente, dentista e funcionário (claro = cores originais; escuro = mesmos matizes, bem mais fundos). */
+  --grad-atendimento: linear-gradient(135deg, #4F46E5 0%, #7C3AED 55%, #2A6BF2 100%);
+  --grad-odonto: linear-gradient(135deg, #2A6BF2 0%, #4F46E5 55%, #7C3AED 100%);
+  --grad-clinico: linear-gradient(135deg, #059669 0%, #0891B2 55%, #2A6BF2 100%);
+  --grad-gestao: linear-gradient(135deg, #0B1220 0%, #1E293B 55%, #334155 100%);
+  --grad-apoio: linear-gradient(135deg, #F59E0B 0%, #EA580C 55%, #DC2626 100%);
+
+  /* Arcada decorativa do card Odontograma (modal do paciente), da página do paciente e do mini odontograma dos procedimentos. */
+  --arcm-dente-a: #FFFFFF;
+  --arcm-dente-b: #E0E7FF;
+  --arcm-borda: rgb(255 255 255 / 0.3);
+  --arcm-gengiva-a: rgb(255 255 255 / 0.35);
+  --arcm-gengiva-b: rgb(255 255 255 / 0.15);
+  --arcp-dente-a: #FFFFFF;
+  --arcp-dente-b: #E2E8F0;
+  --arcp-borda: #CBD5E1;
+  --arcp-gengiva-a: #FCA5A5;
+  --arcp-gengiva-b: #EF4444;
+  --mini-dente-a: #FBF7EE;
+  --mini-dente-b: #E6DCC1;
+  --mini-dente-borda: #B9A97F;
+
+  /* Texto das condições do Odontograma (lista Selecione a condição): tom escuro por grupo clínico. */
+  --cond-vermelho-ink: #991B1B;
+  --cond-azul-ink: #1D4ED8;
+  --cond-verde-ink: #047857;
+  --cond-preto-ink: #111827;
+  --cond-neutro-ink: #64748B;
+
+  /* Desenho do Odontograma. Claro = cores originais do SVG; escuro = versão funda (dentes opacos, gengiva vinho, faces escuras). */
+  --odo-numero: #475569;
+  --odo-sel: #2563EB;
+  --odo-guia: #CBD5E1;
+  --odo-face-fill: #FDFEFF;
+  --odo-face-stroke: #94A3B8;
+  --odo-dente: #FFFCF2;
+  --odo-dentina-a: #FFF6D9;
+  --odo-dentina-b: #F0D9A0;
+  --odo-dentina-c: #D8B573;
+  --odo-brilho: #FFFFFF;
+  --odo-gengiva-a: #F9C0CC;
+  --odo-gengiva-b: #EA6A8A;
+  --odo-gengiva-c: #B93E63;
+  --odo-gengiva-brilho: #FFFFFF;
+  /* Preto clínico (Ausente, Dente incluso): no escuro o preto some no fundo, então ganha contorno claro. */
+  --cond-preto-fill: #111827;
+  --cond-preto-stroke: #111827;
 }
 
 /* Tema escuro — referência: docs/prototipo-grafico-produtividade.html (tema Escuro) e docs/auditoria-dark-mode.md §8.
@@ -171,6 +264,23 @@ body,
   --color-bokka-neutral-ink: #CBD5E1;
 
   --color-bokka-strong: #24345A;
+  --color-bokka-cal-dia: #0F192F;
+  --color-bokka-cal-vazio: #112142;
+  --color-bokka-cal-hover: #1D3366;
+  --color-bokka-hero: #0B1220;
+  --color-bokka-hero-edge: #1E2B47;
+  --color-bokka-hero-fg: #F1F5F9;
+  --color-bokka-hero-fg-2: #94A3B8;
+  --color-bokka-hero-fg-3: #94A3B8;
+  --color-bokka-hero-chip: #142447;
+  --color-bokka-hero-chip-fg: #7BA6F8;
+  --color-bokka-edge: #33456B;
+  --color-bokka-block-ok: #065F46;
+  --color-bokka-block-ok-fg: #ECFDF5;
+  --color-bokka-block-warn: #92400E;
+  --color-bokka-block-warn-fg: #FFFBEB;
+  --color-bokka-field-edge: #566B93;
+  --color-bokka-swatch: #94A3B8;
   --color-bokka-tone-1: rgb(59 130 246 / 0.2);
   --color-bokka-tone-1-ink: #93C5FD;
   --color-bokka-tone-2: rgb(16 185 129 / 0.18);
@@ -209,6 +319,61 @@ body,
   --tip-border: #33456B;
   --band: rgb(255 255 255 / 0.05);
   --skeleton: rgb(255 255 255 / 0.06);
+
+  /* Categorias: tom 400 do Tailwind, que passa de 3:1 sobre o card escuro (#0B1220) e sobre o balão (#16213A). */
+  --cat-aluguel: #6FA3FA;
+  --cat-material: #34D399;
+  --cat-equipamento: #A78BFA;
+  --cat-salario: #FBBF24;
+  --cat-agua: #22D3EE;
+  --cat-luz: #FACC15;
+  --cat-internet: #F472B6;
+  --cat-manutencao: #FB923C;
+  --cat-imposto: #F87171;
+  --cat-outro: #94A3B8;
+
+  --grad-atendimento: linear-gradient(135deg, #26246B 0%, #3A1F78 55%, #1B3478 100%);
+  --grad-odonto: linear-gradient(135deg, #1B3478 0%, #26246B 55%, #3A1F78 100%);
+  --grad-clinico: linear-gradient(135deg, #064E3B 0%, #164E63 55%, #1B3478 100%);
+  --grad-gestao: linear-gradient(135deg, #1E293B 0%, #273449 55%, #334155 100%);
+  --grad-apoio: linear-gradient(135deg, #78350F 0%, #7C2D12 55%, #7F1D1D 100%);
+
+  --arcm-dente-a: #C7D0EC;
+  --arcm-dente-b: #8E9BC9;
+  --arcm-borda: rgb(255 255 255 / 0.15);
+  --arcm-gengiva-a: rgb(255 255 255 / 0.12);
+  --arcm-gengiva-b: rgb(255 255 255 / 0.06);
+  --arcp-dente-a: #CBD5E1;
+  --arcp-dente-b: #94A3B8;
+  --arcp-borda: #64748B;
+  --arcp-gengiva-a: #9F3B3B;
+  --arcp-gengiva-b: #6B1F1F;
+  --mini-dente-a: #C9D1E3;
+  --mini-dente-b: #8794B3;
+  --mini-dente-borda: #5F6E91;
+
+  --cond-vermelho-ink: #FCA5A5;
+  --cond-azul-ink: #93C5FD;
+  --cond-verde-ink: #6EE7B7;
+  --cond-preto-ink: #E2E8F0;
+  --cond-neutro-ink: #94A3B8;
+
+  --odo-numero: #94A3B8;
+  --odo-sel: #60A5FA;
+  --odo-guia: #64748B;
+  --odo-face-fill: #0F192C;
+  --odo-face-stroke: #64748B;
+  --odo-dente: #CFC8B6;
+  --odo-dentina-a: #CDBF9B;
+  --odo-dentina-b: #B7A06F;
+  --odo-dentina-c: #8F7A4D;
+  --odo-brilho: #ECE7DA;
+  --odo-gengiva-a: #6B3347;
+  --odo-gengiva-b: #7E2E4E;
+  --odo-gengiva-c: #5A1F37;
+  --odo-gengiva-brilho: #C79AAB;
+  --cond-preto-fill: #000000;
+  --cond-preto-stroke: #E2E8F0;
 }
 
 /* Transição do toggle de privacidade financeira (olho + valor mascarado) — pequeno "pop"
@@ -234,6 +399,11 @@ body,
    janela parava de funcionar). Só em body preserva a propagação e cobre a mesma regra. */
 body {
   overflow-x: hidden;
+  /* `clip` corta igual, mas NÃO cria contêiner de rolagem. Com `hidden`, o overflow-y de body vira `auto`; quando
+     o Headless UI abre um menu e trava a rolagem (html { overflow: hidden }), body deixa de propagar para a janela e
+     passa a rolar sozinho: a página "quebrava" (menu cortado e um vazio enorme abaixo). Navegador sem `clip` fica
+     com o `hidden` de cima. */
+  overflow-x: clip;
 }
 
 html {
@@ -304,6 +474,19 @@ select option {
   color: var(--color-bokka-ink);
 }
 
+/* O reset acima não está em camada e por isso vence `text-*` do Tailwind (que fica em @layer utilities):
+   num <button>, `text-white` nunca valia e o texto sobre o fundo azul/vermelho ficava escuro. Aqui o branco
+   volta SÓ para os botões que o pedem (primário, perigo, chip selecionado, hover azul). As demais cores de
+   texto em botão (ink-2, ink-3 etc.) continuam como estavam: herdam a cor do pai. */
+button.text-white,
+button.hover\:text-white:hover {
+  color: var(--color-white);
+}
+
+button.text-bokka-on-primary {
+  color: var(--color-bokka-on-primary);
+}
+
 button {
   cursor: pointer;
 }
@@ -316,7 +499,14 @@ button:disabled {
 *:focus-visible {
   outline: 2px solid var(--color-bokka-primary-ring);
   outline-offset: 2px;
-  border-radius: 4px;
+}
+
+/* Raio do contorno de foco só para quem não tem `rounded-*` (em camada, para as utilities vencerem: antes o 4px
+   fixo transformava botão redondo, como o dia do calendário, em quadrado ao focar com o teclado). */
+@layer base {
+  *:focus-visible {
+    border-radius: 4px;
+  }
 }
 
 /* Scrollbar suave */
@@ -341,4 +531,22 @@ button:disabled {
   background: var(--color-bokka-ink-3);
   background-clip: padding-box;
   border: 2px solid transparent;
+}
+
+/* Área de toque de 44 px em celular e tablet (abaixo de lg) SEM mudar o visual: o botão continua do tamanho que é e ganha um
+   pseudo-elemento invisível de pelo menos 44x44 centrado nele (o clique no pseudo-elemento vale como clique no botão).
+   No desktop (lg+) o pseudo-elemento some. */
+@utility alvo-toque {
+  position: relative;
+  @media (max-width: 1023.98px) {
+    &::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: max(100%, 44px);
+      height: max(100%, 44px);
+      transform: translate(-50%, -50%);
+    }
+  }
 }

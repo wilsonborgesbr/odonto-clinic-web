@@ -394,7 +394,7 @@ export const NotificationsPanel = () => {
                     <p className="text-[10px] text-bokka-ink-3 mt-1 inline-flex items-center gap-1 uppercase font-semibold tracking-wider">
                       <Clock className="w-3 h-3" strokeWidth={2} />
                       {relativeTime(n.timestamp, now)}
-                      <span className="mx-1 text-bokka-border-strong">·</span>
+                      <span className="mx-1 text-bokka-ink-3" aria-hidden="true">·</span>
                       <span>{style.label}</span>
                     </p>
                   </div>
@@ -435,7 +435,7 @@ export const NotificationsPanel = () => {
       >
         <Bell className="w-4 h-4" strokeWidth={2} />
         {unreadCount > 0 && !open && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-bokka-danger text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-bokka-surface tabular-nums">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-bokka-badge text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-bokka-surface tabular-nums">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}

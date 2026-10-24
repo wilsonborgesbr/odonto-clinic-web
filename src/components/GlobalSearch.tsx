@@ -335,7 +335,7 @@ export const GlobalSearch = () => {
       {mobileOpen && (
         <div className="fixed inset-0 z-50 bg-bokka-surface flex flex-col md:hidden">
           <div className="h-16 px-4 flex items-center gap-3 border-b border-bokka-border shrink-0">
-            <div className="flex-1 flex items-center bg-bokka-surface-2 border border-bokka-border-strong rounded-full px-4 h-10 gap-2">
+            <div className="flex-1 flex items-center bg-bokka-surface-2 border border-bokka-field-edge rounded-full px-4 h-10 gap-2">
               <Search className="w-4 h-4 text-bokka-ink-3 shrink-0" strokeWidth={2} />
               <input
                 ref={mobileInputRef}

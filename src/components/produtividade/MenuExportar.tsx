@@ -74,7 +74,8 @@ export const MenuExportar = ({
 
       <MenuItems
         transition
-        className="absolute right-0 top-full z-40 mt-2 w-56 origin-top-right overflow-hidden rounded-xl border border-bokka-border bg-bokka-panel text-bokka-ink shadow-md transition duration-100 ease-out focus:outline-none data-[closed]:scale-95 data-[closed]:opacity-0 motion-reduce:transition-none"
+        anchor={{ to: 'bottom end', gap: 8, padding: 8 }}
+        className="z-50 w-56 origin-top-right overflow-y-auto rounded-xl border border-bokka-border bg-bokka-panel text-bokka-ink shadow-md transition duration-100 ease-out focus:outline-none data-[closed]:scale-95 data-[closed]:opacity-0 motion-reduce:transition-none"
       >
         {bloqueado ? (
           <div className="mx-1.5 mt-1.5 flex items-center gap-2 rounded-md bg-bokka-surface-2 px-3 py-2 text-xs text-bokka-ink-2">
