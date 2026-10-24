@@ -71,7 +71,7 @@ const tipoStyle: Record<NotifTipo, { icon: React.ElementType; tone: string; labe
   },
   agendamento: {
     icon: Calendar,
-    tone: 'bg-bokka-primary-soft text-bokka-primary',
+    tone: 'bg-bokka-primary-soft text-bokka-primary-text',
     label: 'Agenda',
   },
   despesa: {
@@ -86,12 +86,12 @@ const tipoStyle: Record<NotifTipo, { icon: React.ElementType; tone: string; labe
   },
   paciente: {
     icon: UserPlus,
-    tone: 'bg-bokka-primary-soft text-bokka-primary',
+    tone: 'bg-bokka-primary-soft text-bokka-primary-text',
     label: 'Paciente',
   },
   procedimento: {
     icon: Sparkles,
-    tone: 'bg-bokka-primary-soft text-bokka-primary',
+    tone: 'bg-bokka-primary-soft text-bokka-primary-text',
     label: 'Procedimento',
   },
 };
@@ -330,7 +330,7 @@ export const NotificationsPanel = () => {
           <button
             type="button"
             onClick={marcarTodasLidas}
-            className="text-xs font-semibold text-bokka-primary hover:text-bokka-primary-hover inline-flex items-center gap-1"
+            className="text-xs font-semibold text-bokka-primary-text hover:text-bokka-primary-text-hover inline-flex items-center gap-1"
           >
             <Check className="w-3.5 h-3.5" strokeWidth={2} />
             Marcar todas lidas
@@ -412,7 +412,7 @@ export const NotificationsPanel = () => {
             navigate('/configuracoes');
             setOpen(false);
           }}
-          className="text-[11px] font-semibold text-bokka-ink-3 hover:text-bokka-primary transition-colors"
+          className="text-[11px] font-semibold text-bokka-ink-3 hover:text-bokka-primary-text transition-colors"
         >
           Ajustar em Configurações →
         </button>
@@ -483,7 +483,7 @@ const EmptyPanel = ({
       <button
         type="button"
         onClick={onAction}
-        className="mt-4 text-xs font-semibold text-bokka-primary hover:text-bokka-primary-hover"
+        className="mt-4 text-xs font-semibold text-bokka-primary-text hover:text-bokka-primary-text-hover"
       >
         {actionLabel}
       </button>

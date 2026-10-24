@@ -243,7 +243,7 @@ export const EstoquePage = () => {
                         <button
                           type="button"
                           onClick={() => openEdit(item)}
-                          className="w-9 h-9 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary transition-colors"
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary-text transition-colors"
                           title="Editar"
                         >
                           <Pencil className="w-4 h-4" strokeWidth={1.75} />
@@ -259,7 +259,7 @@ export const EstoquePage = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap mt-1.5">
-                      <span className="px-2 py-0.5 rounded-full bg-bokka-primary-soft text-bokka-primary text-[10px] font-semibold">
+                      <span className="px-2 py-0.5 rounded-full bg-bokka-primary-soft text-bokka-primary-text text-[10px] font-semibold">
                         {categoriaLabel[item.categoria!] ?? item.categoria}
                       </span>
                       <span className={cn('text-xs tabular-nums font-semibold', low ? 'text-bokka-danger-ink' : 'text-bokka-ink-2')}>
@@ -303,7 +303,7 @@ export const EstoquePage = () => {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="px-2 py-0.5 rounded-full bg-bokka-primary-soft text-bokka-primary text-[10px] font-semibold">
+                        <span className="px-2 py-0.5 rounded-full bg-bokka-primary-soft text-bokka-primary-text text-[10px] font-semibold">
                           {categoriaLabel[item.categoria!] ?? item.categoria}
                         </span>
                       </td>
@@ -329,7 +329,7 @@ export const EstoquePage = () => {
                           <button
                             type="button"
                             onClick={() => openEdit(item)}
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary transition-colors"
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary-text transition-colors"
                             title="Editar"
                           >
                             <Pencil className="w-3.5 h-3.5" strokeWidth={1.75} />

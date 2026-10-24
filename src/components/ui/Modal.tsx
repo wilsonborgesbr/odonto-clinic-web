@@ -62,7 +62,7 @@ export const Modal = ({
         leaveFrom="opacity-100"
         leaveTo="opacity-0"
       >
-        <div className="fixed inset-0 bg-bokka-ink/40 backdrop-blur-sm" aria-hidden="true" />
+        <div className="fixed inset-0 bg-bokka-scrim backdrop-blur-sm" aria-hidden="true" />
       </Transition.Child>
 
       <div className="fixed inset-0 overflow-y-auto">

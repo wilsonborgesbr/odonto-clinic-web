@@ -379,7 +379,7 @@ export const DentistaDetalheModal = ({ dentistaId, open, onClose }: DentistaDeta
                     <CalendarDays className="w-5 h-5" strokeWidth={1.75} />
                   </div>
                   <div>
-                    <p className="text-xs uppercase font-semibold text-bokka-primary tracking-wider">
+                    <p className="text-xs uppercase font-semibold text-bokka-primary-text tracking-wider">
                       Proximo agendamento
                     </p>
                     <p className="text-lg font-bold text-bokka-ink mt-0.5 tabular-nums">
@@ -417,7 +417,7 @@ export const DentistaDetalheModal = ({ dentistaId, open, onClose }: DentistaDeta
 
 const BasicRow = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) => (
   <li className="flex items-start gap-3">
-    <span className="w-8 h-8 rounded-lg bg-bokka-primary-soft text-bokka-primary flex items-center justify-center shrink-0 mt-0.5">
+    <span className="w-8 h-8 rounded-lg bg-bokka-primary-soft text-bokka-primary-text flex items-center justify-center shrink-0 mt-0.5">
       {icon}
     </span>
     <div className="min-w-0 flex-1">

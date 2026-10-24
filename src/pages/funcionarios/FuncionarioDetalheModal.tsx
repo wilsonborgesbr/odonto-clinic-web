@@ -425,7 +425,7 @@ const BasicRow = ({
   value: React.ReactNode;
 }) => (
   <li className="flex items-start gap-3">
-    <span className="w-8 h-8 rounded-lg bg-bokka-primary-soft text-bokka-primary flex items-center justify-center shrink-0 mt-0.5">
+    <span className="w-8 h-8 rounded-lg bg-bokka-primary-soft text-bokka-primary-text flex items-center justify-center shrink-0 mt-0.5">
       {icon}
     </span>
     <div className="min-w-0 flex-1">
@@ -459,7 +459,7 @@ const ContactRow = ({
       rel={external ? 'noreferrer' : undefined}
       className="flex items-center gap-3 rounded-xl p-3 border border-bokka-border bg-bokka-surface hover:border-bokka-primary hover:bg-bokka-primary-soft/50 transition-colors group"
     >
-      <span className="w-9 h-9 rounded-lg bg-bokka-primary-soft text-bokka-primary flex items-center justify-center shrink-0 group-hover:bg-bokka-primary group-hover:text-white transition-colors">
+      <span className="w-9 h-9 rounded-lg bg-bokka-primary-soft text-bokka-primary-text flex items-center justify-center shrink-0 group-hover:bg-bokka-primary group-hover:text-white transition-colors">
         {icon}
       </span>
       <div className="min-w-0 flex-1">

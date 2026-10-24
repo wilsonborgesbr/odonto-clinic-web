@@ -249,7 +249,7 @@ export const AgendaPage = () => {
                             setFormInitial(ag);
                             setFormOpen(true);
                           }}
-                          className="p-2 rounded-md text-bokka-ink-2 hover:bg-bokka-surface hover:text-bokka-primary"
+                          className="p-2 rounded-md text-bokka-ink-2 hover:bg-bokka-surface hover:text-bokka-primary-text"
                           title="Editar"
                         >
                           <Pencil className="w-4 h-4" strokeWidth={1.75} />

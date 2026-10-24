@@ -223,7 +223,7 @@ export const PacientesPage = () => {
                     <button
                       type="button"
                       onClick={() => setDetalheId(p.id)}
-                      className="w-9 h-9 rounded-full flex items-center justify-center text-bokka-ink-2 hover:bg-bokka-surface hover:text-bokka-primary"
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-bokka-ink-2 hover:bg-bokka-surface hover:text-bokka-primary-text"
                       title="Ver ficha"
                     >
                       <Eye className="w-4 h-4" strokeWidth={1.75} />
@@ -231,7 +231,7 @@ export const PacientesPage = () => {
                     <button
                       type="button"
                       onClick={() => abrirEdicao(p)}
-                      className="w-9 h-9 rounded-full flex items-center justify-center text-bokka-ink-2 hover:bg-bokka-surface hover:text-bokka-primary"
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-bokka-ink-2 hover:bg-bokka-surface hover:text-bokka-primary-text"
                       title="Editar"
                     >
                       <Pencil className="w-4 h-4" strokeWidth={1.75} />
@@ -276,7 +276,7 @@ export const PacientesPage = () => {
                           name={p.nomeCompleto}
                           size="sm"
                         />
-                        <span className="font-semibold text-bokka-ink group-hover:text-bokka-primary">
+                        <span className="font-semibold text-bokka-ink group-hover:text-bokka-primary-text">
                           {p.nomeCompleto}
                         </span>
                         {p.menorDeIdade && <BadgeMenor />}
@@ -299,7 +299,7 @@ export const PacientesPage = () => {
                         <button
                           type="button"
                           onClick={() => setDetalheId(p.id)}
-                          className="p-2 rounded-md text-bokka-ink-2 hover:bg-bokka-surface hover:text-bokka-primary"
+                          className="p-2 rounded-md text-bokka-ink-2 hover:bg-bokka-surface hover:text-bokka-primary-text"
                           title="Ver ficha"
                         >
                           <Eye className="w-4 h-4" strokeWidth={1.75} />
@@ -307,7 +307,7 @@ export const PacientesPage = () => {
                         <button
                           type="button"
                           onClick={() => abrirEdicao(p)}
-                          className="p-2 rounded-md text-bokka-ink-2 hover:bg-bokka-surface hover:text-bokka-primary"
+                          className="p-2 rounded-md text-bokka-ink-2 hover:bg-bokka-surface hover:text-bokka-primary-text"
                           title="Editar"
                         >
                           <Pencil className="w-4 h-4" strokeWidth={1.75} />

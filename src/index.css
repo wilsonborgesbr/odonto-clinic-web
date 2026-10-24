@@ -57,6 +57,34 @@
   --color-bokka-toast-fg: #FFFFFF;
   --color-bokka-toast-err-bg: #B91C1C;
 
+  /* Papéis que NÃO acompanham `ink`/`primary` quando o tema escuro inverte o texto principal:
+     - strong: fundo escuro com texto branco por cima (item ativo do menu, cartão escuro, avatar);
+     - scrim: cortina atrás de modal e de menu lateral aberto no celular;
+     - primary-text: o azul de destaque usado como TEXTO (bokka-primary fica só como fundo). */
+  --color-bokka-strong: #0B1220;
+  --color-bokka-scrim: rgb(11 18 32 / 0.4);
+  --color-bokka-primary-text: #2A6BF2;
+  --color-bokka-primary-text-hover: #1E56D6;
+
+  /* Hover e clique do botão de perigo (iguais ao red-600/red-700 que o Button usava; nos dois temas). */
+  --color-bokka-danger-hover: oklch(57.7% 0.245 27.325);
+  --color-bokka-danger-active: oklch(50.5% 0.213 27.518);
+
+  /* Seis tons de fundo + texto do avatar (cor por hash do nome). Claro = blue/emerald/amber/rose/violet/cyan
+     100 e 700 do Tailwind, valores originais; escuro = fundo translúcido e texto 300. */
+  --color-bokka-tone-1: oklch(93.2% 0.032 255.585);
+  --color-bokka-tone-1-ink: oklch(48.8% 0.243 264.376);
+  --color-bokka-tone-2: oklch(95% 0.052 163.051);
+  --color-bokka-tone-2-ink: oklch(50.8% 0.118 165.612);
+  --color-bokka-tone-3: oklch(96.2% 0.059 95.617);
+  --color-bokka-tone-3-ink: oklch(55.5% 0.163 48.998);
+  --color-bokka-tone-4: oklch(94.1% 0.03 12.58);
+  --color-bokka-tone-4-ink: oklch(51.4% 0.222 16.935);
+  --color-bokka-tone-5: oklch(94.3% 0.029 294.588);
+  --color-bokka-tone-5-ink: oklch(49.1% 0.27 292.581);
+  --color-bokka-tone-6: oklch(95.6% 0.045 203.388);
+  --color-bokka-tone-6-ink: oklch(52% 0.105 223.128);
+
   /* DM Sans — fonte principal (estilo Moru) */
   --font-sans: "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
@@ -101,6 +129,86 @@ body,
   --tip-shadow: var(--shadow-md);
   --band: rgb(42 107 242 / 0.06);
   --skeleton: #F1F5F9;
+}
+
+/* Tema escuro — referência: docs/prototipo-grafico-produtividade.html (tema Escuro) e docs/auditoria-dark-mode.md §8.
+   Só sobrescreve as MESMAS variáveis do tema claro; nenhum componente tem versão escura própria.
+   `data-theme` é posto no <html> pelo script do index.html e pelo ThemeProvider. Sem o atributo (ou com
+   "light") vale o claro. Contrastes: `node docs/verificar-contraste-grafico.js`. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-bokka-page: #060A13;
+  --color-bokka-surface: #0B1220;
+  --color-bokka-surface-2: #0F192C;
+  --color-bokka-surface-3: #16213A;
+  --color-bokka-panel: #111B31;
+  --color-bokka-border: #1E2B47;
+  --color-bokka-border-strong: #33456B;
+  --color-bokka-hover: #17233D;
+  --color-bokka-hover-strong: #24345A;
+
+  --color-bokka-ink: #F1F5F9;
+  --color-bokka-ink-2: #CBD5E1;
+  --color-bokka-ink-3: #94A3B8;
+
+  --color-bokka-primary-soft: #142447;
+  --color-bokka-link: #7BA6F8;
+  --color-bokka-link-hover: #A9C7FD;
+  --color-bokka-focus: #93B8FC;
+  --color-bokka-primary-text: #7BA6F8;
+  --color-bokka-primary-text-hover: #A9C7FD;
+
+  --color-bokka-success-soft: rgb(16 185 129 / 0.16);
+  --color-bokka-success-ink: #6EE7B7;
+  --color-bokka-warning-soft: rgb(245 158 11 / 0.16);
+  --color-bokka-warning-ink: #FCD34D;
+  --color-bokka-danger-soft: rgb(239 68 68 / 0.18);
+  --color-bokka-danger-ink: #FCA5A5;
+  --color-bokka-info-soft: rgb(42 107 242 / 0.18);
+  --color-bokka-info-ink: #7BA6F8;
+  --color-bokka-neutral-soft: rgb(148 163 184 / 0.16);
+  --color-bokka-neutral-ink: #CBD5E1;
+
+  --color-bokka-strong: #24345A;
+  --color-bokka-tone-1: rgb(59 130 246 / 0.2);
+  --color-bokka-tone-1-ink: #93C5FD;
+  --color-bokka-tone-2: rgb(16 185 129 / 0.18);
+  --color-bokka-tone-2-ink: #6EE7B7;
+  --color-bokka-tone-3: rgb(245 158 11 / 0.18);
+  --color-bokka-tone-3-ink: #FCD34D;
+  --color-bokka-tone-4: rgb(244 63 94 / 0.18);
+  --color-bokka-tone-4-ink: #FDA4AF;
+  --color-bokka-tone-5: rgb(139 92 246 / 0.2);
+  --color-bokka-tone-5-ink: #C4B5FD;
+  --color-bokka-tone-6: rgb(6 182 212 / 0.18);
+  --color-bokka-tone-6-ink: #67E8F9;
+  --color-bokka-scrim: rgb(0 0 0 / 0.6);
+  --color-bokka-toast-bg: #E2E8F0;
+  --color-bokka-toast-fg: #0B1220;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --shadow-md: 0 8px 24px rgb(0 0 0 / 0.45);
+
+  --grid: rgb(255 255 255 / 0.08);
+  --axis: #94A3B8;
+  --baseline: #64748B;
+  --line: #6FA3FA;
+  --line-fill: #6FA3FA;
+  --line-fill-a: 0.28;
+  --cursor: rgb(147 184 252 / 0.45);
+  --dot-bg: #0B1220;
+  --dot-ring: #93B8FC;
+  --compare: #94A3B8;
+  --positive: #10B981;
+  --negative: #EF4444;
+  --profit: #93B8FC;
+  --tip-bg: #16213A;
+  --tip-fg: #F1F5F9;
+  --tip-fg-3: #94A3B8;
+  --tip-border: #33456B;
+  --band: rgb(255 255 255 / 0.05);
+  --skeleton: rgb(255 255 255 / 0.06);
 }
 
 /* Transição do toggle de privacidade financeira (olho + valor mascarado) — pequeno "pop"
@@ -166,6 +274,12 @@ body {
     );
 }
 
+/* O padrão pontilhado só existe no claro; no escuro o fundo é o liso da página. */
+:root[data-theme="dark"] .bokka-bg-pattern {
+  background-color: var(--color-bokka-page);
+  background-image: none;
+}
+
 /* Native form controls follow the theme */
 input,
 button,
@@ -175,8 +289,18 @@ select {
   color: inherit;
 }
 
+/* Preenchimento automático do navegador (usuário/senha salvos): no escuro, mantém o campo escuro e legível. */
+:root[data-theme="dark"] input:-webkit-autofill,
+:root[data-theme="dark"] input:-webkit-autofill:hover,
+:root[data-theme="dark"] input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-bokka-ink);
+  caret-color: var(--color-bokka-ink);
+  box-shadow: 0 0 0 1000px var(--color-bokka-surface-3) inset;
+  transition: background-color 9999s ease-out 0s;
+}
+
 select option {
-  background-color: #FFFFFF;
+  background-color: var(--color-bokka-panel);
   color: var(--color-bokka-ink);
 }
 

@@ -179,7 +179,7 @@ export const Perfil = () => {
         <CardHeader title="Dados da conta" />
         <ul className="space-y-4">
           <li className="flex items-start gap-3">
-            <span className="w-9 h-9 rounded-lg bg-bokka-primary-soft text-bokka-primary flex items-center justify-center shrink-0">
+            <span className="w-9 h-9 rounded-lg bg-bokka-primary-soft text-bokka-primary-text flex items-center justify-center shrink-0">
               <UserIcon className="w-4 h-4" strokeWidth={1.75} />
             </span>
             <div className="min-w-0 flex-1">
@@ -225,7 +225,7 @@ export const Perfil = () => {
                   <button
                     type="button"
                     onClick={startEditingName}
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary transition-colors"
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary-text transition-colors"
                     title="Editar nome"
                   >
                     <Pencil className="w-3.5 h-3.5" strokeWidth={1.75} />
@@ -235,7 +235,7 @@ export const Perfil = () => {
             </div>
           </li>
           <li className="flex items-start gap-3">
-            <span className="w-9 h-9 rounded-lg bg-bokka-primary-soft text-bokka-primary flex items-center justify-center shrink-0">
+            <span className="w-9 h-9 rounded-lg bg-bokka-primary-soft text-bokka-primary-text flex items-center justify-center shrink-0">
               <Mail className="w-4 h-4" strokeWidth={1.75} />
             </span>
             <div className="min-w-0 flex-1">
@@ -281,7 +281,7 @@ export const Perfil = () => {
                   <button
                     type="button"
                     onClick={startEditingEmail}
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary transition-colors"
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary-text transition-colors"
                     title="Editar e-mail"
                   >
                     <Pencil className="w-3.5 h-3.5" strokeWidth={1.75} />
@@ -353,7 +353,7 @@ const InfoRow = ({
   value: string;
 }) => (
   <li className="flex items-start gap-3">
-    <span className="w-9 h-9 rounded-lg bg-bokka-primary-soft text-bokka-primary flex items-center justify-center shrink-0">
+    <span className="w-9 h-9 rounded-lg bg-bokka-primary-soft text-bokka-primary-text flex items-center justify-center shrink-0">
       {icon}
     </span>
     <div className="min-w-0 flex-1">

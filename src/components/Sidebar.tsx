@@ -78,7 +78,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     <>
       {isOpen && (
         <div
-          className="fixed inset-0 z-30 bg-bokka-ink/40 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-30 bg-bokka-scrim backdrop-blur-sm lg:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -114,7 +114,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                           cn(
                             'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors',
                             isActive
-                              ? 'bg-bokka-ink text-white shadow-sm'
+                              ? 'bg-bokka-strong text-white shadow-sm'
                               : 'text-bokka-ink-2 hover:bg-bokka-surface-3 hover:text-bokka-ink',
                           )
                         }

@@ -176,7 +176,7 @@ export const PacienteDocumentos = ({ pacienteId }: PacienteDocumentosProps) => {
                               href={doc.urlArquivo}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-[11px] text-bokka-primary hover:underline inline-flex items-center gap-0.5 mt-0.5"
+                              className="text-[11px] text-bokka-primary-text hover:underline inline-flex items-center gap-0.5 mt-0.5"
                             >
                               Ver arquivo <ExternalLink className="w-3 h-3" />
                             </a>

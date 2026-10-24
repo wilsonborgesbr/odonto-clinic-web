@@ -225,7 +225,7 @@ export const PacienteProcedimentos = ({ pacienteId }: PacienteProcedimentosProps
                             setFormInitial(item);
                             setFormOpen(true);
                           }}
-                          className="w-7 h-7 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary transition-colors"
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary-text transition-colors"
                           title="Editar"
                         >
                           <Pencil className="w-3.5 h-3.5" strokeWidth={1.75} />
@@ -418,7 +418,7 @@ export const ProcedimentoFormInline = ({
           {showOdontogramaLink && (
             <Link
               to={`/pacientes/${pacienteId}/odontograma`}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-bokka-primary hover:text-bokka-primary-strong"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-bokka-primary-text hover:text-bokka-primary-strong"
             >
               <ExternalLink className="w-3.5 h-3.5" strokeWidth={2} />
               Abrir odontograma completo
@@ -433,7 +433,7 @@ export const ProcedimentoFormInline = ({
                 className={cn(
                   'inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-semibold',
                   values.odontogramaId
-                    ? 'bg-bokka-primary-soft text-bokka-primary'
+                    ? 'bg-bokka-primary-soft text-bokka-primary-text'
                     : 'bg-bokka-surface-3 text-bokka-ink-3',
                 )}
               >
@@ -555,7 +555,7 @@ export const ProcedimentoFormInline = ({
             )}
           </div>
           {values.valor && values.valor > 0 && values.dataPrimeiroPagamento && (
-            <p className="text-xs text-bokka-primary bg-bokka-primary-soft/50 border border-bokka-primary/15 rounded-md px-3 py-2 mt-3">
+            <p className="text-xs text-bokka-primary-text bg-bokka-primary-soft/50 border border-bokka-primary/15 rounded-md px-3 py-2 mt-3">
               Ao salvar, {values.tipoPagamento === 'PARCELADO' && (values.numeroParcelas ?? 0) > 1
                 ? `${values.numeroParcelas} cobranças serão criadas`
                 : '1 cobrança será criada'}{' '}
@@ -650,7 +650,7 @@ const ArchMini = ({ highlightDente }: ArchMiniProps) => {
         />
       </svg>
       {highlight && (
-        <div className="flex items-center justify-center mt-1 gap-1 text-[10px] font-semibold text-bokka-primary">
+        <div className="flex items-center justify-center mt-1 gap-1 text-[10px] font-semibold text-bokka-primary-text">
           <Grid3X3 className="w-3 h-3" strokeWidth={2} />
           Dente {highlight}
         </div>

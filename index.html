@@ -5,6 +5,20 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bokka</title>
+    <!-- Aplica o tema salvo antes da primeira pintura (evita "piscar" claro no escuro). Só 'dark' ou 'light' (padrão);
+         não segue o tema do sistema. Mesma lógica de src/lib/tema.ts. -->
+    <script>
+      (function () {
+        var tema = 'light';
+        // %VITE_TEMA_VISIVEL% é trocado pelo Vite no build; sem a variável fica o texto literal e vale sempre Claro.
+        var visivel = '%VITE_TEMA_VISIVEL%' === 'true';
+        try {
+          if (visivel && localStorage.getItem('bokka:tema') === 'dark') tema = 'dark';
+        } catch (e) {}
+        document.documentElement.setAttribute('data-theme', tema);
+        document.documentElement.style.colorScheme = tema;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

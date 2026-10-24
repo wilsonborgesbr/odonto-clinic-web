@@ -153,7 +153,7 @@ export const PacienteCombobox = ({
                   </span>
                 )}
                 <Check
-                  className="invisible w-4 h-4 shrink-0 text-bokka-primary group-data-selected:visible"
+                  className="invisible w-4 h-4 shrink-0 text-bokka-primary-text group-data-selected:visible"
                   aria-hidden="true"
                 />
               </ComboboxOption>

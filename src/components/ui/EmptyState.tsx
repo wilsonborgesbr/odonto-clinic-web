@@ -25,7 +25,7 @@ export const EmptyState = ({
       className,
     )}
   >
-    <div className="w-14 h-14 rounded-full bg-bokka-primary-soft text-bokka-primary flex items-center justify-center mb-4">
+    <div className="w-14 h-14 rounded-full bg-bokka-primary-soft text-bokka-primary-text flex items-center justify-center mb-4">
       {icon}
     </div>
     <h3 className="text-base font-semibold text-bokka-ink mb-1">{title}</h3>

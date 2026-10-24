@@ -22,7 +22,7 @@ createRoot(document.getElementById('root')!).render(
             padding: '12px 16px',
             fontSize: '14px',
             fontWeight: 500,
-            boxShadow: '0 4px 12px -2px rgb(11 18 32 / 0.08), 0 2px 4px -2px rgb(11 18 32 / 0.04)',
+            boxShadow: 'var(--shadow-md)',
           },
           success: {
             iconTheme: {

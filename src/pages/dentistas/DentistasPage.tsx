@@ -290,7 +290,7 @@ export const DentistasPage = () => {
                     {(d.especialidades ?? []).slice(0, 3).map((esp) => (
                       <span
                         key={esp}
-                        className="px-2 py-0.5 rounded-full bg-bokka-primary-soft text-bokka-primary text-[10px] font-semibold"
+                        className="px-2 py-0.5 rounded-full bg-bokka-primary-soft text-bokka-primary-text text-[10px] font-semibold"
                       >
                         {espLabel[esp] ?? esp}
                       </span>
@@ -307,7 +307,7 @@ export const DentistasPage = () => {
                   {d.telefoneCelular && (
                     <a
                       href={`tel:${d.telefoneCelular}`}
-                      className="inline-flex items-center gap-1 hover:text-bokka-primary"
+                      className="inline-flex items-center gap-1 hover:text-bokka-primary-text"
                     >
                       <Phone className="w-3.5 h-3.5" strokeWidth={1.75} />
                       {formatPhone(d.telefoneCelular)}
@@ -316,7 +316,7 @@ export const DentistasPage = () => {
                   {d.email && (
                     <a
                       href={`mailto:${d.email}`}
-                      className="inline-flex items-center gap-1 hover:text-bokka-primary"
+                      className="inline-flex items-center gap-1 hover:text-bokka-primary-text"
                     >
                       <Mail className="w-3.5 h-3.5" strokeWidth={1.75} />
                       <span className="truncate max-w-[160px]">{d.email}</span>
@@ -330,7 +330,7 @@ export const DentistasPage = () => {
                       <button
                         type="button"
                         onClick={() => openEdit(d)}
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary transition-colors"
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary-text transition-colors"
                         title="Editar"
                       >
                         <Pencil className="w-3.5 h-3.5" strokeWidth={1.75} />

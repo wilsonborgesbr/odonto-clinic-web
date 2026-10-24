@@ -589,7 +589,7 @@ export const AuditoriaPage = () => {
                             setReceberInitial(c);
                             setReceberFormOpen(true);
                           }}
-                          className="w-9 h-9 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary transition-colors"
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary-text transition-colors"
                           title="Editar"
                         >
                           <Pencil className="w-4 h-4" strokeWidth={1.75} />
@@ -669,7 +669,7 @@ export const AuditoriaPage = () => {
                                 setReceberInitial(c);
                                 setReceberFormOpen(true);
                               }}
-                              className="w-8 h-8 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary transition-colors"
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary-text transition-colors"
                               title="Editar"
                             >
                               <Pencil className="w-3.5 h-3.5" strokeWidth={1.75} />
@@ -798,7 +798,7 @@ export const AuditoriaPage = () => {
                             setPagarInitial(c);
                             setPagarFormOpen(true);
                           }}
-                          className="w-9 h-9 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary transition-colors"
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary-text transition-colors"
                           title="Editar"
                         >
                           <Pencil className="w-4 h-4" strokeWidth={1.75} />
@@ -879,7 +879,7 @@ export const AuditoriaPage = () => {
                                 setPagarInitial(c);
                                 setPagarFormOpen(true);
                               }}
-                              className="w-8 h-8 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary transition-colors"
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary-text transition-colors"
                               title="Editar"
                             >
                               <Pencil className="w-3.5 h-3.5" strokeWidth={1.75} />
@@ -1218,7 +1218,7 @@ const CaixaHero = ({
     <div
       className={cn(
         '@container relative rounded-2xl overflow-hidden p-6 lg:p-7 tv:p-9 flex flex-col justify-between min-h-[180px] tv:min-h-[220px] shadow-sm min-w-0',
-        positive ? 'bg-bokka-ink text-white' : 'bg-bokka-danger text-white',
+        positive ? 'bg-bokka-strong text-white' : 'bg-bokka-danger text-white',
         className,
       )}
     >
@@ -1287,7 +1287,7 @@ const EstoqueIntegracaoCard = ({
           Valor total imobilizado em materiais no depósito.
         </p>
       </div>
-      <span className="w-10 h-10 tv:w-12 tv:h-12 rounded-xl bg-bokka-primary-soft text-bokka-primary flex items-center justify-center shrink-0">
+      <span className="w-10 h-10 tv:w-12 tv:h-12 rounded-xl bg-bokka-primary-soft text-bokka-primary-text flex items-center justify-center shrink-0">
         <Package className="w-5 h-5" strokeWidth={1.75} />
       </span>
     </div>

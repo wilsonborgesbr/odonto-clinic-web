@@ -151,7 +151,7 @@ export const PacienteDetalhePage = () => {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-bokka-ink-3">
-        <Link to="/pacientes" className="hover:text-bokka-primary inline-flex items-center gap-1 font-medium">
+        <Link to="/pacientes" className="hover:text-bokka-primary-text inline-flex items-center gap-1 font-medium">
           <ArrowLeft className="w-4 h-4" /> Pacientes
         </Link>
         <ChevronRight className="w-4 h-4" />
@@ -193,7 +193,7 @@ export const PacienteDetalhePage = () => {
                   className={cn(
                     'px-3 py-1 rounded-full text-xs font-semibold transition-colors',
                     queueSort === t.v
-                      ? 'bg-bokka-primary-soft text-bokka-primary'
+                      ? 'bg-bokka-primary-soft text-bokka-primary-text'
                       : 'text-bokka-ink-3 hover:bg-bokka-surface-3',
                   )}
                 >
@@ -484,7 +484,7 @@ export const PacienteDetalhePage = () => {
             </div>
 
             {/* Odontograma preview */}
-            <div className="bg-bokka-ink rounded-2xl p-5 text-white overflow-hidden relative flex flex-col">
+            <div className="bg-bokka-strong rounded-2xl p-5 text-white overflow-hidden relative flex flex-col">
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <h3 className="text-base font-semibold">Odontograma</h3>
@@ -538,7 +538,7 @@ export const PacienteDetalhePage = () => {
                   <CalendarDays className="w-5 h-5" strokeWidth={1.75} />
                 </div>
                 <div>
-                  <p className="text-xs uppercase font-semibold text-bokka-primary tracking-wider">
+                  <p className="text-xs uppercase font-semibold text-bokka-primary-text tracking-wider">
                     Próxima consulta
                   </p>
                   <p className="text-lg font-bold text-bokka-ink mt-0.5 tabular-nums">
@@ -580,7 +580,7 @@ interface BasicRowProps {
 
 const BasicRow = ({ icon, label, value }: BasicRowProps) => (
   <li className="flex items-start gap-3">
-    <span className="w-8 h-8 rounded-lg bg-bokka-primary-soft text-bokka-primary flex items-center justify-center shrink-0 mt-0.5">
+    <span className="w-8 h-8 rounded-lg bg-bokka-primary-soft text-bokka-primary-text flex items-center justify-center shrink-0 mt-0.5">
       {icon}
     </span>
     <div className="min-w-0 flex-1">

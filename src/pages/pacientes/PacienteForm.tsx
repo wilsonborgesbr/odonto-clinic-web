@@ -257,7 +257,7 @@ export const PacienteForm = ({ initial, photoKey, onSubmit, onCancel }: Paciente
               className="sm:col-span-2 rounded-lg border border-bokka-border bg-bokka-surface-2 p-4 space-y-4"
             >
               <div className="flex items-start gap-3">
-                <span className="w-8 h-8 rounded-lg bg-bokka-primary-soft text-bokka-primary flex items-center justify-center shrink-0">
+                <span className="w-8 h-8 rounded-lg bg-bokka-primary-soft text-bokka-primary-text flex items-center justify-center shrink-0">
                   <UserRound className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
                 </span>
                 <div className="min-w-0">

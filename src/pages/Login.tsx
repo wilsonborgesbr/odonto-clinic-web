@@ -168,7 +168,7 @@ export const Login = () => {
         <div className="flex justify-end -mt-2">
           <Link
             to={`/recuperar-senha${codigoLimpo ? `?c=${encodeURIComponent(codigoLimpo)}` : ''}`}
-            className="text-sm text-bokka-primary font-semibold hover:text-bokka-primary-hover"
+            className="text-sm text-bokka-primary-text font-semibold hover:text-bokka-primary-text-hover"
           >
             Esqueci minha senha
           </Link>
@@ -182,7 +182,7 @@ export const Login = () => {
           Ainda não tem conta?{' '}
           <Link
             to="/registro"
-            className="text-bokka-primary font-semibold hover:text-bokka-primary-hover"
+            className="text-bokka-primary-text font-semibold hover:text-bokka-primary-text-hover"
           >
             Cadastre-se agora
           </Link>

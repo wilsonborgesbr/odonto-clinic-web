@@ -118,7 +118,7 @@ export const PacienteAnamneses = ({ pacienteId }: PacienteAnamnesesProps) => {
                     onClick={() => setExpandido(isExpanded ? null : a.id!)}
                     className="w-full px-5 py-3.5 flex items-center gap-4 text-left hover:bg-bokka-surface-3/50 transition-colors"
                   >
-                    <span className="w-8 h-8 rounded-lg bg-bokka-primary-soft text-bokka-primary flex items-center justify-center shrink-0">
+                    <span className="w-8 h-8 rounded-lg bg-bokka-primary-soft text-bokka-primary-text flex items-center justify-center shrink-0">
                       <ClipboardList className="w-4 h-4" strokeWidth={1.75} />
                     </span>
                     <div className="flex-1 min-w-0">
@@ -224,7 +224,7 @@ export const PacienteAnamneses = ({ pacienteId }: PacienteAnamnesesProps) => {
                           <button
                             type="button"
                             onClick={() => abrirEditar(a)}
-                            className="w-8 h-8 rounded-full inline-flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary transition-colors"
+                            className="w-8 h-8 rounded-full inline-flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary-text transition-colors"
                             title="Editar"
                           >
                             <Pencil className="w-3.5 h-3.5" strokeWidth={1.75} />

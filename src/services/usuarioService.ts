@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import type { Tema } from '../lib/tema';
 import type { PermissaoEnum, RoleEnum, UsuarioDTO } from '../types';
 
 export interface CriarUsuarioPayload {
@@ -18,8 +19,11 @@ export interface AtualizarUsuarioPayload {
   novaSenha?: string;
 }
 
+/** PATCH parcial: só os campos enviados mudam no backend. */
 export interface AtualizarPreferenciasPayload {
-  hideFinancialInfo: boolean;
+  hideFinancialInfo?: boolean;
+  /** O front só envia 'light' ou 'dark' (o backend também aceita 'system', que não usamos). */
+  theme?: Tema;
 }
 
 export const usuarioService = {
@@ -50,6 +54,20 @@ export const useUsuarioMe = (options?: { enabled?: boolean }) =>
     enabled: options?.enabled ?? true,
   });
 
+/**
+ * /me lido só para aplicar o tema salvo do usuário que acabou de entrar. Chave por usuário e sem cache
+ * entre sessões (staleTime e gcTime 0): o /me compartilhado dura 30 s e pode ser o de OUTRO usuário do
+ * mesmo navegador, e uma cópia antiga traria o tema que o próprio usuário já trocou depois.
+ */
+export const useUsuarioMeParaTema = (userId: string | undefined, enabled: boolean) =>
+  useQuery({
+    queryKey: [...usuarioKeys.me(), 'tema', userId] as const,
+    queryFn: usuarioService.me,
+    enabled: enabled && !!userId,
+    staleTime: 0,
+    gcTime: 0,
+  });
+
 export const useAtualizarPreferenciasUsuario = () => {
   const qc = useQueryClient();
   return useMutation({
@@ -62,7 +80,11 @@ export const useAtualizarPreferenciasUsuario = () => {
       if (previous) {
         qc.setQueryData<UsuarioDTO>(usuarioKeys.me(), {
           ...previous,
-          preferences: { ...previous.preferences, hideFinancialInfo: payload.hideFinancialInfo },
+          preferences: {
+            ...previous.preferences,
+            ...(payload.hideFinancialInfo !== undefined && { hideFinancialInfo: payload.hideFinancialInfo }),
+            ...(payload.theme !== undefined && { theme: payload.theme }),
+          },
         });
       }
       return { previous };

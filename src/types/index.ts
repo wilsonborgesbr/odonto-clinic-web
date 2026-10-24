@@ -299,6 +299,8 @@ export interface Clinica {
 
 export interface UsuarioPreferencesDTO {
   hideFinancialInfo?: boolean;
+  /** 'light' | 'dark' | 'system'; ausente (backend antigo) vale 'light'. */
+  theme?: 'light' | 'dark' | 'system';
 }
 
 export interface UsuarioDTO {

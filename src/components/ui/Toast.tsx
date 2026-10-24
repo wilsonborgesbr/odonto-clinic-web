@@ -11,7 +11,7 @@ interface ToastOptions {
 const iconMap: Record<'success' | 'error' | 'info' | 'warning', ReactNode> = {
   success: <CheckCircle2 className="w-5 h-5 text-bokka-success" />,
   error: <XCircle className="w-5 h-5 text-bokka-danger" />,
-  info: <Info className="w-5 h-5 text-bokka-primary" />,
+  info: <Info className="w-5 h-5 text-bokka-primary-text" />,
   warning: <AlertCircle className="w-5 h-5 text-bokka-warning" />,
 };
 
@@ -34,7 +34,7 @@ const buildCustom = (
         {opts?.actionLabel && opts.onAction && (
           <button
             type="button"
-            className="text-sm font-semibold text-bokka-primary hover:text-bokka-primary-hover px-2 py-1 -mr-1 rounded-md whitespace-nowrap"
+            className="text-sm font-semibold text-bokka-primary-text hover:text-bokka-primary-text-hover px-2 py-1 -mr-1 rounded-md whitespace-nowrap"
             onClick={() => {
               opts.onAction!();
               toast.dismiss(t.id);

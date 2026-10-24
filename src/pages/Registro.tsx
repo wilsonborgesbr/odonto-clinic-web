@@ -49,7 +49,7 @@ export const Registro = () => {
   };
 
   return (
-    <div className="min-h-screen bg-bokka-surface-2 flex items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-bokka-page flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-[480px]">
         <div className="flex flex-col items-center mb-8">
           <BokkaMark size={44} />
@@ -149,7 +149,7 @@ export const Registro = () => {
             Já tem conta?{' '}
             <Link
               to="/login"
-              className="text-bokka-primary font-semibold hover:text-bokka-primary-hover"
+              className="text-bokka-primary-text font-semibold hover:text-bokka-primary-text-hover"
             >
               Entrar
             </Link>

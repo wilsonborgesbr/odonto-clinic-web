@@ -75,7 +75,7 @@ export const SeletorClinicaModal = ({
                 title={c.nome}
                 className="w-full flex items-center gap-3 rounded-xl border border-bokka-border bg-bokka-surface p-3 text-left transition-colors hover:border-bokka-primary hover:bg-bokka-primary-soft/40 focus-visible:outline-2 focus-visible:outline-bokka-primary-ring focus-visible:outline-offset-2 disabled:opacity-50 disabled:pointer-events-none"
               >
-                <span className="w-10 h-10 rounded-lg bg-bokka-primary-soft text-bokka-primary flex items-center justify-center shrink-0">
+                <span className="w-10 h-10 rounded-lg bg-bokka-primary-soft text-bokka-primary-text flex items-center justify-center shrink-0">
                   <Building2 className="w-5 h-5" strokeWidth={1.75} aria-hidden="true" />
                 </span>
                 <span className="min-w-0 flex-1">
@@ -84,7 +84,7 @@ export const SeletorClinicaModal = ({
                 </span>
                 {escolhida ? (
                   <Loader2
-                    className="w-4 h-4 text-bokka-primary animate-spin shrink-0"
+                    className="w-4 h-4 text-bokka-primary-text animate-spin shrink-0"
                     aria-label="Entrando"
                   />
                 ) : ehUltimo ? (

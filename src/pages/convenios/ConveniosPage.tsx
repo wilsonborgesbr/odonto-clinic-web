@@ -275,7 +275,7 @@ const CoberturasPicker = ({
                     if (el) el.indeterminate = someSelected;
                   }}
                   onChange={() => toggleGroup(group)}
-                  className="w-4 h-4 rounded border-bokka-border-strong text-bokka-primary focus:ring-bokka-primary-ring accent-bokka-primary"
+                  className="w-4 h-4 rounded border-bokka-border-strong text-bokka-primary-text focus:ring-bokka-primary-ring accent-bokka-primary"
                 />
                 <span className="text-sm font-semibold text-bokka-ink">
                   {group.label}
@@ -296,7 +296,7 @@ const CoberturasPicker = ({
                       type="checkbox"
                       checked={selected.includes(proc)}
                       onChange={() => toggle(proc)}
-                      className="w-3.5 h-3.5 rounded border-bokka-border-strong text-bokka-primary focus:ring-bokka-primary-ring accent-bokka-primary"
+                      className="w-3.5 h-3.5 rounded border-bokka-border-strong text-bokka-primary-text focus:ring-bokka-primary-ring accent-bokka-primary"
                     />
                     <span className="text-sm text-bokka-ink-2">
                       {procLabel[proc]}
@@ -818,7 +818,7 @@ export const ConveniosPage = () => {
                   className="flex items-center gap-4 px-5 py-4 hover:bg-bokka-surface-3/50 transition-colors cursor-pointer"
                   onClick={() => openEdit(c)}
                 >
-                  <div className="w-10 h-10 rounded-full bg-bokka-primary-soft text-bokka-primary flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-bokka-primary-soft text-bokka-primary-text flex items-center justify-center shrink-0">
                     <ShieldCheck className="w-5 h-5" strokeWidth={1.75} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -843,7 +843,7 @@ export const ConveniosPage = () => {
                     <div className="flex flex-wrap gap-1.5 mt-1.5">
                       {c.percentualCobertura != null &&
                         c.percentualCobertura > 0 && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-bokka-primary-soft text-bokka-primary text-[10px] font-semibold">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-bokka-primary-soft text-bokka-primary-text text-[10px] font-semibold">
                             <Percent
                               className="w-3 h-3"
                               strokeWidth={1.75}
@@ -882,7 +882,7 @@ export const ConveniosPage = () => {
                         <button
                           type="button"
                           onClick={() => openEdit(c)}
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary transition-colors"
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary-text transition-colors"
                           title="Editar"
                         >
                           <Pencil

@@ -88,7 +88,7 @@ interface KpiCardProps {
 }
 
 const toneIconClasses: Record<KpiTone, string> = {
-  primary: 'bg-bokka-primary-soft text-bokka-primary',
+  primary: 'bg-bokka-primary-soft text-bokka-primary-text',
   success: 'bg-bokka-success-soft text-bokka-success-ink',
   warning: 'bg-bokka-warning-soft text-bokka-warning-ink',
   danger: 'bg-bokka-danger-soft text-bokka-danger-ink',

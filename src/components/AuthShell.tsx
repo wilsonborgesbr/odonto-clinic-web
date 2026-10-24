@@ -24,7 +24,7 @@ export const AuthShell = ({ title, subtitle, focusKey, children }: AuthShellProp
   }, [focusKey]);
 
   return (
-    <div className="min-h-screen bg-bokka-surface-2 flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-bokka-page flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-[400px]">
         <div className="flex flex-col items-center mb-8 text-center">
           <BokkaMark size={44} />
@@ -55,7 +55,7 @@ type TomPainel = 'sucesso' | 'aviso' | 'info';
 const chipTom: Record<TomPainel, string> = {
   sucesso: 'bg-bokka-success-soft text-bokka-success-ink',
   aviso: 'bg-bokka-warning-soft text-bokka-warning-ink',
-  info: 'bg-bokka-primary-soft text-bokka-primary',
+  info: 'bg-bokka-primary-soft text-bokka-primary-text',
 };
 
 interface PainelEstadoProps {

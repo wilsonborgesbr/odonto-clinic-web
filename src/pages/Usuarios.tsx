@@ -233,7 +233,7 @@ export const Usuarios = () => {
                   <div
                     className={cn(
                       'w-11 h-11 rounded-full flex items-center justify-center text-white font-bold shrink-0',
-                      isProprietario ? 'bg-bokka-primary' : 'bg-bokka-ink',
+                      isProprietario ? 'bg-bokka-primary' : 'bg-bokka-strong',
                     )}
                     aria-hidden="true"
                   >
@@ -245,7 +245,7 @@ export const Usuarios = () => {
                         {u.name}
                       </span>
                       {isEu && (
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-bokka-primary bg-bokka-primary-soft px-2 py-0.5 rounded-full">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-bokka-primary-text bg-bokka-primary-soft px-2 py-0.5 rounded-full">
                           Você
                         </span>
                       )}
@@ -270,7 +270,7 @@ export const Usuarios = () => {
                         setFormOpen(true);
                       }}
                       disabled={isProprietario && !isEu}
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary-text transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                       title={isProprietario && !isEu ? 'Só o proprietário pode se editar' : 'Editar'}
                     >
                       <Pencil className="w-3.5 h-3.5" strokeWidth={1.75} />
@@ -508,7 +508,7 @@ const UsuarioForm = ({
             <button
               type="button"
               onClick={resetarParaPadrao}
-              className="text-xs font-semibold text-bokka-primary hover:text-bokka-primary-hover"
+              className="text-xs font-semibold text-bokka-primary-text hover:text-bokka-primary-text-hover"
             >
               Voltar ao padrão
             </button>

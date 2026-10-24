@@ -317,7 +317,7 @@ export const Dashboard = () => {
             </div>
             <Link
               to="/agenda"
-              className="text-sm font-semibold text-bokka-primary hover:text-bokka-primary-hover inline-flex items-center gap-1"
+              className="text-sm font-semibold text-bokka-primary-text hover:text-bokka-primary-text-hover inline-flex items-center gap-1"
             >
               Ver agenda <ArrowRight className="w-4 h-4" strokeWidth={2} />
             </Link>
@@ -328,7 +328,7 @@ export const Dashboard = () => {
             </div>
           ) : agendamentosHoje.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center px-6 pb-6 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-bokka-primary-soft text-bokka-primary flex items-center justify-center mb-4">
+              <div className="w-16 h-16 rounded-2xl bg-bokka-primary-soft text-bokka-primary-text flex items-center justify-center mb-4">
                 <CalendarDays className="w-7 h-7" strokeWidth={1.75} />
               </div>
               <h3 className="text-base font-semibold text-bokka-ink">
@@ -493,7 +493,7 @@ export const Dashboard = () => {
               </div>
               <Link
                 to="/estoque"
-                className="text-xs font-semibold text-bokka-primary hover:text-bokka-primary-hover inline-flex items-center gap-1"
+                className="text-xs font-semibold text-bokka-primary-text hover:text-bokka-primary-text-hover inline-flex items-center gap-1"
               >
                 Ver tudo <ArrowRight className="w-3.5 h-3.5" strokeWidth={2} />
               </Link>
@@ -696,7 +696,7 @@ const TeamCard = ({
     >
       <div className="flex items-start justify-between">
         <span className="text-sm tv:text-base font-semibold text-bokka-ink-3">{label}</span>
-        <span className="text-xs tv:text-sm font-semibold text-bokka-primary">Ver</span>
+        <span className="text-xs tv:text-sm font-semibold text-bokka-primary-text">Ver</span>
       </div>
       {loading ? (
         <div className="flex -space-x-2">
@@ -719,7 +719,7 @@ const TeamCard = ({
               />
             ))}
             {extras > 0 && (
-              <div className="w-11 h-11 rounded-full bg-bokka-ink text-white flex items-center justify-center text-xs font-bold ring-2 ring-bokka-surface">
+              <div className="w-11 h-11 rounded-full bg-bokka-strong text-white flex items-center justify-center text-xs font-bold ring-2 ring-bokka-surface">
                 +{extras}
               </div>
             )}
@@ -784,7 +784,7 @@ const TimelineDia = ({
                   key={h}
                   className={cn(
                     'text-center text-[11px] font-semibold tabular-nums pb-2',
-                    isNow ? 'text-bokka-primary' : 'text-bokka-ink-3',
+                    isNow ? 'text-bokka-primary-text' : 'text-bokka-ink-3',
                   )}
                 >
                   <span

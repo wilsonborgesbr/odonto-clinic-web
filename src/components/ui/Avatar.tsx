@@ -34,12 +34,12 @@ const cameraBoxSize: Record<Size, string> = {
 };
 
 const toneVariants = [
-  'bg-blue-100 text-blue-700',
-  'bg-emerald-100 text-emerald-700',
-  'bg-amber-100 text-amber-700',
-  'bg-rose-100 text-rose-700',
-  'bg-violet-100 text-violet-700',
-  'bg-cyan-100 text-cyan-700',
+  'bg-bokka-tone-1 text-bokka-tone-1-ink',
+  'bg-bokka-tone-2 text-bokka-tone-2-ink',
+  'bg-bokka-tone-3 text-bokka-tone-3-ink',
+  'bg-bokka-tone-4 text-bokka-tone-4-ink',
+  'bg-bokka-tone-5 text-bokka-tone-5-ink',
+  'bg-bokka-tone-6 text-bokka-tone-6-ink',
 ];
 
 const hashTone = (seed: string): string => {

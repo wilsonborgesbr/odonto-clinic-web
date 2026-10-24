@@ -324,7 +324,7 @@ const ToggleRow = ({
   onToggle: () => void;
 }) => (
   <li className="flex items-center gap-4 px-5 py-4">
-    <span className="w-9 h-9 rounded-lg bg-bokka-primary-soft text-bokka-primary flex items-center justify-center shrink-0">
+    <span className="w-9 h-9 rounded-lg bg-bokka-primary-soft text-bokka-primary-text flex items-center justify-center shrink-0">
       {icon}
     </span>
     <div className="flex-1 min-w-0">
@@ -369,7 +369,7 @@ const IntegrationRow = ({
   children: React.ReactNode;
 }) => {
   const tagClass = {
-    primary: 'bg-bokka-primary-soft text-bokka-primary',
+    primary: 'bg-bokka-primary-soft text-bokka-primary-text',
     success: 'bg-bokka-success-soft text-bokka-success-ink',
     neutral: 'bg-bokka-surface-3 text-bokka-ink-2',
   }[tone];
@@ -377,7 +377,7 @@ const IntegrationRow = ({
   return (
     <div className="rounded-2xl border border-bokka-border bg-bokka-surface-2/60 p-5">
       <div className="flex items-start gap-4 mb-3">
-        <span className="w-11 h-11 rounded-xl bg-bokka-surface border border-bokka-border text-bokka-primary flex items-center justify-center shrink-0">
+        <span className="w-11 h-11 rounded-xl bg-bokka-surface border border-bokka-border text-bokka-primary-text flex items-center justify-center shrink-0">
           {icon}
         </span>
         <div className="flex-1 min-w-0">
@@ -396,7 +396,7 @@ const IntegrationRow = ({
           href={docsHref}
           target="_blank"
           rel="noreferrer"
-          className="text-xs font-semibold text-bokka-primary hover:text-bokka-primary-hover inline-flex items-center gap-1 shrink-0"
+          className="text-xs font-semibold text-bokka-primary-text hover:text-bokka-primary-text-hover inline-flex items-center gap-1 shrink-0"
         >
           Docs
           <ArrowUpRight className="w-3.5 h-3.5" strokeWidth={2} />

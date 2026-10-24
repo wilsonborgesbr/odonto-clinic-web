@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { Avatar } from './ui/Avatar';
 import { GlobalSearch } from './GlobalSearch';
 import { NotificationsPanel } from './NotificationsPanel';
+import { SeletorTema } from './SeletorTema';
 import { photoKeys } from '../lib/profilePhotos';
 import type { RoleEnum } from '../types';
 
@@ -47,6 +48,8 @@ export const Header = ({ onToggleSidebar }: HeaderProps) => {
 
         <NotificationsPanel />
 
+        <SeletorTema />
+
         {/* Menu do perfil */}
         <Menu as="div" className="relative">
           <Menu.Button className="flex items-center gap-2 bg-bokka-surface border border-bokka-border rounded-full p-1 sm:pl-1 sm:pr-3 sm:py-1 hover:shadow-sm transition-shadow">
@@ -84,7 +87,7 @@ export const Header = ({ onToggleSidebar }: HeaderProps) => {
                   <div className="text-xs text-bokka-ink-3 truncate">{user?.email}</div>
                   {user?.clinicaCodigo && (
                     <div className="text-[10px] text-bokka-ink-3 truncate mt-1">
-                      Clínica: <span className="font-semibold text-bokka-primary">{user.clinicaCodigo}</span>
+                      Clínica: <span className="font-semibold text-bokka-primary-text">{user.clinicaCodigo}</span>
                     </div>
                   )}
                 </div>
@@ -96,7 +99,7 @@ export const Header = ({ onToggleSidebar }: HeaderProps) => {
                       to="/perfil"
                       className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md ${
                         active
-                          ? 'bg-bokka-primary-soft text-bokka-primary'
+                          ? 'bg-bokka-primary-soft text-bokka-primary-text'
                           : 'text-bokka-ink-2'
                       }`}
                     >
@@ -110,7 +113,7 @@ export const Header = ({ onToggleSidebar }: HeaderProps) => {
                       to="/configuracoes"
                       className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md ${
                         active
-                          ? 'bg-bokka-primary-soft text-bokka-primary'
+                          ? 'bg-bokka-primary-soft text-bokka-primary-text'
                           : 'text-bokka-ink-2'
                       }`}
                     >

@@ -26,10 +26,10 @@ const norm = (s: string | undefined | null) =>
   (s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
 const tipoStyle: Record<SearchResult['tipo'], { icon: React.ElementType; group: string; tone: string }> = {
-  paciente: { icon: User, group: 'Pacientes', tone: 'bg-bokka-primary-soft text-bokka-primary' },
+  paciente: { icon: User, group: 'Pacientes', tone: 'bg-bokka-primary-soft text-bokka-primary-text' },
   dentista: { icon: Stethoscope, group: 'Dentistas', tone: 'bg-bokka-success-soft text-bokka-success-ink' },
   funcionario: { icon: UserCog, group: 'Funcionários', tone: 'bg-bokka-warning-soft text-bokka-warning-ink' },
-  agendamento: { icon: CalendarDays, group: 'Agendamentos', tone: 'bg-bokka-primary-soft text-bokka-primary' },
+  agendamento: { icon: CalendarDays, group: 'Agendamentos', tone: 'bg-bokka-primary-soft text-bokka-primary-text' },
 };
 
 const groupOrder: SearchResult['tipo'][] = ['paciente', 'dentista', 'funcionario', 'agendamento'];
@@ -366,7 +366,7 @@ export const GlobalSearch = () => {
                 setMobileOpen(false);
                 setQuery('');
               }}
-              className="text-sm font-semibold text-bokka-primary shrink-0"
+              className="text-sm font-semibold text-bokka-primary-text shrink-0"
             >
               Cancelar
             </button>

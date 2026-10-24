@@ -70,7 +70,7 @@ export const BottomNav = ({ onOpenMore }: BottomNavProps) => {
               className={({ isActive }) =>
                 cn(
                   'flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors',
-                  isActive ? 'text-bokka-primary' : 'text-bokka-ink-3',
+                  isActive ? 'text-bokka-primary-text' : 'text-bokka-ink-3',
                 )
               }
             >

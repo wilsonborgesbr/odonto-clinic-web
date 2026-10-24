@@ -23,7 +23,7 @@ const variantClasses: Record<Variant, string> = {
   ghost:
     'bg-transparent text-bokka-ink-2 hover:bg-bokka-surface-3 hover:text-bokka-ink',
   danger:
-    'bg-bokka-danger text-white hover:bg-red-600 active:bg-red-700 shadow-sm',
+    'bg-bokka-danger text-white hover:bg-bokka-danger-hover active:bg-bokka-danger-active shadow-sm',
 };
 
 const sizeClasses: Record<Size, string> = {
