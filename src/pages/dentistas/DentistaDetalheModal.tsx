@@ -306,7 +306,7 @@ export const DentistaDetalheModal = ({ dentistaId, open, onClose }: DentistaDeta
               <div
                 className="rounded-2xl p-5 text-white relative overflow-hidden md:col-span-2 xl:col-span-1"
                 style={{
-                  background: 'linear-gradient(135deg, #059669 0%, #0891B2 55%, #2A6BF2 100%)',
+                  background: 'var(--grad-clinico)',
                 }}
               >
                 <div className="flex items-start justify-between mb-4">

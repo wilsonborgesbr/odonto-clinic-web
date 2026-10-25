@@ -70,10 +70,10 @@ const cargoGrupo: Record<CargoFuncionarioEnum, 'clinico' | 'admin' | 'apoio' | '
 };
 
 const grupoGradient: Record<'clinico' | 'admin' | 'apoio' | 'gestao', string> = {
-  clinico: 'linear-gradient(135deg, #059669 0%, #0891B2 55%, #2A6BF2 100%)',
-  admin: 'linear-gradient(135deg, #2A6BF2 0%, #4F46E5 55%, #7C3AED 100%)',
-  gestao: 'linear-gradient(135deg, #0B1220 0%, #1E293B 55%, #334155 100%)',
-  apoio: 'linear-gradient(135deg, #F59E0B 0%, #EA580C 55%, #DC2626 100%)',
+  clinico: 'var(--grad-clinico)',
+  admin: 'var(--grad-odonto)',
+  gestao: 'var(--grad-gestao)',
+  apoio: 'var(--grad-apoio)',
 };
 
 const grupoLabel: Record<'clinico' | 'admin' | 'apoio' | 'gestao', string> = {

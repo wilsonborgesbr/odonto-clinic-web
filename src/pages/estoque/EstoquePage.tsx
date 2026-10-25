@@ -166,7 +166,7 @@ export const EstoquePage = () => {
             <select
               value={stockFilter}
               onChange={(e) => setStockFilter(e.target.value as typeof stockFilter)}
-              className="text-sm bg-bokka-surface-2 border border-bokka-border rounded-lg px-3 h-9 text-bokka-ink outline-none focus:border-bokka-primary-ring"
+              className="text-sm bg-bokka-surface-2 border border-bokka-field-edge rounded-lg px-3 h-9 text-bokka-ink outline-none focus:border-bokka-primary-ring"
             >
               <option value="todos">Todos</option>
               <option value="baixo">Estoque baixo</option>
@@ -174,7 +174,7 @@ export const EstoquePage = () => {
             <select
               value={catFilter}
               onChange={(e) => setCatFilter(e.target.value as typeof catFilter)}
-              className="text-sm bg-bokka-surface-2 border border-bokka-border rounded-lg px-3 h-9 text-bokka-ink outline-none focus:border-bokka-primary-ring"
+              className="text-sm bg-bokka-surface-2 border border-bokka-field-edge rounded-lg px-3 h-9 text-bokka-ink outline-none focus:border-bokka-primary-ring"
             >
               <option value="todos">Todas as categorias</option>
               {allCategorias.map((cat) => (
@@ -188,7 +188,7 @@ export const EstoquePage = () => {
                 placeholder="Buscar por nome ou fornecedor..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full text-sm bg-bokka-surface-2 border border-bokka-border rounded-lg pl-9 pr-3 h-9 placeholder:text-bokka-ink-3 outline-none focus:border-bokka-primary-ring"
+                className="w-full text-sm bg-bokka-surface-2 border border-bokka-field-edge rounded-lg pl-9 pr-3 h-9 placeholder:text-bokka-ink-3 outline-none focus:border-bokka-primary-ring"
               />
             </div>
           </div>

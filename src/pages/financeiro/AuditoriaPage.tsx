@@ -82,18 +82,19 @@ const statusFilterOptions: { value: StatusFilter; label: string }[] = [
   { value: 'CANCELADO', label: 'Cancelados' },
 ];
 
-// Categoria palette — reused from Bokka semantic tones
+// Cores das categorias: variáveis --cat-* de index.css (uma por categoria, com versão clara e escura).
+// Servem ao gráfico (SVG) e às bolinhas da legenda/tabelas (style), por isso são var() e não classes.
 const categoriaColors: Record<CategoriaContaPagarEnum, string> = {
-  ALUGUEL: '#2A6BF2',
-  MATERIAL_ODONTOLOGICO: '#10B981',
-  EQUIPAMENTO: '#8B5CF6',
-  SALARIO: '#F59E0B',
-  AGUA: '#06B6D4',
-  LUZ: '#EAB308',
-  INTERNET: '#EC4899',
-  MANUTENCAO: '#F97316',
-  IMPOSTO: '#EF4444',
-  OUTRO: '#64748B',
+  ALUGUEL: 'var(--cat-aluguel)',
+  MATERIAL_ODONTOLOGICO: 'var(--cat-material)',
+  EQUIPAMENTO: 'var(--cat-equipamento)',
+  SALARIO: 'var(--cat-salario)',
+  AGUA: 'var(--cat-agua)',
+  LUZ: 'var(--cat-luz)',
+  INTERNET: 'var(--cat-internet)',
+  MANUTENCAO: 'var(--cat-manutencao)',
+  IMPOSTO: 'var(--cat-imposto)',
+  OUTRO: 'var(--cat-outro)',
 };
 
 // ============ Page ============
@@ -511,7 +512,7 @@ export const AuditoriaPage = () => {
             <select
               value={receberFilter}
               onChange={(e) => setReceberFilter(e.target.value as StatusFilter)}
-              className="text-sm bg-bokka-surface-2 border border-bokka-border rounded-lg px-3 h-9 text-bokka-ink outline-none focus:border-bokka-primary-ring"
+              className="text-sm bg-bokka-surface-2 border border-bokka-field-edge rounded-lg px-3 h-9 text-bokka-ink outline-none focus:border-bokka-primary-ring"
             >
               {statusFilterOptions.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
@@ -714,7 +715,7 @@ export const AuditoriaPage = () => {
             <select
               value={pagarFilter}
               onChange={(e) => setPagarFilter(e.target.value as StatusFilter)}
-              className="text-sm bg-bokka-surface-2 border border-bokka-border rounded-lg px-3 h-9 text-bokka-ink outline-none focus:border-bokka-primary-ring"
+              className="text-sm bg-bokka-surface-2 border border-bokka-field-edge rounded-lg px-3 h-9 text-bokka-ink outline-none focus:border-bokka-primary-ring"
             >
               {statusFilterOptions.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
@@ -950,8 +951,8 @@ export const AuditoriaPage = () => {
                     <Tooltip
                       formatter={(v) => [formatCurrency(v as number), 'Valor']}
                       contentStyle={{
-                        background: '#FFFFFF',
-                        border: '1px solid #E2E8F0',
+                        background: 'var(--tip-bg)',
+                        border: '1px solid var(--tip-border)',
                         borderRadius: '10px',
                         fontSize: '12px',
                       }}
@@ -1147,29 +1148,26 @@ const LucroCard = ({ value, loading }: { value: number; loading: boolean }) => {
     <div
       className={cn(
         '@container rounded-2xl p-5 tv:p-7 shadow-sm flex flex-col gap-4 tv:gap-5 border transition-colors min-w-0',
-        positive
-          ? 'bg-bokka-primary text-white border-transparent'
-          : 'bg-bokka-surface text-bokka-ink border-bokka-danger/30',
+        'bg-bokka-surface text-bokka-ink',
+        positive ? 'border-bokka-border' : 'border-bokka-danger/30',
       )}
     >
       <div className="flex items-start justify-between gap-2">
         <span className="inline-flex items-center gap-1 min-w-0">
           <span
             className={cn(
-              'text-sm tv:text-base font-semibold truncate',
-              positive ? 'text-white/85' : 'text-bokka-danger-ink',
+              'text-sm tv:text-base truncate',
+              positive ? 'font-medium text-bokka-ink-3' : 'font-semibold text-bokka-danger-ink',
             )}
           >
             Lucro líquido
           </span>
-          <VisibilityToggle
-            className={positive ? 'text-white/85 hover:text-white hover:bg-white/15' : undefined}
-          />
+          <VisibilityToggle />
         </span>
         <span
           className={cn(
             'w-9 h-9 tv:w-11 tv:h-11 rounded-lg flex items-center justify-center shrink-0',
-            positive ? 'bg-white/15' : 'bg-bokka-danger-soft text-bokka-danger-ink',
+            positive ? 'bg-bokka-primary-soft text-bokka-primary-text' : 'bg-bokka-danger-soft text-bokka-danger-ink',
           )}
         >
           <TrendingUp className="w-5 h-5" strokeWidth={2} />
@@ -1177,12 +1175,7 @@ const LucroCard = ({ value, loading }: { value: number; loading: boolean }) => {
       </div>
       <div className="min-w-0">
         {loading ? (
-          <span
-            className={cn(
-              'inline-block w-24 h-9 rounded-md animate-pulse',
-              positive ? 'bg-white/15' : 'bg-bokka-surface-3',
-            )}
-          />
+          <span className="inline-block w-24 h-9 rounded-md animate-pulse bg-bokka-surface-3" />
         ) : (
           <span
             key={masked ? 'masked' : 'visible'}
@@ -1194,7 +1187,7 @@ const LucroCard = ({ value, loading }: { value: number; loading: boolean }) => {
             {masked ? MASKED_CURRENCY : formatCurrency(value)}
           </span>
         )}
-        <p className={cn('text-xs tv:text-sm mt-2', positive ? 'text-white/80' : 'text-bokka-ink-3')}>
+        <p className="text-xs tv:text-sm mt-2 text-bokka-ink-3">
           {positive ? 'Receita − despesa do mês' : 'Despesas superaram receita'}
         </p>
       </div>
@@ -1218,7 +1211,7 @@ const CaixaHero = ({
     <div
       className={cn(
         '@container relative rounded-2xl overflow-hidden p-6 lg:p-7 tv:p-9 flex flex-col justify-between min-h-[180px] tv:min-h-[220px] shadow-sm min-w-0',
-        positive ? 'bg-bokka-strong text-white' : 'bg-bokka-danger text-white',
+        'bg-bokka-strong text-white',
         className,
       )}
     >
@@ -1237,13 +1230,16 @@ const CaixaHero = ({
             Caixa disponível
             <VisibilityToggle className="text-white/70 hover:text-white hover:bg-white/15 normal-case tracking-normal" />
           </div>
-          <p className="text-white/60 text-sm mt-2 max-w-md">
+          <p className="text-white/70 text-sm mt-2 max-w-md">
             Saldo total em caixa da clínica · soma cumulativa de todas as receitas pagas menos todas as despesas quitadas.
           </p>
         </div>
-        <span className="hidden sm:inline-flex px-2.5 py-1 rounded-full bg-white/10 text-white/80 text-[11px] font-semibold uppercase tracking-wider">
-          {positive ? 'Positivo' : 'Negativo'}
-        </span>
+        {/* Com os valores ocultos a pílula também some: ela revelaria o sinal do saldo que o número mascarado esconde. */}
+        {!masked && (
+          <span className="hidden sm:inline-flex px-2.5 py-1 rounded-full bg-white/10 text-white/80 text-[11px] font-semibold uppercase tracking-wider">
+            {positive ? 'Positivo' : 'Negativo'}
+          </span>
+        )}
       </div>
       <div className="relative mt-4 min-w-0">
         {loading ? (

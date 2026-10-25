@@ -195,7 +195,7 @@ export const Perfil = () => {
                     onChange={(e) => setNameValue(e.target.value)}
                     onKeyDown={handleNameKeyDown}
                     disabled={savingName}
-                    className="text-sm font-semibold text-bokka-ink bg-bokka-surface border border-bokka-border-strong rounded-md px-3 h-9 flex-1 min-w-0 outline-none focus:border-bokka-primary-ring"
+                    className="text-sm font-semibold text-bokka-ink bg-bokka-surface border border-bokka-field-edge rounded-md px-3 h-9 flex-1 min-w-0 outline-none focus:border-bokka-primary-ring"
                     placeholder="Seu nome completo"
                   />
                   <button
@@ -251,7 +251,7 @@ export const Perfil = () => {
                     onChange={(e) => setEmailValue(e.target.value)}
                     onKeyDown={handleEmailKeyDown}
                     disabled={savingEmail}
-                    className="text-sm font-semibold text-bokka-ink bg-bokka-surface border border-bokka-border-strong rounded-md px-3 h-9 flex-1 min-w-0 outline-none focus:border-bokka-primary-ring"
+                    className="text-sm font-semibold text-bokka-ink bg-bokka-surface border border-bokka-field-edge rounded-md px-3 h-9 flex-1 min-w-0 outline-none focus:border-bokka-primary-ring"
                     placeholder="seu@email.com"
                   />
                   <button

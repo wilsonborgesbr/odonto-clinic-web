@@ -129,11 +129,11 @@ export const AgendaPage = () => {
       <Card padded={false}>
         {/* Barra de filtros */}
         <div className="p-4 border-b border-bokka-border flex flex-wrap items-end gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center gap-2 sm:w-auto">
             <button
               type="button"
               onClick={() => setSelectedDate((d) => shiftDay(d, -1))}
-              className="p-2 rounded-md text-bokka-ink-2 hover:bg-bokka-surface-3 hover:text-bokka-ink border border-bokka-border-strong"
+              className="alvo-toque shrink-0 p-2 rounded-md text-bokka-ink-2 hover:bg-bokka-surface-3 hover:text-bokka-ink border border-bokka-border-strong"
               aria-label="Dia anterior"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -143,13 +143,13 @@ export const AgendaPage = () => {
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               fullWidth={false}
-              containerClassName="w-44"
+              containerClassName="min-w-0 flex-1 sm:w-44 sm:flex-none"
               leadingIcon={<CalendarDays className="w-4 h-4" strokeWidth={1.75} />}
             />
             <button
               type="button"
               onClick={() => setSelectedDate((d) => shiftDay(d, 1))}
-              className="p-2 rounded-md text-bokka-ink-2 hover:bg-bokka-surface-3 hover:text-bokka-ink border border-bokka-border-strong"
+              className="alvo-toque shrink-0 p-2 rounded-md text-bokka-ink-2 hover:bg-bokka-surface-3 hover:text-bokka-ink border border-bokka-border-strong"
               aria-label="Próximo dia"
             >
               <ChevronRight className="w-4 h-4" />

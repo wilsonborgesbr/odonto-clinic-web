@@ -103,7 +103,7 @@ export const PacienteCombobox = ({
               'pr-9',
               error
                 ? 'border-bokka-danger focus-visible:outline-bokka-danger'
-                : 'border-bokka-border-strong',
+                : 'border-bokka-field-edge',
             )}
             displayValue={(o: PacienteOption | null) => o?.nomeCompleto ?? ''}
             onChange={(e) => setQuery(e.target.value)}

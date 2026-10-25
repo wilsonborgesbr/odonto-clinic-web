@@ -378,15 +378,15 @@ export const Dashboard = () => {
                 <h2 className="text-base font-semibold text-bokka-ink capitalize">
                   {miniCalendar.monthLabel}
                 </h2>
-                <p className="text-xs text-bokka-ink-2/70 mt-0.5">
+                <p className="text-xs text-bokka-ink-2/80 mt-0.5">
                   {miniCalendar.daysWithEvents.size} dias com consultas · clique pra agendar
                 </p>
               </div>
-              <div className="flex gap-1">
+              <div className="flex gap-3 lg:gap-1">
                 <button
                   type="button"
                   onClick={() => shiftMonth(-1)}
-                  className="w-8 h-8 rounded-full bg-white hover:bg-white/85 flex items-center justify-center text-bokka-ink transition-colors"
+                  className="alvo-toque w-8 h-8 rounded-full bg-bokka-surface hover:bg-bokka-cal-hover flex items-center justify-center text-bokka-ink transition-colors"
                   aria-label="Mês anterior"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -394,7 +394,7 @@ export const Dashboard = () => {
                 <button
                   type="button"
                   onClick={() => shiftMonth(1)}
-                  className="w-8 h-8 rounded-full bg-white hover:bg-white/85 flex items-center justify-center text-bokka-ink transition-colors"
+                  className="alvo-toque w-8 h-8 rounded-full bg-bokka-surface hover:bg-bokka-cal-hover flex items-center justify-center text-bokka-ink transition-colors"
                   aria-label="Próximo mês"
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -405,7 +405,7 @@ export const Dashboard = () => {
               {semanaLabels.map((d, i) => (
                 <div
                   key={i}
-                  className="h-7 flex items-center justify-center text-[11px] font-semibold text-bokka-ink-2/70"
+                  className="h-7 flex items-center justify-center text-[11px] font-semibold text-bokka-ink-2/80"
                 >
                   {d}
                 </div>
@@ -417,7 +417,7 @@ export const Dashboard = () => {
                   return (
                     <div
                       key={i}
-                      className="aspect-square rounded-full border border-dashed border-bokka-ink-2/20"
+                      className="aspect-square rounded-full bg-bokka-cal-vazio"
                     />
                   );
                 }
@@ -429,11 +429,10 @@ export const Dashboard = () => {
                     type="button"
                     onClick={() => abrirNovoAgendamento(n)}
                     className={cn(
-                      'aspect-square rounded-full flex flex-col items-center justify-center text-[13px] tabular-nums transition-all cursor-pointer relative',
-                      'hover:ring-2 hover:ring-bokka-primary hover:scale-105',
-                      isToday
-                        ? 'bg-bokka-primary text-white font-bold ring-2 ring-white'
-                        : 'bg-white/60 text-bokka-ink font-medium hover:bg-white',
+                      'aspect-square rounded-full flex flex-col items-center justify-center text-[13px] tabular-nums transition-colors cursor-pointer relative',
+                                            isToday
+                        ? 'bg-bokka-primary text-white font-bold'
+                        : 'bg-bokka-cal-dia text-bokka-ink font-medium hover:bg-bokka-cal-hover',
                     )}
                     aria-label={
                       hasEvent
@@ -572,7 +571,7 @@ export const Dashboard = () => {
                         type="button"
                         onClick={() => setEstoquePage((p) => Math.max(0, p - 1))}
                         disabled={estoquePage === 0}
-                        className="w-10 h-10 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-surface-3 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="w-11 h-11 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-surface-3 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                         aria-label="Página anterior"
                       >
                         <ChevronLeft className="w-3.5 h-3.5" />
@@ -581,7 +580,7 @@ export const Dashboard = () => {
                         type="button"
                         onClick={() => setEstoquePage((p) => Math.min(estoqueTotalPages - 1, p + 1))}
                         disabled={estoquePage >= estoqueTotalPages - 1}
-                        className="w-10 h-10 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-surface-3 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="w-11 h-11 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-surface-3 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                         aria-label="Próxima página"
                       >
                         <ChevronRight className="w-3.5 h-3.5" />
@@ -652,22 +651,22 @@ interface HighlightKpiProps {
 }
 
 const HighlightKpi = ({ label, value, hint, icon, loading }: HighlightKpiProps) => (
-  <div className="@container bg-bokka-primary rounded-2xl p-5 tv:p-7 shadow-sm text-white flex flex-col gap-4 tv:gap-5 min-w-0">
+  <div className="@container bg-bokka-hero border border-bokka-hero-edge rounded-2xl p-[19px] tv:p-[27px] shadow-sm text-bokka-hero-fg flex flex-col gap-4 tv:gap-5 min-w-0">
     <div className="flex items-start justify-between">
-      <span className="text-sm tv:text-base font-semibold text-white/85">{label}</span>
-      <span className="w-9 h-9 tv:w-11 tv:h-11 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
+      <span className="text-sm tv:text-base font-semibold text-bokka-hero-fg-2">{label}</span>
+      <span className="w-9 h-9 tv:w-11 tv:h-11 rounded-lg bg-bokka-hero-chip text-bokka-hero-chip-fg flex items-center justify-center shrink-0">
         {icon}
       </span>
     </div>
     <div className="min-w-0">
       {loading ? (
-        <span className="inline-block w-20 h-9 rounded-md bg-white/15 animate-pulse" />
+        <span className="inline-block w-20 h-9 rounded-md bg-bokka-hero-chip animate-pulse" />
       ) : (
         <span className="block text-[clamp(1.125rem,9cqw,1.875rem)] tv:text-[clamp(1.75rem,4.5cqw,3rem)] font-bold tabular-nums leading-tight tracking-tight break-words">
           {value}
         </span>
       )}
-      {hint && <p className="text-xs tv:text-sm text-white/80 mt-2">{hint}</p>}
+      {hint && <p className="text-xs tv:text-sm text-bokka-hero-fg-3 mt-2">{hint}</p>}
     </div>
   </div>
 );
@@ -719,7 +718,7 @@ const TeamCard = ({
               />
             ))}
             {extras > 0 && (
-              <div className="w-11 h-11 rounded-full bg-bokka-strong text-white flex items-center justify-center text-xs font-bold ring-2 ring-bokka-surface">
+              <div className="w-11 h-11 box-content -m-0.5 border-2 border-bokka-surface rounded-full bg-bokka-strong text-white flex items-center justify-center text-xs font-bold">
                 +{extras}
               </div>
             )}
@@ -735,9 +734,9 @@ const TeamCard = ({
 // Cores por status do agendamento — casam com a legenda embaixo do Timeline.
 const statusTone: Record<string, string> = {
   AGENDADO: 'bg-bokka-primary text-white',
-  CONFIRMADO: 'bg-bokka-success text-white',
+  CONFIRMADO: 'bg-bokka-block-ok text-bokka-block-ok-fg',
   REALIZADO: 'bg-bokka-surface-3 text-bokka-ink border border-bokka-border',
-  FALTOU: 'bg-bokka-warning text-white',
+  FALTOU: 'bg-bokka-block-warn text-bokka-block-warn-fg',
   CANCELADO: 'bg-bokka-danger-soft text-bokka-danger-ink border border-bokka-danger/30',
 };
 
