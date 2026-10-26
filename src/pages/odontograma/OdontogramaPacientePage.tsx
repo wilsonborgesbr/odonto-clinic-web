@@ -316,11 +316,11 @@ export const OdontogramaPacientePage = () => {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-bokka-ink-3 flex-wrap">
-        <Link to="/pacientes" className="hover:text-bokka-primary inline-flex items-center gap-1 font-medium">
+        <Link to="/pacientes" className="hover:text-bokka-primary-text inline-flex items-center gap-1 font-medium">
           <ArrowLeft className="w-4 h-4" /> Pacientes
         </Link>
         <ChevronRight className="w-4 h-4" />
-        <Link to="/pacientes" className="hover:text-bokka-primary font-medium">
+        <Link to="/pacientes" className="hover:text-bokka-primary-text font-medium">
           {paciente.nomeCompleto}
         </Link>
         <ChevronRight className="w-4 h-4" />
@@ -330,7 +330,7 @@ export const OdontogramaPacientePage = () => {
       {/* Header do paciente */}
       <div className="bg-bokka-surface border border-bokka-border rounded-2xl p-5 flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-12 h-12 rounded-full bg-bokka-primary-soft text-bokka-primary flex items-center justify-center text-sm font-bold shrink-0">
+          <div className="w-12 h-12 rounded-full bg-bokka-primary-soft text-bokka-primary-text flex items-center justify-center text-sm font-bold shrink-0">
             {initials(paciente.nomeCompleto)}
           </div>
           <div className="min-w-0">
@@ -374,14 +374,14 @@ export const OdontogramaPacientePage = () => {
                       type="button"
                       onClick={() => setActiveCondicao(c)}
                       className={cn(
-                        'flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-semibold transition-all border',
+                        'flex items-center gap-2 px-[11px] py-[9px] rounded-lg text-xs font-semibold transition-colors',
                         active
-                          ? 'border-bokka-ink bg-bokka-surface-3 ring-2 ring-bokka-primary/40'
-                          : 'border-transparent hover:bg-bokka-surface-3',
+                          ? 'bg-bokka-primary-soft shadow-[inset_3px_0_0_0_var(--color-bokka-primary)]'
+                          : 'hover:bg-bokka-surface-3',
                       )}
                     >
                       <span
-                        className="w-4 h-4 rounded-full border border-bokka-border shrink-0"
+                        className="w-4 h-4 rounded-full shadow-[inset_0_0_0_1px_var(--color-bokka-swatch)] shrink-0"
                         style={{ background: fill }}
                       />
                       <span
@@ -429,7 +429,7 @@ export const OdontogramaPacientePage = () => {
 
             {selectedTooth && (
               <div className="bg-bokka-primary-soft border border-bokka-primary/20 rounded-2xl p-4">
-                <p className="text-xs uppercase font-semibold text-bokka-primary tracking-wider">
+                <p className="text-xs uppercase font-semibold text-bokka-primary-text tracking-wider">
                   Dente selecionado
                 </p>
                 <p className="text-3xl font-bold text-bokka-ink mt-1 tabular-nums">
@@ -473,7 +473,7 @@ export const OdontogramaPacientePage = () => {
                 onChange={(e) => setObservacoes(e.target.value)}
                 rows={4}
                 placeholder="Anotações sobre a avaliação..."
-                className="w-full bg-bokka-surface-2 border border-bokka-border-strong rounded-md p-3 text-sm resize-y outline-none focus:border-bokka-primary-ring"
+                className="w-full bg-bokka-surface-2 border border-bokka-field-edge rounded-md p-3 text-sm resize-y outline-none focus:border-bokka-primary-ring"
               />
             </div>
           </div>
@@ -557,7 +557,7 @@ export const OdontogramaPacientePage = () => {
                             {o.dentes?.length ?? 0} dentes
                           </span>
                           {vinculados > 0 && (
-                            <span className="inline-flex items-center gap-1 text-[11px] text-bokka-primary font-semibold">
+                            <span className="inline-flex items-center gap-1 text-[11px] text-bokka-primary-text font-semibold">
                               <Link2 className="w-3 h-3" strokeWidth={2} />
                               {vinculados} proc.
                             </span>
@@ -674,7 +674,7 @@ export const OdontogramaPacientePage = () => {
                             )}
                           >
                             <span
-                              className="w-3.5 h-3.5 rounded-full border border-bokka-border shrink-0"
+                              className="w-3.5 h-3.5 rounded-full shadow-[inset_0_0_0_1px_var(--color-bokka-swatch)] shrink-0"
                               style={{ background: fill }}
                             />
                             <span className="text-sm font-bold text-bokka-ink tabular-nums w-8">
@@ -736,7 +736,7 @@ export const OdontogramaPacientePage = () => {
                       <li key={p.id} className="p-4">
                         <div className="flex items-center gap-2 mb-1">
                           <Syringe
-                            className="w-3.5 h-3.5 text-bokka-primary shrink-0"
+                            className="w-3.5 h-3.5 text-bokka-primary-text shrink-0"
                             strokeWidth={1.75}
                           />
                           <p className="text-sm font-semibold text-bokka-ink truncate">

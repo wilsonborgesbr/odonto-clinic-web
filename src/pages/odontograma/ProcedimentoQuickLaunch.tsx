@@ -140,7 +140,7 @@ export const ProcedimentoQuickLaunch = ({
       <button
         type="button"
         onClick={() => onEditarCompleto(buildDraft())}
-        className="text-xs font-semibold text-bokka-primary hover:text-bokka-primary-hover"
+        className="text-xs font-semibold text-bokka-primary-text hover:text-bokka-primary-text-hover"
       >
         Editar pagamento detalhado / parcelar
       </button>

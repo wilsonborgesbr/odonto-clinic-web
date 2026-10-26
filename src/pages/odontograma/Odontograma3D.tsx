@@ -418,8 +418,8 @@ const FaceGridBox = ({
   const bottomFace: FaceDenteEnum = isAnterior ? 'CERVICAL' : 'OCLUSAL';
   const centerFace: FaceDenteEnum = isUpper ? 'PALATINA' : 'LINGUAL';
 
-  const fill = (marked: boolean) => marked ? condicaoFill : '#FDFEFF';
-  const stroke = (marked: boolean) => marked ? condicaoStroke : '#94A3B8';
+  const fill = (marked: boolean) => marked ? condicaoFill : 'var(--odo-face-fill)';
+  const stroke = (marked: boolean) => marked ? condicaoStroke : 'var(--odo-face-stroke)';
 
   const handleClick = (face: FaceDenteEnum) => (e: React.MouseEvent) => {
     if (readOnly) return;
@@ -479,7 +479,7 @@ const FaceGridBox = ({
           x={x - 1.5} y={y - 1.5}
           width={s + 3} height={s + 3}
           fill="none"
-          stroke="#2563EB"
+          stroke="var(--odo-sel)"
           strokeWidth="1.5"
           rx="2"
         />
@@ -506,7 +506,7 @@ export const condicaoColor = (
     case 'CARIADO':
     case 'FRATURADO':
     case 'EXTRAIR':
-      return { fill: '#DC2626', stroke: '#991B1B', textInk: '#991B1B' };
+      return { fill: '#DC2626', stroke: '#991B1B', textInk: 'var(--cond-vermelho-ink)' };
 
     // Azul — tratamento realizado
     case 'RESTAURACAO_SATISFATORIA':
@@ -518,22 +518,22 @@ export const condicaoColor = (
     case 'RESTAURADO':
     case 'COROA':
     case 'EM_TRATAMENTO':
-      return { fill: '#2563EB', stroke: '#1D4ED8', textInk: '#1D4ED8' };
+      return { fill: '#2563EB', stroke: '#1D4ED8', textInk: 'var(--cond-azul-ink)' };
 
     // Verde — saudável
     case 'HIGIDO':
     case 'SELANTE':
     // legado
     case 'SAUDAVEL':
-      return { fill: '#059669', stroke: '#047857', textInk: '#047857' };
+      return { fill: '#059669', stroke: '#047857', textInk: 'var(--cond-verde-ink)' };
 
     // Preto — ausente / incluso
     case 'AUSENTE':
     case 'DENTE_INCLUSO':
-      return { fill: '#111827', stroke: '#111827', textInk: '#111827' };
+      return { fill: 'var(--cond-preto-fill)', stroke: 'var(--cond-preto-stroke)', textInk: 'var(--cond-preto-ink)' };
 
     default:
-      return { fill: '#FFFCF2', stroke: '#B0A78F', textInk: '#64748B' };
+      return { fill: 'var(--odo-dente)', stroke: '#B0A78F', textInk: 'var(--cond-neutro-ink)' };
   }
 };
 
@@ -630,7 +630,7 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
     : crownFillMode === 'coroa-implante' ? '#CBD5E1'
     : crownFillMode === 'coroa-total' ? fill
     : crownFillMode === 'total' ? fill
-    : '#FFFCF2';
+    : 'var(--odo-dente)';
 
   const opacity = isAusente ? 0.4 : isDenteIncluso ? 0.5 : 1;
 
@@ -653,7 +653,7 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
         textAnchor="middle"
         fontSize="11"
         fontWeight="700"
-        fill={selected ? '#2563EB' : '#475569'}
+        fill={selected ? 'var(--odo-sel)' : 'var(--odo-numero)'}
         fontFamily="system-ui, sans-serif"
         style={{ userSelect: 'none' }}
       >
@@ -675,7 +675,7 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
           width={(cfg.hw + 6) * 2} height={tipY - rootTipY + 6}
           rx="6"
           fill="none"
-          stroke="#2563EB" strokeWidth="1.8" strokeDasharray="4 3"
+          stroke="var(--odo-sel)" strokeWidth="1.8" strokeDasharray="4 3"
           opacity="0.7"
           pointerEvents="none"
         />
@@ -737,7 +737,7 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
         fill={crownFill}
         stroke={
           isAusente ? '#B0B8C4'
-          : isDenteIncluso ? '#111827'
+          : isDenteIncluso ? 'var(--cond-preto-stroke)'
           : (crownFillMode === 'natural' || crownFillMode === 'natural-com-faces' ? '#B0A78F' : stroke)
         }
         strokeDasharray={isDenteIncluso ? '3 2' : undefined}
@@ -859,7 +859,7 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
     : crownFillMode === 'coroa-implante' ? '#CBD5E1'
     : crownFillMode === 'coroa-total' ? fill
     : crownFillMode === 'total' ? fill
-    : '#FFFCF2';
+    : 'var(--odo-dente)';
 
   const opacity = isAusente ? 0.4 : isDenteIncluso ? 0.5 : 1;
 
@@ -907,7 +907,7 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
           width={(cfg.hw + 6) * 2} height={rootTipY - tipY + 6}
           rx="6"
           fill="none"
-          stroke="#2563EB" strokeWidth="1.8" strokeDasharray="4 3"
+          stroke="var(--odo-sel)" strokeWidth="1.8" strokeDasharray="4 3"
           opacity="0.7"
           pointerEvents="none"
         />
@@ -969,7 +969,7 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
         fill={crownFill}
         stroke={
           isAusente ? '#B0B8C4'
-          : isDenteIncluso ? '#111827'
+          : isDenteIncluso ? 'var(--cond-preto-stroke)'
           : (crownFillMode === 'natural' || crownFillMode === 'natural-com-faces' ? '#B0A78F' : stroke)
         }
         strokeDasharray={isDenteIncluso ? '3 2' : undefined}
@@ -1048,7 +1048,7 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
         textAnchor="middle"
         fontSize="11"
         fontWeight="700"
-        fill={selected ? '#2563EB' : '#475569'}
+        fill={selected ? 'var(--odo-sel)' : 'var(--odo-numero)'}
         fontFamily="system-ui, sans-serif"
         style={{ userSelect: 'none' }}
       >
@@ -1228,49 +1228,49 @@ export const Odontograma3D = ({
       >
         <defs>
           <linearGradient id="dentin-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#FFF6D9" />
-            <stop offset="55%" stopColor="#F0D9A0" />
-            <stop offset="100%" stopColor="#D8B573" />
+            <stop offset="0%" style={{ stopColor: 'var(--odo-dentina-a)' }} />
+            <stop offset="55%" style={{ stopColor: 'var(--odo-dentina-b)' }} />
+            <stop offset="100%" style={{ stopColor: 'var(--odo-dentina-c)' }} />
           </linearGradient>
           {/* Enamel upper: highlight brilhante no topo + sombra profunda embaixo */}
           <linearGradient id="enamel-upper" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="1" />
-            <stop offset="25%" stopColor="#FFFFFF" stopOpacity="0.5" />
-            <stop offset="60%" stopColor="#FFFFFF" stopOpacity="0.05" />
+            <stop offset="0%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="1" />
+            <stop offset="25%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="0.5" />
+            <stop offset="60%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="0.05" />
             <stop offset="100%" stopColor="#5C4A2E" stopOpacity="0.28" />
           </linearGradient>
           <linearGradient id="enamel-lower" x1="0%" y1="100%" x2="0%" y2="0%">
-            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="1" />
-            <stop offset="25%" stopColor="#FFFFFF" stopOpacity="0.5" />
-            <stop offset="60%" stopColor="#FFFFFF" stopOpacity="0.05" />
+            <stop offset="0%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="1" />
+            <stop offset="25%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="0.5" />
+            <stop offset="60%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="0.05" />
             <stop offset="100%" stopColor="#5C4A2E" stopOpacity="0.28" />
           </linearGradient>
           {/* Radial specular highlight — dá o volume 3D esférico */}
           <radialGradient id="tooth-highlight-upper" cx="35%" cy="30%" r="70%">
-            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.85" />
-            <stop offset="35%" stopColor="#FFFFFF" stopOpacity="0.15" />
-            <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+            <stop offset="0%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="0.85" />
+            <stop offset="35%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="0.15" />
+            <stop offset="100%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="0" />
           </radialGradient>
           <radialGradient id="tooth-highlight-lower" cx="35%" cy="70%" r="70%">
-            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.85" />
-            <stop offset="35%" stopColor="#FFFFFF" stopOpacity="0.15" />
-            <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+            <stop offset="0%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="0.85" />
+            <stop offset="35%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="0.15" />
+            <stop offset="100%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="0" />
           </radialGradient>
           <linearGradient id="gum-upper" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#F9C0CC" stopOpacity="0.35" />
-            <stop offset="55%" stopColor="#EA6A8A" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#B93E63" stopOpacity="0.95" />
+            <stop offset="0%" style={{ stopColor: 'var(--odo-gengiva-a)' }} stopOpacity="0.35" />
+            <stop offset="55%" style={{ stopColor: 'var(--odo-gengiva-b)' }} stopOpacity="0.8" />
+            <stop offset="100%" style={{ stopColor: 'var(--odo-gengiva-c)' }} stopOpacity="0.95" />
           </linearGradient>
           <linearGradient id="gum-lower" x1="0%" y1="100%" x2="0%" y2="0%">
-            <stop offset="0%" stopColor="#F9C0CC" stopOpacity="0.35" />
-            <stop offset="55%" stopColor="#EA6A8A" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#B93E63" stopOpacity="0.95" />
+            <stop offset="0%" style={{ stopColor: 'var(--odo-gengiva-a)' }} stopOpacity="0.35" />
+            <stop offset="55%" style={{ stopColor: 'var(--odo-gengiva-b)' }} stopOpacity="0.8" />
+            <stop offset="100%" style={{ stopColor: 'var(--odo-gengiva-c)' }} stopOpacity="0.95" />
           </linearGradient>
           {/* Sombra vermelha suave sob a linha das coroas (papila gengival) */}
           <linearGradient id="gum-shine-upper" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.5" />
-            <stop offset="40%" stopColor="#FFFFFF" stopOpacity="0.1" />
-            <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+            <stop offset="0%" style={{ stopColor: 'var(--odo-gengiva-brilho)' }} stopOpacity="0.5" />
+            <stop offset="40%" style={{ stopColor: 'var(--odo-gengiva-brilho)' }} stopOpacity="0.1" />
+            <stop offset="100%" style={{ stopColor: 'var(--odo-gengiva-brilho)' }} stopOpacity="0" />
           </linearGradient>
           {/* Drop-shadow do arco — ilumina "de cima" */}
           <filter id="tooth-shadow" x="-20%" y="-20%" width="140%" height="140%">
@@ -1298,7 +1298,7 @@ export const Odontograma3D = ({
           y1={UPPER_ROOT_TOP - 5}
           x2={PAD + 8 * SLOT_W + MIDLINE_GAP / 2}
           y2={LOWER_ROOT_TIP + 5}
-          stroke="#CBD5E1"
+          stroke="var(--odo-guia)"
           strokeWidth="0.8"
           strokeDasharray="4 4"
           opacity="0.5"
@@ -1308,7 +1308,7 @@ export const Odontograma3D = ({
         <line
           x1={PAD} y1={(UPPER_FACE_TOP + FACE_BOX_SIZE + LOWER_FACE_BOTTOM - FACE_BOX_SIZE) / 2}
           x2={TOTAL_W - PAD} y2={(UPPER_FACE_TOP + FACE_BOX_SIZE + LOWER_FACE_BOTTOM - FACE_BOX_SIZE) / 2}
-          stroke="#CBD5E1"
+          stroke="var(--odo-guia)"
           strokeWidth="0.8"
           strokeDasharray="5 4"
           opacity="0.4"
@@ -1368,7 +1368,7 @@ export const Odontograma3D = ({
           return (
             <span key={c} className="inline-flex items-center gap-1.5 text-bokka-ink-2">
               <span
-                className="w-3 h-3 rounded-sm border border-bokka-border shrink-0"
+                className="w-3 h-3 rounded-sm shadow-[inset_0_0_0_1px_var(--color-bokka-swatch)] shrink-0"
                 style={{ background: fill }}
               />
               {condicaoLabel(c)}

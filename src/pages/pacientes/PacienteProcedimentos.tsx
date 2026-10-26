@@ -629,8 +629,8 @@ const ArchMini = ({ highlightDente }: ArchMiniProps) => {
       <svg viewBox="0 0 280 96" width={220} height={76} xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="mini-tooth" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#FBF7EE" />
-            <stop offset="100%" stopColor="#E6DCC1" />
+            <stop offset="0%" style={{ stopColor: 'var(--mini-dente-a)' }} />
+            <stop offset="100%" style={{ stopColor: 'var(--mini-dente-b)' }} />
           </linearGradient>
           <linearGradient id="mini-tooth-active" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--color-bokka-primary, #C97A5E)" />
@@ -681,7 +681,7 @@ const ArchRow = ({
             ry="3"
             fill={isActive ? 'url(#mini-tooth-active)' : 'url(#mini-tooth)'}
             stroke={
-              isActive ? 'var(--color-bokka-primary-strong, #8F4E36)' : '#B9A97F'
+              isActive ? 'var(--color-bokka-primary-strong, #8F4E36)' : 'var(--mini-dente-borda)'
             }
             strokeWidth={isActive ? 1 : 0.5}
           />

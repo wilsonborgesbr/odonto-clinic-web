@@ -175,7 +175,7 @@ export const PacienteDetalhePage = () => {
                 placeholder="Buscar..."
                 value={queueSearch}
                 onChange={(e) => setQueueSearch(e.target.value)}
-                className="w-full text-sm bg-bokka-surface-2 border border-bokka-border rounded-md px-3 h-9 placeholder:text-bokka-ink-3 outline-none focus:border-bokka-primary-ring"
+                className="w-full text-sm bg-bokka-surface-2 border border-bokka-field-edge rounded-md px-3 h-9 placeholder:text-bokka-ink-3 outline-none focus:border-bokka-primary-ring"
               />
             </div>
             <div className="px-4 pb-3 flex gap-1">
@@ -426,7 +426,7 @@ export const PacienteDetalhePage = () => {
             <div
               className="rounded-2xl p-5 text-white relative overflow-hidden md:col-span-2 xl:col-span-1"
               style={{
-                background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 55%, #2A6BF2 100%)',
+                background: 'var(--grad-atendimento)',
               }}
             >
               <div className="flex items-start justify-between mb-4">
@@ -516,7 +516,7 @@ export const PacienteDetalhePage = () => {
                 </div>
                 <Link
                   to={`/pacientes/${id}/odontograma`}
-                  className="text-xs font-semibold bg-white text-bokka-ink hover:bg-white/90 px-3 py-1.5 rounded-md inline-flex items-center gap-1"
+                  className="text-xs font-semibold bg-bokka-surface text-bokka-ink hover:bg-bokka-surface/90 ring-1 ring-bokka-edge px-3 py-1.5 rounded-md inline-flex items-center gap-1"
                 >
                   Abrir <ChevronRight className="w-3 h-3" />
                 </Link>
@@ -605,12 +605,12 @@ const ArcadaMiniIllustration = () => (
   >
     <defs>
       <radialGradient id="toothGrad" cx="50%" cy="30%" r="70%">
-        <stop offset="0%" stopColor="#FFFFFF" />
-        <stop offset="100%" stopColor="#E2E8F0" />
+        <stop offset="0%" style={{ stopColor: 'var(--arcp-dente-a)' }} />
+        <stop offset="100%" style={{ stopColor: 'var(--arcp-dente-b)' }} />
       </radialGradient>
       <radialGradient id="gumGrad" cx="50%" cy="50%" r="60%">
-        <stop offset="0%" stopColor="#FCA5A5" />
-        <stop offset="100%" stopColor="#EF4444" />
+        <stop offset="0%" style={{ stopColor: 'var(--arcp-gengiva-a)' }} />
+        <stop offset="100%" style={{ stopColor: 'var(--arcp-gengiva-b)' }} />
       </radialGradient>
     </defs>
     {/* Gengiva superior */}
@@ -638,7 +638,7 @@ const ArcadaMiniIllustration = () => (
           rx="7"
           ry="10"
           fill="url(#toothGrad)"
-          stroke="#CBD5E1"
+          style={{ stroke: 'var(--arcp-borda)' }}
           strokeWidth="0.5"
         />
       );
@@ -656,7 +656,7 @@ const ArcadaMiniIllustration = () => (
           rx="7"
           ry="10"
           fill="url(#toothGrad)"
-          stroke="#CBD5E1"
+          style={{ stroke: 'var(--arcp-borda)' }}
           strokeWidth="0.5"
         />
       );

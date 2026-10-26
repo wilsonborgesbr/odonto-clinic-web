@@ -303,7 +303,7 @@ export const PacienteDetalheModal = ({ pacienteId, open, onClose }: PacienteDeta
               <div
                 className="rounded-2xl p-5 text-white relative overflow-hidden md:col-span-2 xl:col-span-1"
                 style={{
-                  background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 55%, #2A6BF2 100%)',
+                  background: 'var(--grad-atendimento)',
                 }}
               >
                 <div className="flex items-start justify-between mb-4">
@@ -364,7 +364,7 @@ export const PacienteDetalheModal = ({ pacienteId, open, onClose }: PacienteDeta
               <div
                 className="rounded-2xl p-5 text-white overflow-hidden relative flex flex-col"
                 style={{
-                  background: 'linear-gradient(135deg, #2A6BF2 0%, #4F46E5 55%, #7C3AED 100%)',
+                  background: 'var(--grad-odonto)',
                 }}
               >
                 <div className="flex items-start justify-between mb-3">
@@ -399,7 +399,7 @@ export const PacienteDetalheModal = ({ pacienteId, open, onClose }: PacienteDeta
                   <Link
                     to={`/pacientes/${pacienteId}/odontograma`}
                     onClick={onClose}
-                    className="text-xs font-semibold bg-white text-bokka-ink hover:bg-white/90 px-3 py-1.5 rounded-md inline-flex items-center gap-1"
+                    className="text-xs font-semibold bg-bokka-surface text-bokka-ink hover:bg-bokka-surface/90 ring-1 ring-bokka-edge px-3 py-1.5 rounded-md inline-flex items-center gap-1"
                   >
                     Abrir <ChevronRight className="w-3 h-3" />
                   </Link>
@@ -484,12 +484,12 @@ const ArcadaMiniIllustration = () => (
   >
     <defs>
       <radialGradient id="modalToothGrad" cx="50%" cy="30%" r="70%">
-        <stop offset="0%" stopColor="#FFFFFF" />
-        <stop offset="100%" stopColor="#E0E7FF" />
+        <stop offset="0%" style={{ stopColor: 'var(--arcm-dente-a)' }} />
+        <stop offset="100%" style={{ stopColor: 'var(--arcm-dente-b)' }} />
       </radialGradient>
       <radialGradient id="modalGumGrad" cx="50%" cy="50%" r="60%">
-        <stop offset="0%" stopColor="rgba(255,255,255,0.35)" />
-        <stop offset="100%" stopColor="rgba(255,255,255,0.15)" />
+        <stop offset="0%" style={{ stopColor: 'var(--arcm-gengiva-a)' }} />
+        <stop offset="100%" style={{ stopColor: 'var(--arcm-gengiva-b)' }} />
       </radialGradient>
     </defs>
     <path d="M 22 55 Q 100 15 178 55 Q 178 40 100 8 Q 22 40 22 55 Z" fill="url(#modalGumGrad)" />
@@ -498,13 +498,13 @@ const ArcadaMiniIllustration = () => (
       const t = i / 11;
       const x = 28 + t * 144;
       const y = 55 - Math.sin(t * Math.PI) * 22;
-      return <ellipse key={`top-${i}`} cx={x} cy={y} rx="7" ry="10" fill="url(#modalToothGrad)" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5" />;
+      return <ellipse key={`top-${i}`} cx={x} cy={y} rx="7" ry="10" fill="url(#modalToothGrad)" style={{ stroke: 'var(--arcm-borda)' }} strokeWidth="0.5" />;
     })}
     {Array.from({ length: 12 }).map((_, i) => {
       const t = i / 11;
       const x = 28 + t * 144;
       const y = 85 + Math.sin(t * Math.PI) * 22;
-      return <ellipse key={`bot-${i}`} cx={x} cy={y} rx="7" ry="10" fill="url(#modalToothGrad)" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5" />;
+      return <ellipse key={`bot-${i}`} cx={x} cy={y} rx="7" ry="10" fill="url(#modalToothGrad)" style={{ stroke: 'var(--arcm-borda)' }} strokeWidth="0.5" />;
     })}
   </svg>
 );
