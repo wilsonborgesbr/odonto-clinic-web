@@ -150,6 +150,8 @@ export const gerarCsv = (r: RelatorioTabular): Blob => {
 
 // ---------------------------------------------------------------- Excel
 
+// Cores FIXAS DE PROPÓSITO, não migrar para tokens do tema: a planilha é um documento aberto fora do app e deve
+// sair igual (papel claro) com o tema Claro ou Escuro. Este módulo não lê CSS, data-theme nem matchMedia.
 const AZUL_CABECALHO = '#EAF1FF';
 const TINTA = '#0B1220';
 const VERMELHO_NEGATIVO = '#B91C1C';
@@ -245,6 +247,8 @@ export const gerarXlsx = async (r: RelatorioTabular): Promise<Blob> => {
 
 // ---------------------------------------------------------------- PDF
 
+// Cores FIXAS DE PROPÓSITO, não migrar para tokens do tema: o PDF é um documento (papel/impressão) e deve sair
+// igual com o tema Claro ou Escuro. Este módulo não lê CSS, data-theme nem matchMedia.
 const COR = {
   azul: [42, 107, 242] as const,
   tinta: [11, 18, 32] as const,

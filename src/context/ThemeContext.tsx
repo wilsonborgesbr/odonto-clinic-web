@@ -40,6 +40,19 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const atualizarPreferencias = useAtualizarPreferenciasUsuario();
   const sincronizadoParaUsuario = useRef<string | null>(null);
   const escolheuNaSessao = useRef(false);
+  // Escolha feita na tela de login (ainda sem usuário): vira a escolha do usuário assim que ele entra.
+  const escolhaNoLogin = useRef<Tema | null>(null);
+
+  // Entrou logo depois de escolher o tema no login: grava essa escolha como preferência dele (senão ela valeria só nesta
+  // sessão e voltaria ao tema antigo do servidor ao recarregar). Declarado ANTES do efeito de leitura do servidor abaixo.
+  useEffect(() => {
+    if (!isAuthenticated || !TEMA_VISIVEL || !TEMA_NO_BACKEND) return;
+    const escolha = escolhaNoLogin.current;
+    if (!escolha) return;
+    escolhaNoLogin.current = null;
+    escolheuNaSessao.current = true;
+    atualizarPreferencias.mutate({ theme: escolha });
+  }, [isAuthenticated, atualizarPreferencias]);
 
   // O tema salvo no servidor é o do usuário que entrou, e SEMPRE substitui o que estava no navegador
   // (que pode ser de outro usuário): sem escolha salva (ausente, nulo ou 'system') vale o padrão Claro.
@@ -50,6 +63,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     if (!isAuthenticated) {
       sincronizadoParaUsuario.current = null;
       escolheuNaSessao.current = false;
+      escolhaNoLogin.current = null;
       return;
     }
     if (!TEMA_VISIVEL || !TEMA_NO_BACKEND || !usuarioMe || !user?.id || usuarioMe.id !== user.id) return;
@@ -72,6 +86,8 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       // Tema é conveniência: se o PATCH falhar, a escolha continua valendo neste navegador (sem toast).
       if (TEMA_NO_BACKEND && isAuthenticated) {
         atualizarPreferencias.mutate({ theme: novo });
+      } else if (!isAuthenticated) {
+        escolhaNoLogin.current = novo;
       }
     },
     [isAuthenticated, atualizarPreferencias],

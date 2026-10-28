@@ -14,7 +14,7 @@
 
   --color-bokka-ink: #0B1220;
   --color-bokka-ink-2: #334155;
-  --color-bokka-ink-3: #64748B;
+  --color-bokka-ink-3: #5F6E85;
 
   --color-bokka-surface: #FFFFFF;
   --color-bokka-surface-2: #F8FAFC;
@@ -63,7 +63,7 @@
      - primary-text: o azul de destaque usado como TEXTO (bokka-primary fica só como fundo). */
   --color-bokka-strong: #0B1220;
   --color-bokka-scrim: rgb(11 18 32 / 0.4);
-  --color-bokka-primary-text: #2A6BF2;
+  --color-bokka-primary-text: #2661E3;
   --color-bokka-primary-text-hover: #1E56D6;
 
   /* Bolinha dos dias do mini-calendário: cor SÓLIDA (antes era branco/preto com transparência sobre o azul do
@@ -102,6 +102,12 @@
   /* Hover e clique do botão de perigo (iguais ao red-600/red-700 que o Button usava; nos dois temas). */
   --color-bokka-danger-hover: oklch(57.7% 0.245 27.325);
   --color-bokka-danger-active: oklch(50.5% 0.213 27.518);
+  /* Fundo do botão de perigo (texto branco por cima). No claro é o que sempre foi; no escuro fica mais fechado
+     (branco sobre #EF4444 dava só 3,76:1). Claro: #D93434 (4,68:1), o mais próximo do vermelho de antes que passa 4,5:1;
+     escuro: #DC2626 (4,83:1). */
+  --color-bokka-danger-solid: #D93434;
+  --color-bokka-danger-solid-hover: #B91C1C;
+  --color-bokka-danger-solid-active: #991B1B;
 
   /* Seis tons de fundo + texto do avatar (cor por hash do nome). Claro = blue/emerald/amber/rose/violet/cyan
      100 e 700 do Tailwind, valores originais; escuro = fundo translúcido e texto 300. */
@@ -258,6 +264,9 @@ body,
   --color-bokka-warning-ink: #FCD34D;
   --color-bokka-danger-soft: rgb(239 68 68 / 0.18);
   --color-bokka-danger-ink: #FCA5A5;
+  --color-bokka-danger-solid: #DC2626;
+  --color-bokka-danger-solid-hover: #B91C1C;
+  --color-bokka-danger-solid-active: #991B1B;
   --color-bokka-info-soft: rgb(42 107 242 / 0.18);
   --color-bokka-info-ink: #7BA6F8;
   --color-bokka-neutral-soft: rgb(148 163 184 / 0.16);

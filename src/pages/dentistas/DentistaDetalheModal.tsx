@@ -132,7 +132,7 @@ export const DentistaDetalheModal = ({ dentistaId, open, onClose }: DentistaDeta
         ) : !dentista ? (
           <EmptyState
             icon={<Stethoscope className="w-6 h-6" strokeWidth={1.75} />}
-            title="Dentista nao encontrado"
+            title="Dentista não encontrado"
             description="Este profissional pode ter sido removido."
           />
         ) : (
@@ -209,7 +209,7 @@ export const DentistaDetalheModal = ({ dentistaId, open, onClose }: DentistaDeta
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               <div className="bg-bokka-surface-2 border border-bokka-border rounded-2xl p-5">
                 <h3 className="text-base font-semibold text-bokka-ink mb-4">
-                  Informacoes basicas
+                  Informações básicas
                 </h3>
                 <ul className="space-y-4">
                   <BasicRow
@@ -236,7 +236,7 @@ export const DentistaDetalheModal = ({ dentistaId, open, onClose }: DentistaDeta
                   />
                   <BasicRow
                     icon={<MapPin className="w-4 h-4" strokeWidth={1.75} />}
-                    label="Endereco"
+                    label="Endereço"
                     value={
                       enderecoLinha || enderecoLinha2 ? (
                         <>
@@ -380,7 +380,7 @@ export const DentistaDetalheModal = ({ dentistaId, open, onClose }: DentistaDeta
                   </div>
                   <div>
                     <p className="text-xs uppercase font-semibold text-bokka-primary-text tracking-wider">
-                      Proximo agendamento
+                      Próximo agendamento
                     </p>
                     <p className="text-lg font-bold text-bokka-ink mt-0.5 tabular-nums">
                       {formatDate(proximoAgendamento.dataHoraInicio)} ·{' '}
