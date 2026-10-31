@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import type { ElementType, ReactNode } from 'react';
+import { CalendarDays, ClipboardList, Wallet } from 'lucide-react';
 import { BokkaMark } from './BokkaMark';
+import { SeletorTema } from './SeletorTema';
 import { cn } from '../lib/utils';
 
 interface AuthShellProps {
@@ -10,6 +12,12 @@ interface AuthShellProps {
   focusKey?: string;
   children: ReactNode;
 }
+
+const RECURSOS: { icone: ElementType<{ className?: string; strokeWidth?: number; 'aria-hidden'?: boolean | 'true' }>; texto: string }[] = [
+  { icone: CalendarDays, texto: 'Agenda com confirmação de consultas' },
+  { icone: ClipboardList, texto: 'Odontograma no padrão clínico' },
+  { icone: Wallet, texto: 'Financeiro e estoque sob controle' },
+];
 
 /** Casca das telas públicas de autenticação (login, recuperação, redefinição, confirmação). */
 export const AuthShell = ({ title, subtitle, focusKey, children }: AuthShellProps) => {
@@ -24,28 +32,82 @@ export const AuthShell = ({ title, subtitle, focusKey, children }: AuthShellProp
   }, [focusKey]);
 
   return (
-    <div className="min-h-screen bg-bokka-page flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-[400px]">
-        <div className="flex flex-col items-center mb-8 text-center">
-          <BokkaMark size={44} />
-          <h1
-            ref={h1Ref}
-            tabIndex={-1}
-            className="text-2xl font-bold tracking-tight text-bokka-ink mt-4 focus:outline-none"
-          >
-            {title}
-          </h1>
-          {subtitle && <p className="text-sm text-bokka-ink-3 mt-1">{subtitle}</p>}
+    <div className="min-h-screen bg-bokka-page min-[901px]:grid min-[901px]:grid-cols-[minmax(0,46fr)_minmax(0,54fr)]">
+      <main className="relative flex items-center justify-center px-4 py-8 min-[901px]:px-8 min-[901px]:py-12">
+        <div className="w-full max-w-[400px]">
+          {/* Celular: o painel de marca some e fica só o ícone em cima do formulário */}
+          <div className="flex justify-center mb-7 min-[901px]:hidden">
+            <BokkaMark size={48} />
+          </div>
+          <div className="mb-8 text-center min-[901px]:text-left">
+            <h1
+              ref={h1Ref}
+              tabIndex={-1}
+              className="text-2xl font-bold tracking-tight text-bokka-ink focus:outline-none"
+            >
+              {title}
+            </h1>
+            {subtitle && <p className="text-sm text-bokka-ink-3 mt-1">{subtitle}</p>}
+          </div>
+
+          <div className="bg-bokka-surface border border-bokka-border rounded-2xl p-6 shadow-sm space-y-5">
+            {children}
+          </div>
+
+          <p className="text-xs text-bokka-ink-3 text-center mt-6">
+            Bokka · sistema de gestão para clínicas e consultórios odontológicos
+          </p>
         </div>
 
-        <div className="bg-bokka-surface border border-bokka-border rounded-2xl p-6 shadow-sm space-y-5">
-          {children}
+        {/* Canto superior direito (igual ao mockup). Fica por último no HTML: o foco e a leitura começam pelo formulário.
+            Some sozinho quando o interruptor do tema está desligado (produção). */}
+        <div className="absolute top-6 right-6">
+          <SeletorTema />
         </div>
+      </main>
 
-        <p className="text-xs text-bokka-ink-3 text-center mt-6">
-          Bokka · sistema de gestão para clínicas e consultórios odontológicos
-        </p>
-      </div>
+      {/* Painel de marca (só em tela larga): marinho nos dois temas. Vem depois do formulário no HTML
+          (o foco e a leitura começam pelo formulário) e vai para a esquerda só visualmente. */}
+      <aside
+        className="relative hidden min-[901px]:flex min-[901px]:order-first flex-col justify-center overflow-hidden px-[72px] py-16 text-white bg-[linear-gradient(160deg,var(--color-bokka-marca-1)_0%,var(--color-bokka-marca-2)_45%,var(--color-bokka-marca-3)_100%)]"
+      >
+        <svg
+          viewBox="0 0 1024 1024"
+          className="absolute -right-[180px] -bottom-[230px] w-[760px] h-[760px] opacity-[0.07] pointer-events-none"
+          aria-hidden="true"
+        >
+          <path
+            d="M 262 520 C 320 660 420 720 500 712 C 600 702 690 560 774 360"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="100"
+            strokeLinecap="round"
+          />
+        </svg>
+        <div className="relative">
+          <BokkaMark size={112} withWordmark empilhado wordmarkAltura={58} sobreEscuro />
+          <h2 className="mt-11 max-w-[440px] text-[34px] leading-[1.2] font-bold tracking-[-0.02em]">
+            A rotina da sua clínica, organizada do agendamento ao sorriso.
+          </h2>
+          <p className="mt-3.5 max-w-[420px] text-[17px] leading-[1.55] text-bokka-marca-texto">
+            Agenda, pacientes, odontograma e financeiro no mesmo lugar, para clínicas e consultórios
+            odontológicos.
+          </p>
+          <ul className="mt-9 grid gap-3.5">
+            {RECURSOS.map(({ icone: Icone, texto }) => (
+              <li
+                key={texto}
+                className="flex items-center gap-3 text-[15px] font-medium text-bokka-marca-texto-2"
+              >
+                <span className="inline-flex w-[30px] h-[30px] items-center justify-center text-bokka-marca-icone">
+                  <Icone className="w-[17px] h-[17px]" strokeWidth={1.75} aria-hidden="true" />
+                </span>
+                {texto}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </aside>
     </div>
   );
 };

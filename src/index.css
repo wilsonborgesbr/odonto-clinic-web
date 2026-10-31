@@ -559,3 +559,19 @@ button:disabled {
     }
   }
 }
+
+/* Painel de marca do login (K2): marinho nos DOIS temas, não acompanha a troca claro/escuro. */
+@theme {
+  --color-bokka-marca-1: #1E3A8A;
+  --color-bokka-marca-2: #13265E;
+  --color-bokka-marca-3: #0B1226;
+  --color-bokka-marca-texto: #CBD5E1;
+  --color-bokka-marca-texto-2: #E2E8F0;
+  --color-bokka-marca-icone: #BFDBFE;
+}
+
+/* Marca Bokka (components/BokkaMark.tsx): versão clara no tema claro, escura (brilho verde, logotipo branco) no escuro. */
+.bokka-marca-claro { display: block; }
+.bokka-marca-escuro { display: none; }
+:root[data-theme="dark"] .bokka-marca-claro { display: none; }
+:root[data-theme="dark"] .bokka-marca-escuro { display: block; }

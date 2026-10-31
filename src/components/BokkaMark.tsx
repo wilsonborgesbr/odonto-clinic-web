@@ -1,38 +1,100 @@
 import { cn } from '../lib/utils';
+import iconeClaro from '../assets/marca/icone-k2-claro.svg';
+import iconeEscuro from '../assets/marca/icone-k2-escuro.svg';
+import logotipoClaro from '../assets/marca/logotipo-L2-claro.svg';
+import logotipoEscuro from '../assets/marca/logotipo-L2-escuro.svg';
 
 interface BokkaMarkProps {
+  /** Lado do ícone em px, como aparece na tela (sem contar o brilho da versão escura). */
   size?: number;
+  /** Mostra o logotipo "bokka" (L2) junto do ícone. */
   withWordmark?: boolean;
+  /** Ícone em cima, logotipo embaixo (painel de login). O padrão é lado a lado (menu lateral). */
+  empilhado?: boolean;
+  /** Altura do logotipo em px. Padrão: proporcional ao ícone (a mesma do mockup do menu lateral). */
+  wordmarkAltura?: number;
+  /** Fundo escuro fixo nos dois temas (painel marinho): usa sempre a versão escura da marca. */
+  sobreEscuro?: boolean;
   className?: string;
 }
 
+/** Folga que a versão escura do ícone (1264 x 1264) tem em volta do quadrado de 1024 para o brilho verde. */
+const FOLGA_BRILHO = 120 / 1024;
+/** Proporção do arquivo do logotipo L2 (834 x 256), já sem a folga vertical de cima. */
+const PROPORCAO_LOGOTIPO = 834 / 256;
+
 /**
- * Marca Bokka — B geométrico em cobalto com contorno arredondado.
- * Sem clip-art dental. A identidade é abstrata, sobrevive escala pequena.
+ * Marca Bokka (K2): ícone do sorriso + logotipo L2. Os SVGs ficam em src/assets/marca/ (kit final do Designer).
+ * No tema escuro troca para a versão escura (ícone com brilho verde e logotipo branco), pelo atributo
+ * data-theme do <html> (regras `.bokka-marca-*` em index.css), sem JS e sem piscar.
  */
-export const BokkaMark = ({ size = 32, withWordmark = false, className }: BokkaMarkProps) => (
-  <div className={cn('inline-flex items-center gap-2', className)}>
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 40 40"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+export const BokkaMark = ({
+  size = 32,
+  withWordmark = false,
+  empilhado = false,
+  wordmarkAltura,
+  sobreEscuro = false,
+  className,
+}: BokkaMarkProps) => {
+  const altura = wordmarkAltura ?? Math.round(size * 0.6875);
+  const largura = Math.round(altura * PROPORCAO_LOGOTIPO * 10) / 10;
+  const ladoEscuro = Math.round(size * (1 + FOLGA_BRILHO * 2) * 100) / 100;
+  const folga = Math.round(size * FOLGA_BRILHO * 100) / 100;
+
+  const icone = (src: string, classe: string, escuro: boolean) => (
+    <img
+      src={src}
+      alt=""
       aria-hidden="true"
+      width={escuro ? ladoEscuro : size}
+      height={escuro ? ladoEscuro : size}
+      draggable={false}
+      className={cn('shrink-0 select-none max-w-none', classe)}
+      style={escuro ? { margin: -folga } : undefined}
+    />
+  );
+
+  const logotipo = (src: string, classe: string) => (
+    <img
+      src={src}
+      alt=""
+      aria-hidden="true"
+      width={largura}
+      height={altura}
+      draggable={false}
+      className={cn('shrink-0 select-none max-w-none', classe)}
+      style={{ width: largura, height: altura }}
+    />
+  );
+
+  // Só uma das duas versões (clara/escura) aparece por vez, e qual delas depende do tema (CSS). Por isso todas as
+  // imagens ficam aria-hidden e o nome "Bokka" vai no contêiner, quando há logotipo.
+  return (
+    <div
+      {...(withWordmark ? { role: 'img', 'aria-label': 'Bokka' } : {})}
+      className={cn(
+        'inline-flex',
+        empilhado ? 'flex-col items-start gap-7' : 'items-center gap-3',
+        className,
+      )}
     >
-      <rect width="40" height="40" rx="10" fill="var(--color-bokka-primary)" />
-      <path
-        d="M13.5 11.5h9.2c2.85 0 5.05 1.65 5.05 4.35 0 1.9-1.05 3.2-2.5 3.9 1.9.65 3.2 2.05 3.2 4.35 0 2.95-2.3 4.65-5.35 4.65H13.5V11.5Zm4.1 3.3v3.85h4.55c1.35 0 2.15-.7 2.15-1.95 0-1.2-.8-1.9-2.15-1.9H17.6Zm0 6.95v3.9h4.85c1.45 0 2.3-.75 2.3-1.95 0-1.25-.85-1.95-2.3-1.95H17.6Z"
-        fill="white"
-      />
-    </svg>
-    {withWordmark && (
-      <span
-        className="text-[19px] font-bold tracking-tight text-bokka-ink"
-        style={{ letterSpacing: '-0.02em' }}
-      >
-        Bokka
-      </span>
-    )}
-  </div>
-);
+      {sobreEscuro ? (
+        icone(iconeEscuro, '', true)
+      ) : (
+        <>
+          {icone(iconeClaro, 'bokka-marca-claro', false)}
+          {icone(iconeEscuro, 'bokka-marca-escuro', true)}
+        </>
+      )}
+      {withWordmark &&
+        (sobreEscuro ? (
+          logotipo(logotipoEscuro, '')
+        ) : (
+          <>
+            {logotipo(logotipoClaro, 'bokka-marca-claro')}
+            {logotipo(logotipoEscuro, 'bokka-marca-escuro')}
+          </>
+        ))}
+    </div>
+  );
+};
