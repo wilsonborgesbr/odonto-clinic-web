@@ -215,7 +215,8 @@ body,
   --odo-sel: #2563EB;
   --odo-guia: #CBD5E1;
   --odo-face-fill: #FDFEFF;
-  --odo-face-stroke: #94A3B8;
+  /* Borda de peça vazia: #94A3B8 dava 2,54:1 sobre --odo-face-fill; #64748B dá ~4,7:1 (limite de componente: 3:1). Não é cor clínica. */
+  --odo-face-stroke: #64748B;
   --odo-dente: #FFFCF2;
   --odo-dentina-a: #FFF6D9;
   --odo-dentina-b: #F0D9A0;

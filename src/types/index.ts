@@ -513,6 +513,23 @@ export interface Paciente {
 
 export type TipoPagamentoProcedimentoEnum = 'A_VISTA' | 'PARCELADO';
 
+/** Corpo de POST /api/procedimentos/{id}/vincular-odontograma. Sem odontogramaId o backend resolve (vinculado, mais recente ou cria um mínimo). */
+export interface VincularOdontogramaRequest {
+  odontogramaId?: string;
+  /** FDI permanente ou decíduo; fora disso a API devolve 400. */
+  dente: string;
+  faces?: FaceDenteEnum[];
+  /** Só altera a condição se vier; nunca é deduzida. */
+  condicao?: CondicaoDenteEnum;
+}
+
+export interface VincularOdontogramaResponse {
+  procedimento: Procedimento;
+  odontograma: Odontograma;
+  dente: DenteStatus;
+  odontogramaCriado: boolean;
+}
+
 export interface Procedimento {
   id?: string;
   pacienteId?: string;
@@ -521,6 +538,8 @@ export interface Procedimento {
   nomeProcedimento?: NomeProcedimentoEnum;
   descricao?: string;
   dente?: string;
+  /** Faces do dente informado em `dente` (sem repetidas). Procedimentos antigos vêm com []. */
+  faces?: FaceDenteEnum[];
   regiao?: RegiaoEnum;
   status?: StatusProcedimentoEnum;
   dataRealizacao?: string;

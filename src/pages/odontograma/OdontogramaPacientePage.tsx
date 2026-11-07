@@ -12,6 +12,7 @@ import {
   Link2,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { AmostraCor } from '../../components/ui/AmostraCor';
 import { Badge } from '../../components/ui/Badge';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -36,14 +37,15 @@ import type {
   Procedimento,
 } from '../../types';
 import { ProcedimentoFormInline } from '../pacientes/PacienteProcedimentos';
+import { useMarcarDenteAposSalvar } from '../../hooks/useMarcarDenteAposSalvar';
 import { ProcedimentoQuickLaunch } from './ProcedimentoQuickLaunch';
+import { Odontograma3D } from './Odontograma3D';
 import {
-  Odontograma3D,
   condicaoColor,
   condicaoLabel,
   faceLabel,
   CONDICOES_COM_FACE,
-} from './Odontograma3D';
+} from '../../lib/odontogramaGeom';
 
 // ============ Config FDI ============
 const SUPERIOR = ['18', '17', '16', '15', '14', '13', '12', '11', '21', '22', '23', '24', '25', '26', '27', '28'];
@@ -74,6 +76,7 @@ export const OdontogramaPacientePage = () => {
   const procedimentosQ = useProcedimentosPorPaciente(id);
   const criarM = useCriarOdontograma();
   const criarProcM = useCriarProcedimento();
+  const marcarDente = useMarcarDenteAposSalvar();
 
   const [editing, setEditing] = useState(false);
   const [selectedTooth, setSelectedTooth] = useState<string | null>(null);
@@ -380,10 +383,7 @@ export const OdontogramaPacientePage = () => {
                           : 'hover:bg-bokka-surface-3',
                       )}
                     >
-                      <span
-                        className="w-4 h-4 rounded-full shadow-[inset_0_0_0_1px_var(--color-bokka-swatch)] shrink-0"
-                        style={{ background: fill }}
-                      />
+                      <AmostraCor cor={fill} tamanho={16} />
                       <span
                         style={{ color: active ? undefined : textInk }}
                         className="text-bokka-ink text-left"
@@ -673,10 +673,7 @@ export const OdontogramaPacientePage = () => {
                               isSel && 'bg-bokka-primary-soft/60',
                             )}
                           >
-                            <span
-                              className="w-3.5 h-3.5 rounded-full shadow-[inset_0_0_0_1px_var(--color-bokka-swatch)] shrink-0"
-                              style={{ background: fill }}
-                            />
+                            <AmostraCor cor={fill} tamanho={14} />
                             <span className="text-sm font-bold text-bokka-ink tabular-nums w-8">
                               {d.numeroDente}
                             </span>
@@ -810,9 +807,10 @@ export const OdontogramaPacientePage = () => {
             pacienteId={id}
             showOdontogramaLink={false}
             onCancel={fecharProcModal}
-            onSubmit={async (values) => {
-              await criarProcM.mutateAsync(values);
+            onSubmit={async (values, marca) => {
+              const salvo = await criarProcM.mutateAsync(values);
               bokkaToast.success('Procedimento vinculado ao odontograma.');
+              await marcarDente(salvo.id, marca);
               fecharProcModal();
             }}
           />

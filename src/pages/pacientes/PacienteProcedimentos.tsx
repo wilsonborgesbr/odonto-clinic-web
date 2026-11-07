@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -6,9 +6,9 @@ import {
   Pencil,
   Trash2,
   Syringe,
-  Grid3X3,
   Link2,
   ExternalLink,
+  Grid3X3,
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -25,7 +25,13 @@ import {
   useExcluirProcedimento,
 } from '../../services/procedimentoService';
 import { usePaciente } from '../../services/pacienteService';
-import { useOdontogramaRecente } from '../../services/odontogramaService';
+import { useOdontogramaRecente, useOdontogramasPorPaciente } from '../../services/odontogramaService';
+import { SeletorDenteFace } from '../../components/odontograma/SeletorDenteFace';
+import type { SelecaoDentes } from '../../components/odontograma/SeletorDenteFace';
+import { MarcarNoOdontogramaConteudo } from '../../components/odontograma/MarcarNoOdontogramaModal';
+import { denteValido, dentesDoTexto, mapaDentes, separarDentes } from '../../lib/dentes';
+import { useMarcarDenteAposSalvar } from '../../hooks/useMarcarDenteAposSalvar';
+import type { MarcaNoSeletor } from '../../hooks/useMarcarDenteAposSalvar';
 import { ApiError } from '../../lib/api';
 import { formatDate, formatCurrency, cn } from '../../lib/utils';
 import { nomeProcLabel, statusLabel, nomeProcOptions } from '../../lib/procedimentoLabels';
@@ -35,6 +41,8 @@ import type {
   StatusProcedimentoEnum,
   RegiaoEnum,
   TipoPagamentoProcedimentoEnum,
+  FaceDenteEnum,
+  CondicaoDenteEnum,
 } from '../../types';
 
 const parcelaOptions = Array.from({ length: 23 }, (_, i) => ({
@@ -93,12 +101,16 @@ interface PacienteProcedimentosProps {
 export const PacienteProcedimentos = ({ pacienteId }: PacienteProcedimentosProps) => {
   const [formOpen, setFormOpen] = useState(false);
   const [formInitial, setFormInitial] = useState<Procedimento | null>(null);
+  // Um Dialog só, que troca de conteúdo: empilhar dois Dialogs do Headless UI na mesma leva de estado
+  // deixa o primeiro sem desmontar (mesmo cuidado da OdontogramaPacientePage).
+  const [modo, setModo] = useState<'form' | 'marcar'>('form');
   const [confirmar, setConfirmar] = useState<{ id: string; nome: string } | null>(null);
 
   const procedimentosQ = useProcedimentosPorPaciente(pacienteId);
   const criarM = useCriarProcedimento();
   const atualizarM = useAtualizarProcedimento();
   const excluirM = useExcluirProcedimento();
+  const marcarDente = useMarcarDenteAposSalvar();
 
   const procedimentos = useMemo(() => {
     const list = procedimentosQ.data ?? [];
@@ -112,16 +124,29 @@ export const PacienteProcedimentos = ({ pacienteId }: PacienteProcedimentosProps
     });
   }, [procedimentosQ.data]);
 
-  const handleSubmit = async (values: Procedimento) => {
-    if (formInitial?.id) {
-      await atualizarM.mutateAsync({ id: formInitial.id, procedimento: values });
-      bokkaToast.success('Procedimento atualizado.');
-    } else {
-      await criarM.mutateAsync(values);
-      bokkaToast.success('Procedimento cadastrado.');
-    }
+  const fecharModal = () => {
     setFormOpen(false);
     setFormInitial(null);
+    setModo('form');
+  };
+
+  const abrirMarcar = (item: Procedimento) => {
+    setFormInitial(item);
+    setModo('marcar');
+    setFormOpen(true);
+  };
+
+  const handleSubmit = async (values: Procedimento, marca?: MarcaNoSeletor) => {
+    let salvo: Procedimento;
+    if (formInitial?.id) {
+      salvo = await atualizarM.mutateAsync({ id: formInitial.id, procedimento: values });
+      bokkaToast.success('Procedimento atualizado.');
+    } else {
+      salvo = await criarM.mutateAsync(values);
+      bokkaToast.success('Procedimento cadastrado.');
+    }
+    await marcarDente(salvo.id, marca);
+    fecharModal();
   };
 
   const handleExcluir = async () => {
@@ -154,6 +179,7 @@ export const PacienteProcedimentos = ({ pacienteId }: PacienteProcedimentosProps
             icon={<Plus className="w-3.5 h-3.5" />}
             onClick={() => {
               setFormInitial(null);
+              setModo('form');
               setFormOpen(true);
             }}
           >
@@ -201,6 +227,29 @@ export const PacienteProcedimentos = ({ pacienteId }: PacienteProcedimentosProps
                           {item.dente ? `Dente ${item.dente}` : ''}
                         </p>
                       )}
+                      <div className="mt-1 flex items-center gap-2 flex-wrap">
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold',
+                            item.odontogramaId
+                              ? 'border-bokka-primary text-bokka-ink bg-bokka-surface'
+                              : 'border-bokka-field-edge text-bokka-ink-2 bg-bokka-surface',
+                          )}
+                        >
+                          <Link2 className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
+                          {item.odontogramaId ? 'Vinculado ao odontograma' : 'Sem vínculo com o odontograma'}
+                        </span>
+                        {item.id && (
+                          <button
+                            type="button"
+                            onClick={() => abrirMarcar(item)}
+                            className="alvo-toque inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold text-bokka-primary-text hover:bg-bokka-primary-soft transition-colors"
+                          >
+                            <Grid3X3 className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
+                            {item.odontogramaId ? 'Alterar odontograma' : 'Marcar no odontograma'}
+                          </button>
+                        )}
+                      </div>
                     </td>
                     <td className="px-3 py-2.5">
                       {item.status && (
@@ -223,6 +272,7 @@ export const PacienteProcedimentos = ({ pacienteId }: PacienteProcedimentosProps
                           type="button"
                           onClick={() => {
                             setFormInitial(item);
+                            setModo('form');
                             setFormOpen(true);
                           }}
                           className="w-7 h-7 rounded-full flex items-center justify-center text-bokka-ink-3 hover:bg-bokka-primary-soft hover:text-bokka-primary-text transition-colors"
@@ -257,27 +307,42 @@ export const PacienteProcedimentos = ({ pacienteId }: PacienteProcedimentosProps
 
       <Modal
         open={formOpen}
-        onClose={() => {
-          setFormOpen(false);
-          setFormInitial(null);
-        }}
-        title={formInitial?.id ? 'Editar procedimento' : 'Novo procedimento'}
+        onClose={fecharModal}
+        title={
+          modo === 'marcar'
+            ? formInitial?.odontogramaId
+              ? 'Alterar odontograma'
+              : 'Marcar no odontograma'
+            : formInitial?.id
+              ? 'Editar procedimento'
+              : 'Novo procedimento'
+        }
         subtitle={
-          formInitial?.id
-            ? 'Atualize os dados do procedimento.'
-            : 'Preencha os dados para registrar um procedimento.'
+          modo === 'marcar'
+            ? formInitial?.odontogramaId
+              ? 'Troque o odontograma do procedimento ou ajuste o dente e as faces.'
+              : 'Escolha o odontograma, o dente e as faces.'
+            : formInitial?.id
+              ? 'Atualize os dados do procedimento.'
+              : 'Preencha os dados para registrar um procedimento.'
         }
         size="xl"
       >
-        <ProcedimentoFormInline
-          initial={formInitial}
-          pacienteId={pacienteId}
-          onCancel={() => {
-            setFormOpen(false);
-            setFormInitial(null);
-          }}
-          onSubmit={handleSubmit}
-        />
+        {modo === 'marcar' && formInitial?.id ? (
+          <MarcarNoOdontogramaConteudo
+            procedimento={formInitial}
+            onCancel={fecharModal}
+            onConcluido={fecharModal}
+          />
+        ) : (
+          <ProcedimentoFormInline
+            initial={formInitial}
+            pacienteId={pacienteId}
+            onCancel={fecharModal}
+            onSubmit={handleSubmit}
+            onMarcarNoOdontograma={() => setModo('marcar')}
+          />
+        )}
       </Modal>
 
       <ConfirmModal
@@ -296,10 +361,13 @@ export const PacienteProcedimentos = ({ pacienteId }: PacienteProcedimentosProps
 interface ProcFormProps {
   initial: Procedimento | null;
   pacienteId: string;
-  onSubmit: (values: Procedimento) => Promise<void>;
+  /** `marca` só vem quando o usuário clicou no seletor de dentes; aí quem salva chama vincular-odontograma com o id devolvido. */
+  onSubmit: (values: Procedimento, marca?: MarcaNoSeletor) => Promise<void>;
   onCancel: () => void;
   /** Esconde o link "Abrir odontograma completo" — redundante quando o form já foi aberto a partir do próprio odontograma. */
   showOdontogramaLink?: boolean;
+  /** Troca o conteúdo do modal para "Marcar no odontograma" (sem vínculo) ou "Alterar odontograma" (já vinculado). Só ao editar. */
+  onMarcarNoOdontograma?: () => void;
 }
 
 export const ProcedimentoFormInline = ({
@@ -308,6 +376,7 @@ export const ProcedimentoFormInline = ({
   onSubmit,
   onCancel,
   showOdontogramaLink = true,
+  onMarcarNoOdontograma,
 }: ProcFormProps) => {
   const [values, setValues] = useState<Procedimento>(
     () => initial ?? { ...emptyProcedimento, pacienteId },
@@ -317,7 +386,16 @@ export const ProcedimentoFormInline = ({
   const [globalError, setGlobalError] = useState<string | null>(null);
 
   const pacienteQ = usePaciente(pacienteId);
-  const odontogramaRecenteQ = useOdontogramaRecente(pacienteId);
+  const odontogramasQ = useOdontogramasPorPaciente(pacienteId);
+  const recenteQ = useOdontogramaRecente(pacienteId);
+  // true quando o usuário clicou no seletor (e não só digitou o número): só então o dente é marcado no odontograma ao salvar.
+  const [marcouNoSeletor, setMarcouNoSeletor] = useState(false);
+  // Condição escolhida no painel do dente; vale só para o dente em que foi escolhida.
+  const [condicaoEscolhida, setCondicaoEscolhida] = useState<{ dente: string; condicao?: CondicaoDenteEnum }>({ dente: '' });
+  const [faces, setFaces] = useState<Record<string, FaceDenteEnum[] | undefined>>(() => {
+    const unico = dentesDoTexto(initial?.dente);
+    return unico.length === 1 && initial?.faces ? { [unico[0]]: initial.faces } : {};
+  });
   // Regra: paciente conveniado paga via convênio — não expomos valor
   // nem opção de parcelamento na ficha do procedimento.
   const isConveniado = pacienteQ.data?.tipoPaciente === 'CONVENIO';
@@ -326,15 +404,39 @@ export const ProcedimentoFormInline = ({
   const set = <K extends keyof Procedimento>(k: K, v: Procedimento[K]) =>
     setValues((prev) => ({ ...prev, [k]: v }));
 
-  // Vincula automaticamente ao odontograma mais recente da paciente (uma vez, se ainda não houver).
-  useEffect(() => {
-    if (!values.odontogramaId && odontogramaRecenteQ.data?.id) {
-      setValues((prev) => ({ ...prev, odontogramaId: odontogramaRecenteQ.data!.id }));
-    }
-  }, [odontogramaRecenteQ.data?.id, values.odontogramaId]);
+  // Seleção do mini-arco: o texto do campo "Dente" é a fonte da verdade (continua editável à mão).
+  const selecao: SelecaoDentes = useMemo(() => {
+    const dentes = dentesDoTexto(values.dente);
+    return {
+      dentes,
+      faces: Object.fromEntries(dentes.map((d) => [d, faces[d]])),
+      condicao: dentes.length === 1 && condicaoEscolhida.dente === dentes[0] ? condicaoEscolhida.condicao : undefined,
+    };
+  }, [values.dente, faces, condicaoEscolhida]);
+
+  const aoSelecionar = (nova: SelecaoDentes) => {
+    set('dente', nova.dentes.join(', '));
+    setFaces(nova.faces);
+    setCondicaoEscolhida({ dente: nova.dentes.length === 1 ? nova.dentes[0] : '', condicao: nova.condicao });
+    setMarcouNoSeletor(true);
+  };
+
+  const unicoDente = selecao.dentes.length === 1 ? selecao.dentes[0] : undefined;
+  const facesDoDente = unicoDente ? (selecao.faces[unicoDente] ?? []) : [];
+
+  const vinculado = odontogramasQ.data?.find((o) => o.id === values.odontogramaId);
+  // Sem vínculo o backend escreve no mais recente (GET /recente); o front não adivinha por ordem de lista nem manda id.
+  const destino = vinculado ?? recenteQ.data ?? undefined;
+  const condicoes = useMemo(() => mapaDentes(destino), [destino]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    // A API só aceita um código FDI válido (permanente ou decíduo) em "dente", ou vazio.
+    const tokens = separarDentes(values.dente);
+    if (tokens.length > 1 || (tokens.length === 1 && !denteValido(tokens[0]))) {
+      setErrors({ dente: 'Informe um único dente com código FDI válido (ex.: 36).' });
+      return;
+    }
     setSubmitting(true);
     setErrors({});
     setGlobalError(null);
@@ -342,6 +444,8 @@ export const ProcedimentoFormInline = ({
       // Se o paciente é conveniado, não persistimos valor/pagamento
       const payload: Procedimento = {
         ...values,
+        dente: unicoDente ?? '',
+        faces: facesDoDente,
         pacienteId,
         ...(isConveniado
           ? {
@@ -354,7 +458,7 @@ export const ProcedimentoFormInline = ({
             ? { numeroParcelas: values.numeroParcelas ?? 2 }
             : { numeroParcelas: undefined }),
       };
-      await onSubmit(payload);
+      await onSubmit(payload, marcouNoSeletor && unicoDente ? { dente: unicoDente, faces: facesDoDente, condicao: selecao.condicao } : undefined);
     } catch (err) {
       if (err instanceof ApiError) {
         const fe = err.fieldErrors();
@@ -392,7 +496,8 @@ export const ProcedimentoFormInline = ({
             label="Dente"
             value={values.dente ?? ''}
             onChange={(e) => set('dente', e.target.value)}
-            placeholder="ex: 18, 36"
+            placeholder="ex: 36"
+            hint="Um dente, código FDI. Ou clique nele no arco abaixo."
             error={errors.dente}
           />
           <Select
@@ -411,8 +516,8 @@ export const ProcedimentoFormInline = ({
             <h3 className="text-sm font-semibold text-bokka-ink">Odontograma</h3>
             <p className="text-xs text-bokka-ink-3 mt-0.5">
               {values.odontogramaId
-                ? 'Este procedimento será vinculado ao odontograma da paciente.'
-                : 'Nenhum odontograma cadastrado ainda para vincular.'}
+                ? `Vinculado ao odontograma${vinculado?.dataAvaliacao ? ` de ${formatDate(vinculado.dataAvaliacao)}` : ' da paciente'}.`
+                : 'Sem vínculo com o odontograma. Nada é vinculado sem você escolher.'}
             </p>
           </div>
           {showOdontogramaLink && (
@@ -425,40 +530,56 @@ export const ProcedimentoFormInline = ({
             </Link>
           )}
         </div>
-        <div className="bg-bokka-surface-2 border border-bokka-border rounded-xl p-4 flex items-center gap-4 flex-wrap">
-          <ArchMini highlightDente={values.dente ?? ''} />
+        <div className="bg-bokka-surface-2 border border-bokka-border rounded-xl p-4 flex items-start gap-4 flex-wrap">
+          <SeletorDenteFace
+            value={selecao}
+            onChange={aoSelecionar}
+            modo="unico"
+            condicoes={condicoes}
+            className="w-full"
+          />
           <div className="flex-1 min-w-[180px] space-y-2">
-            <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  'inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-semibold',
-                  values.odontogramaId
-                    ? 'bg-bokka-primary-soft text-bokka-primary-text'
-                    : 'bg-bokka-surface-3 text-bokka-ink-3',
-                )}
-              >
-                <Link2 className="w-3 h-3" strokeWidth={2} />
-                {values.odontogramaId ? 'Vinculado' : 'Sem vínculo'}
-              </span>
-              {odontogramaRecenteQ.data?.dataAvaliacao && values.odontogramaId && (
-                <span className="text-[11px] text-bokka-ink-3 tabular-nums">
-                  {formatDate(odontogramaRecenteQ.data.dataAvaliacao)}
-                </span>
+            <span
+              className={cn(
+                'inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border font-semibold bg-bokka-surface',
+                values.odontogramaId
+                  ? 'border-bokka-primary text-bokka-ink'
+                  : 'border-bokka-field-edge text-bokka-ink-2',
               )}
-            </div>
-            {values.dente ? (
-              <p className="text-xs text-bokka-ink-2 leading-relaxed">
-                Realce no dente <b className="text-bokka-ink tabular-nums">{values.dente}</b>{' '}
-                acima. Ajuste no campo "Dente" para trocar.
-              </p>
-            ) : (
-              <p className="text-xs text-bokka-ink-3 leading-relaxed">
-                Informe o número do dente (ex.: 36) no campo acima para destacá-lo no arco.
+            >
+              <Link2 className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
+              {values.odontogramaId ? 'Vinculado' : 'Sem vínculo'}
+            </span>
+            {marcouNoSeletor && unicoDente && (
+              <p className="text-[11px] text-bokka-ink-2 leading-relaxed">
+                {values.odontogramaId
+                  ? `Ao salvar, o dente ${unicoDente} também será marcado no odontograma já vinculado.`
+                  : odontogramasQ.isLoading
+                    ? `Ao salvar, o dente ${unicoDente} também será marcado no odontograma.`
+                    : recenteQ.data
+                      ? `Ao salvar, o dente ${unicoDente} também será marcado no odontograma mais recente (${formatDate(recenteQ.data.dataAvaliacao)}).`
+                      : `Ao salvar, será criado um odontograma mínimo e o dente ${unicoDente} será marcado nele.`}
               </p>
             )}
-            {!odontogramaRecenteQ.isLoading && !odontogramaRecenteQ.data && (
+            {initial?.id && onMarcarNoOdontograma && (
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                icon={<Grid3X3 className="w-3.5 h-3.5" />}
+                onClick={onMarcarNoOdontograma}
+              >
+                {values.odontogramaId ? 'Alterar odontograma' : 'Marcar no odontograma'}
+              </Button>
+            )}
+            {!values.odontogramaId && !initial?.id && !marcouNoSeletor && (
               <p className="text-[11px] text-bokka-ink-3 leading-relaxed">
-                Dica: registre um odontograma primeiro para vincular procedimentos por dente.
+                Salve o procedimento para marcá-lo no odontograma da paciente.
+              </p>
+            )}
+            {!odontogramasQ.isLoading && (odontogramasQ.data?.length ?? 0) === 0 && (
+              <p className="text-[11px] text-bokka-ink-3 leading-relaxed">
+                A paciente ainda não tem odontograma; você poderá criar um ao marcar.
               </p>
             )}
           </div>
@@ -603,93 +724,3 @@ export const ProcedimentoFormInline = ({
     </form>
   );
 };
-
-// ============ Mini-arco odontológico para o form ============
-// SVG compacto mostrando as 32 posições FDI; realça o dente atual quando marcado.
-
-const MINI_SUPERIOR = ['18', '17', '16', '15', '14', '13', '12', '11', '21', '22', '23', '24', '25', '26', '27', '28'];
-const MINI_INFERIOR = ['48', '47', '46', '45', '44', '43', '42', '41', '31', '32', '33', '34', '35', '36', '37', '38'];
-
-interface ArchMiniProps {
-  highlightDente: string;
-}
-
-const ArchMini = ({ highlightDente }: ArchMiniProps) => {
-  const highlight = highlightDente.trim();
-  return (
-    <div
-      className="shrink-0 bg-bokka-surface border border-bokka-border rounded-lg p-2.5"
-      role="img"
-      aria-label={
-        highlight
-          ? `Mini odontograma destacando o dente ${highlight}`
-          : 'Mini odontograma'
-      }
-    >
-      <svg viewBox="0 0 280 96" width={220} height={76} xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="mini-tooth" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" style={{ stopColor: 'var(--mini-dente-a)' }} />
-            <stop offset="100%" style={{ stopColor: 'var(--mini-dente-b)' }} />
-          </linearGradient>
-          <linearGradient id="mini-tooth-active" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--color-bokka-primary, #C97A5E)" />
-            <stop offset="100%" stopColor="#8F4E36" />
-          </linearGradient>
-        </defs>
-        <ArchRow y={12} teeth={MINI_SUPERIOR} highlight={highlight} />
-        <ArchRow y={62} teeth={MINI_INFERIOR} highlight={highlight} />
-        <line
-          x1="12"
-          x2="268"
-          y1="48"
-          y2="48"
-          stroke="var(--color-bokka-border, #E5D9C0)"
-          strokeDasharray="2 3"
-          strokeWidth="0.75"
-        />
-      </svg>
-      {highlight && (
-        <div className="flex items-center justify-center mt-1 gap-1 text-[10px] font-semibold text-bokka-primary-text">
-          <Grid3X3 className="w-3 h-3" strokeWidth={2} />
-          Dente {highlight}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const ArchRow = ({
-  teeth,
-  y,
-  highlight,
-}: {
-  teeth: string[];
-  y: number;
-  highlight: string;
-}) => (
-  <g>
-    {teeth.map((numero, i) => {
-      const x = 14 + i * 16.4;
-      const isActive = numero === highlight;
-      return (
-        <g key={numero} transform={`translate(${x}, ${y})`}>
-          <rect
-            width="12"
-            height="22"
-            rx="3"
-            ry="3"
-            fill={isActive ? 'url(#mini-tooth-active)' : 'url(#mini-tooth)'}
-            stroke={
-              isActive ? 'var(--color-bokka-primary-strong, #8F4E36)' : 'var(--mini-dente-borda)'
-            }
-            strokeWidth={isActive ? 1 : 0.5}
-          />
-          {isActive && (
-            <circle cx="6" cy="-4" r="2.4" fill="var(--color-bokka-primary, #C97A5E)" />
-          )}
-        </g>
-      );
-    })}
-  </g>
-);

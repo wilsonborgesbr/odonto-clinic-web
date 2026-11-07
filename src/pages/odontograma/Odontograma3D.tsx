@@ -1,7 +1,24 @@
-import { useRef } from 'react';
+import { createContext, useContext, useId, useRef, useState } from 'react';
+import type { KeyboardEvent } from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import type { CondicaoDenteEnum, DenteStatus, FaceDenteEnum } from '../../types';
 import { cn } from '../../lib/utils';
+import { AmostraCor } from '../../components/ui/AmostraCor';
+import {
+  CFG,
+  FACE_BOX_SIZE,
+  condicaoColor,
+  condicaoLabel,
+  crownFillColor,
+  crownFillMode as resolveCrownFillMode,
+  crownOpacity,
+  CONDICOES_COM_FACE,
+  lowerCrownGeom,
+  toothPos,
+  upperCrownGeom,
+} from '../../lib/odontogramaGeom';
+import type { ToothCfg } from '../../lib/odontogramaGeom';
+import { FaceGridBox } from '../../components/odontograma/FaceGridBox';
 
 interface Odontograma3DProps {
   superior: string[];
@@ -11,7 +28,30 @@ interface Odontograma3DProps {
   onSelect?: (numero: string) => void;
   onSelectFace?: (numero: string, face: FaceDenteEnum) => void;
   readOnly?: boolean;
+  /** Legenda das 13 condições embaixo do arco. Padrão: true. */
+  legenda?: boolean;
+  /** 'neutro': seleção em ink (halo sólido + pílula no número), sem usar o azul clínico. Padrão: 'padrao'. */
+  estiloSelecao?: 'padrao' | 'neutro';
+  /** Dentes focáveis por teclado (um só tab stop; setas, Home/End, Enter/Espaço). Padrão: false. */
+  teclado?: boolean;
+  /**
+   * Escala responsiva. Sem esta prop o layout é o de sempre (altura fixa de 440 px, largura mínima de 980 px, botões
+   * de arcada no celular). Com ela o SVG escala com a largura do contêiner (altura pelo aspecto do viewBox) e só
+   * rola na horizontal se a escala cairia abaixo deste valor (1 = tamanho do completo; 0 = sempre cabe inteiro).
+   */
+  escalaMinima?: number;
 }
+
+// Ids dos <defs> levam um prefixo por instância (useId): com o completo atrás de um modal que também desenha o
+// odontograma, ids fixos ficariam duplicados no documento.
+interface OdoCtxValor {
+  p: string;
+  neutro: boolean;
+  teclado: boolean;
+  roving?: string;
+  aoTeclar?: (e: KeyboardEvent<SVGGElement>, numero: string) => void;
+}
+const OdoCtx = createContext<OdoCtxValor>({ p: '', neutro: false, teclado: false });
 
 // ============ Layout constants ============
 
@@ -47,216 +87,6 @@ function slotX(i: number): number {
 
 function toothCx(i: number): number {
   return slotX(i) + SLOT_W / 2;
-}
-
-// ============ Tooth type configs ============
-
-interface ToothCfg {
-  hw: number;          // crown half-width
-  nw: number;          // neck half-width (cementoenamel junction)
-  cuspType: 'incisor' | 'canine' | 'premolar' | 'molar-upper' | 'molar-lower';
-  upperRoots: number;
-  lowerRoots: number;
-  rootLen: number;     // 0..1 multiplier
-}
-
-// pos = second digit of FDI (1..8)
-const CFG: Record<number, ToothCfg> = {
-  1: { hw: 15, nw: 11, cuspType: 'incisor',     upperRoots: 1, lowerRoots: 1, rootLen: 0.95 },
-  2: { hw: 12, nw: 9,  cuspType: 'incisor',     upperRoots: 1, lowerRoots: 1, rootLen: 0.88 },
-  3: { hw: 13, nw: 10, cuspType: 'canine',      upperRoots: 1, lowerRoots: 1, rootLen: 1.0  },
-  4: { hw: 14, nw: 11, cuspType: 'premolar',    upperRoots: 2, lowerRoots: 1, rootLen: 0.85 },
-  5: { hw: 13, nw: 10, cuspType: 'premolar',    upperRoots: 1, lowerRoots: 1, rootLen: 0.85 },
-  6: { hw: 20, nw: 17, cuspType: 'molar-upper', upperRoots: 3, lowerRoots: 2, rootLen: 0.78 },
-  7: { hw: 19, nw: 16, cuspType: 'molar-upper', upperRoots: 3, lowerRoots: 2, rootLen: 0.75 },
-  8: { hw: 17, nw: 14, cuspType: 'molar-upper', upperRoots: 2, lowerRoots: 2, rootLen: 0.68 },
-};
-
-function toothPos(fdi: string): number {
-  return parseInt(fdi[1], 10);
-}
-
-// ============ Crown geometry ============
-
-interface CrownGeom {
-  path: string;
-  cusps: { x: number; y: number }[];   // cusp tips
-  fossae: string[];                     // fissure lines
-}
-
-function upperCrownGeom(cx: number, neckY: number, tipY: number, c: ToothCfg): CrownGeom {
-  const { hw, nw, cuspType } = c;
-  const h = tipY - neckY;
-
-  if (cuspType === 'incisor') {
-    // Chisel-shaped, flat incisal edge with slight mamelons
-    const edgeY = tipY;
-    const path = `M ${cx - nw},${neckY}
-      C ${cx - nw - 1},${neckY + h * 0.4} ${cx - hw},${neckY + h * 0.75} ${cx - hw},${edgeY - 3}
-      Q ${cx - hw + 1},${edgeY} ${cx - hw + 3},${edgeY}
-      L ${cx + hw - 3},${edgeY}
-      Q ${cx + hw - 1},${edgeY} ${cx + hw},${edgeY - 3}
-      C ${cx + hw},${neckY + h * 0.75} ${cx + nw + 1},${neckY + h * 0.4} ${cx + nw},${neckY} Z`;
-    return {
-      path,
-      cusps: [],
-      fossae: [
-        `M ${cx - hw * 0.4},${edgeY - 2} L ${cx + hw * 0.4},${edgeY - 2}`,
-      ],
-    };
-  }
-
-  if (cuspType === 'canine') {
-    // Single pointed cusp
-    const cuspY = tipY;
-    const path = `M ${cx - nw},${neckY}
-      C ${cx - nw - 2},${neckY + h * 0.35} ${cx - hw},${neckY + h * 0.6} ${cx - hw + 2},${neckY + h * 0.85}
-      L ${cx},${cuspY}
-      L ${cx + hw - 2},${neckY + h * 0.85}
-      C ${cx + hw},${neckY + h * 0.6} ${cx + nw + 2},${neckY + h * 0.35} ${cx + nw},${neckY} Z`;
-    return {
-      path,
-      cusps: [{ x: cx, y: cuspY }],
-      fossae: [
-        `M ${cx - hw * 0.35},${neckY + h * 0.7} L ${cx},${neckY + h * 0.85}`,
-        `M ${cx + hw * 0.35},${neckY + h * 0.7} L ${cx},${neckY + h * 0.85}`,
-      ],
-    };
-  }
-
-  if (cuspType === 'premolar') {
-    // Two cusps: buccal + lingual with central fissure
-    const cw = hw * 0.6;
-    const cuspH = h * 0.15;
-    const path = `M ${cx - nw},${neckY}
-      C ${cx - nw - 1},${neckY + h * 0.4} ${cx - hw - 1},${neckY + h * 0.6} ${cx - hw},${tipY - cuspH}
-      Q ${cx - hw + 2},${tipY - 2} ${cx - cw},${tipY}
-      Q ${cx - cw * 0.3},${tipY - cuspH * 0.6} ${cx},${tipY - cuspH * 0.5}
-      Q ${cx + cw * 0.3},${tipY - cuspH * 0.6} ${cx + cw},${tipY}
-      Q ${cx + hw - 2},${tipY - 2} ${cx + hw},${tipY - cuspH}
-      C ${cx + hw + 1},${neckY + h * 0.6} ${cx + nw + 1},${neckY + h * 0.4} ${cx + nw},${neckY} Z`;
-    return {
-      path,
-      cusps: [
-        { x: cx - cw * 0.65, y: tipY - cuspH * 0.3 },
-        { x: cx + cw * 0.65, y: tipY - cuspH * 0.3 },
-      ],
-      fossae: [
-        `M ${cx},${tipY - cuspH * 0.55} L ${cx},${tipY - cuspH * 0.1}`,
-      ],
-    };
-  }
-
-  // Upper molar: 4 cusps + H-shaped fissure
-  const cuspH = h * 0.12;
-  const q = hw * 0.55;
-  const path = `M ${cx - nw},${neckY}
-    C ${cx - nw - 1},${neckY + h * 0.35} ${cx - hw - 2},${neckY + h * 0.55} ${cx - hw},${tipY - cuspH}
-    Q ${cx - hw},${tipY - 1} ${cx - q},${tipY - cuspH * 0.4}
-    Q ${cx - q * 0.5},${tipY} ${cx - q * 0.15},${tipY - cuspH * 0.3}
-    L ${cx + q * 0.15},${tipY - cuspH * 0.3}
-    Q ${cx + q * 0.5},${tipY} ${cx + q},${tipY - cuspH * 0.4}
-    Q ${cx + hw},${tipY - 1} ${cx + hw},${tipY - cuspH}
-    C ${cx + hw + 2},${neckY + h * 0.55} ${cx + nw + 1},${neckY + h * 0.35} ${cx + nw},${neckY} Z`;
-  return {
-    path,
-    cusps: [
-      { x: cx - q * 0.7, y: tipY - cuspH * 0.5 },
-      { x: cx + q * 0.7, y: tipY - cuspH * 0.5 },
-      { x: cx - hw * 0.6, y: tipY - cuspH * 0.9 },
-      { x: cx + hw * 0.6, y: tipY - cuspH * 0.9 },
-    ],
-    fossae: [
-      `M ${cx - hw * 0.5},${tipY - cuspH * 0.55} L ${cx + hw * 0.5},${tipY - cuspH * 0.55}`,
-      `M ${cx},${tipY - cuspH * 0.9} L ${cx},${tipY - cuspH * 0.2}`,
-    ],
-  };
-}
-
-function lowerCrownGeom(cx: number, neckY: number, tipY: number, c: ToothCfg): CrownGeom {
-  const { hw, nw, cuspType } = c;
-  const h = neckY - tipY;
-
-  if (cuspType === 'incisor') {
-    const edgeY = tipY;
-    const path = `M ${cx - nw},${neckY}
-      C ${cx - nw - 1},${neckY - h * 0.4} ${cx - hw},${neckY - h * 0.75} ${cx - hw},${edgeY + 3}
-      Q ${cx - hw + 1},${edgeY} ${cx - hw + 3},${edgeY}
-      L ${cx + hw - 3},${edgeY}
-      Q ${cx + hw - 1},${edgeY} ${cx + hw},${edgeY + 3}
-      C ${cx + hw},${neckY - h * 0.75} ${cx + nw + 1},${neckY - h * 0.4} ${cx + nw},${neckY} Z`;
-    return {
-      path,
-      cusps: [],
-      fossae: [
-        `M ${cx - hw * 0.4},${edgeY + 2} L ${cx + hw * 0.4},${edgeY + 2}`,
-      ],
-    };
-  }
-
-  if (cuspType === 'canine') {
-    const cuspY = tipY;
-    const path = `M ${cx - nw},${neckY}
-      C ${cx - nw - 2},${neckY - h * 0.35} ${cx - hw},${neckY - h * 0.6} ${cx - hw + 2},${neckY - h * 0.85}
-      L ${cx},${cuspY}
-      L ${cx + hw - 2},${neckY - h * 0.85}
-      C ${cx + hw},${neckY - h * 0.6} ${cx + nw + 2},${neckY - h * 0.35} ${cx + nw},${neckY} Z`;
-    return {
-      path,
-      cusps: [{ x: cx, y: cuspY }],
-      fossae: [
-        `M ${cx - hw * 0.35},${neckY - h * 0.7} L ${cx},${neckY - h * 0.85}`,
-        `M ${cx + hw * 0.35},${neckY - h * 0.7} L ${cx},${neckY - h * 0.85}`,
-      ],
-    };
-  }
-
-  if (cuspType === 'premolar') {
-    const cw = hw * 0.6;
-    const cuspH = h * 0.15;
-    const path = `M ${cx - nw},${neckY}
-      C ${cx - nw - 1},${neckY - h * 0.4} ${cx - hw - 1},${neckY - h * 0.6} ${cx - hw},${tipY + cuspH}
-      Q ${cx - hw + 2},${tipY + 2} ${cx - cw},${tipY}
-      Q ${cx - cw * 0.3},${tipY + cuspH * 0.6} ${cx},${tipY + cuspH * 0.5}
-      Q ${cx + cw * 0.3},${tipY + cuspH * 0.6} ${cx + cw},${tipY}
-      Q ${cx + hw - 2},${tipY + 2} ${cx + hw},${tipY + cuspH}
-      C ${cx + hw + 1},${neckY - h * 0.6} ${cx + nw + 1},${neckY - h * 0.4} ${cx + nw},${neckY} Z`;
-    return {
-      path,
-      cusps: [
-        { x: cx - cw * 0.65, y: tipY + cuspH * 0.3 },
-        { x: cx + cw * 0.65, y: tipY + cuspH * 0.3 },
-      ],
-      fossae: [
-        `M ${cx},${tipY + cuspH * 0.55} L ${cx},${tipY + cuspH * 0.1}`,
-      ],
-    };
-  }
-
-  // Lower molar (5 cusps typical, drawn as 4 with central pit)
-  const cuspH = h * 0.13;
-  const q = hw * 0.55;
-  const path = `M ${cx - nw},${neckY}
-    C ${cx - nw - 1},${neckY - h * 0.35} ${cx - hw - 2},${neckY - h * 0.55} ${cx - hw},${tipY + cuspH}
-    Q ${cx - hw},${tipY + 1} ${cx - q},${tipY + cuspH * 0.4}
-    Q ${cx - q * 0.5},${tipY} ${cx - q * 0.15},${tipY + cuspH * 0.3}
-    L ${cx + q * 0.15},${tipY + cuspH * 0.3}
-    Q ${cx + q * 0.5},${tipY} ${cx + q},${tipY + cuspH * 0.4}
-    Q ${cx + hw},${tipY + 1} ${cx + hw},${tipY + cuspH}
-    C ${cx + hw + 2},${neckY - h * 0.55} ${cx + nw + 1},${neckY - h * 0.35} ${cx + nw},${neckY} Z`;
-  return {
-    path,
-    cusps: [
-      { x: cx - q * 0.7, y: tipY + cuspH * 0.5 },
-      { x: cx + q * 0.7, y: tipY + cuspH * 0.5 },
-      { x: cx - hw * 0.6, y: tipY + cuspH * 0.9 },
-      { x: cx + hw * 0.6, y: tipY + cuspH * 0.9 },
-    ],
-    fossae: [
-      `M ${cx - hw * 0.5},${tipY + cuspH * 0.55} L ${cx + hw * 0.5},${tipY + cuspH * 0.55}`,
-      `M ${cx},${tipY + cuspH * 0.2} L ${cx},${tipY + cuspH * 0.9}`,
-    ],
-  };
 }
 
 // ============ Root paths (separated per root) ============
@@ -378,217 +208,6 @@ function buildLowerGum(teeth: string[]): string {
 
 // ============ Face grid ============
 
-// Standard dental face representation: 5-section square
-//  ┌──────────────┐
-//  │      V       │   (or Incisal for anterior top)
-//  │──┬────────┬──│
-//  │M │   L    │D │   (Mesial | Lingual/Palatal | Distal)
-//  │──┴────────┴──│
-//  │      O       │   (Oclusal, or Cervical for anterior bottom)
-//  └──────────────┘
-
-const FACE_BOX_SIZE = 30;
-
-interface FaceGrid {
-  numero: string;
-  x: number;   // top-left of grid
-  y: number;
-  facesMarked: FaceDenteEnum[];
-  isUpper: boolean;
-  isAnterior: boolean;
-  condicaoFill: string;
-  condicaoStroke: string;
-  readOnly?: boolean;
-  onSelectFace?: (numero: string, face: FaceDenteEnum) => void;
-  parentSelected?: boolean;
-}
-
-const FaceGridBox = ({
-  numero, x, y, facesMarked, isUpper, isAnterior,
-  condicaoFill, condicaoStroke, readOnly, onSelectFace, parentSelected,
-}: FaceGrid) => {
-  const s = FACE_BOX_SIZE;
-  const cornerCut = s * 0.28;
-  const isMarked = (f: FaceDenteEnum) => facesMarked.includes(f);
-
-  // Determine which face labels apply
-  const topFace: FaceDenteEnum = isUpper && !isAnterior ? 'VESTIBULAR'
-    : !isUpper && !isAnterior ? 'VESTIBULAR'
-    : isAnterior ? 'INCISAL' : 'VESTIBULAR';
-  const bottomFace: FaceDenteEnum = isAnterior ? 'CERVICAL' : 'OCLUSAL';
-  const centerFace: FaceDenteEnum = isUpper ? 'PALATINA' : 'LINGUAL';
-
-  const fill = (marked: boolean) => marked ? condicaoFill : 'var(--odo-face-fill)';
-  const stroke = (marked: boolean) => marked ? condicaoStroke : 'var(--odo-face-stroke)';
-
-  const handleClick = (face: FaceDenteEnum) => (e: React.MouseEvent) => {
-    if (readOnly) return;
-    e.stopPropagation();
-    onSelectFace?.(numero, face);
-  };
-
-  return (
-    <g className={cn(!readOnly && 'cursor-pointer')}>
-      {/* Top trapezoid (V/Incisal) */}
-      <path
-        d={`M ${x},${y} L ${x + s},${y} L ${x + s - cornerCut},${y + cornerCut} L ${x + cornerCut},${y + cornerCut} Z`}
-        fill={fill(isMarked(topFace))}
-        stroke={stroke(isMarked(topFace))}
-        strokeWidth="0.8"
-        onClick={handleClick(topFace)}
-      />
-      {/* Left trapezoid (Mesial) */}
-      <path
-        d={`M ${x},${y} L ${x + cornerCut},${y + cornerCut} L ${x + cornerCut},${y + s - cornerCut} L ${x},${y + s} Z`}
-        fill={fill(isMarked('MESIAL'))}
-        stroke={stroke(isMarked('MESIAL'))}
-        strokeWidth="0.8"
-        onClick={handleClick('MESIAL')}
-      />
-      {/* Right trapezoid (Distal) */}
-      <path
-        d={`M ${x + s},${y} L ${x + s},${y + s} L ${x + s - cornerCut},${y + s - cornerCut} L ${x + s - cornerCut},${y + cornerCut} Z`}
-        fill={fill(isMarked('DISTAL'))}
-        stroke={stroke(isMarked('DISTAL'))}
-        strokeWidth="0.8"
-        onClick={handleClick('DISTAL')}
-      />
-      {/* Bottom trapezoid (O/Cervical) */}
-      <path
-        d={`M ${x},${y + s} L ${x + cornerCut},${y + s - cornerCut} L ${x + s - cornerCut},${y + s - cornerCut} L ${x + s},${y + s} Z`}
-        fill={fill(isMarked(bottomFace))}
-        stroke={stroke(isMarked(bottomFace))}
-        strokeWidth="0.8"
-        onClick={handleClick(bottomFace)}
-      />
-      {/* Center square (L/P) */}
-      <rect
-        x={x + cornerCut}
-        y={y + cornerCut}
-        width={s - cornerCut * 2}
-        height={s - cornerCut * 2}
-        fill={fill(isMarked(centerFace))}
-        stroke={stroke(isMarked(centerFace))}
-        strokeWidth="0.8"
-        onClick={handleClick(centerFace)}
-      />
-
-      {/* Selection outline */}
-      {parentSelected && (
-        <rect
-          x={x - 1.5} y={y - 1.5}
-          width={s + 3} height={s + 3}
-          fill="none"
-          stroke="var(--odo-sel)"
-          strokeWidth="1.5"
-          rx="2"
-        />
-      )}
-    </g>
-  );
-};
-
-// ============ Colors ============
-
-// Paleta USP — 4 buckets fixos (ODONTOGRAMA-COLOR-SPEC). Cor de identificação (legenda/badge/
-// seletor de condição) é sempre a do bucket; a técnica de desenho da coroa (dentina natural,
-// fantasma pálido, contorno tracejado) é resolvida à parte em UpperTooth/LowerTooth — não aqui.
-export const condicaoColor = (
-  c?: CondicaoDenteEnum,
-): { fill: string; stroke: string; textInk: string } => {
-  switch (c) {
-    // Vermelho — precisa de tratamento
-    case 'CARIE':
-    case 'RESTAURACAO_INSATISFATORIA':
-    case 'FRATURA':
-    case 'EXTRACAO_INDICADA':
-    // legados
-    case 'CARIADO':
-    case 'FRATURADO':
-    case 'EXTRAIR':
-      return { fill: '#DC2626', stroke: '#991B1B', textInk: 'var(--cond-vermelho-ink)' };
-
-    // Azul — tratamento realizado
-    case 'RESTAURACAO_SATISFATORIA':
-    case 'ENDODONTIA':
-    case 'PROTESE_FIXA':
-    case 'PROTESE_REMOVIVEL':
-    case 'IMPLANTE':
-    // legados
-    case 'RESTAURADO':
-    case 'COROA':
-    case 'EM_TRATAMENTO':
-      return { fill: '#2563EB', stroke: '#1D4ED8', textInk: 'var(--cond-azul-ink)' };
-
-    // Verde — saudável
-    case 'HIGIDO':
-    case 'SELANTE':
-    // legado
-    case 'SAUDAVEL':
-      return { fill: '#059669', stroke: '#047857', textInk: 'var(--cond-verde-ink)' };
-
-    // Preto — ausente / incluso
-    case 'AUSENTE':
-    case 'DENTE_INCLUSO':
-      return { fill: 'var(--cond-preto-fill)', stroke: 'var(--cond-preto-stroke)', textInk: 'var(--cond-preto-ink)' };
-
-    default:
-      return { fill: 'var(--odo-dente)', stroke: '#B0A78F', textInk: 'var(--cond-neutro-ink)' };
-  }
-};
-
-export const condicaoLabel = (c: CondicaoDenteEnum): string => {
-  switch (c) {
-    case 'HIGIDO':                     return 'Hígido';
-    case 'CARIE':                      return 'Cárie';
-    case 'RESTAURACAO_SATISFATORIA':   return 'Restauração satisfatória';
-    case 'RESTAURACAO_INSATISFATORIA': return 'Restauração insatisfatória';
-    case 'AUSENTE':                    return 'Ausente';
-    case 'ENDODONTIA':                 return 'Endodontia';
-    case 'PROTESE_FIXA':               return 'Prótese fixa';
-    case 'PROTESE_REMOVIVEL':          return 'Prótese removível';
-    case 'IMPLANTE':                   return 'Implante';
-    case 'FRATURA':                    return 'Fratura';
-    case 'DENTE_INCLUSO':              return 'Dente incluso';
-    case 'EXTRACAO_INDICADA':          return 'Extração indicada';
-    case 'SELANTE':                    return 'Selante';
-    // legados — mesmo rótulo do equivalente novo (ODONTOGRAMA-COLOR-SPEC seção 3.1)
-    case 'SAUDAVEL':      return 'Hígido';
-    case 'CARIADO':       return 'Cárie';
-    case 'RESTAURADO':    return 'Restauração satisfatória';
-    case 'COROA':         return 'Prótese fixa';
-    case 'FRATURADO':     return 'Fratura';
-    case 'EM_TRATAMENTO': return 'Endodontia';
-    case 'EXTRAIR':       return 'Extração indicada';
-    default:              return c;
-  }
-};
-
-export const faceLabel = (f: FaceDenteEnum): string => {
-  switch (f) {
-    case 'MESIAL':     return 'Mesial';
-    case 'DISTAL':     return 'Distal';
-    case 'OCLUSAL':    return 'Oclusal';
-    case 'VESTIBULAR': return 'Vestibular';
-    case 'PALATINA':   return 'Palatina';
-    case 'LINGUAL':    return 'Lingual';
-    case 'INCISAL':    return 'Incisal';
-    case 'CERVICAL':   return 'Cervical';
-  }
-};
-
-export const CONDICOES_COM_FACE: CondicaoDenteEnum[] = [
-  'CARIE',
-  'RESTAURACAO_SATISFATORIA',
-  'RESTAURACAO_INSATISFATORIA',
-  'FRATURA',
-  'SELANTE',
-  // legados
-  'CARIADO',
-  'RESTAURADO',
-  'FRATURADO',
-];
-
 // ============ Individual tooth (upper/lower) ============
 
 interface UpperToothProps {
@@ -601,38 +220,65 @@ interface UpperToothProps {
   onSelectFace?: (numero: string, face: FaceDenteEnum) => void;
 }
 
+// Parafuso do implante: cilindro afunilado com ponta arredondada, brilho de metal e roscas discretas (antes era um
+// retângulo cinza com 6 riscas escuras, que parecia uma faixa riscada). Fica no lugar das raízes.
+const ImplantePost = ({
+  cx, neckY, tipY, nw, id, p,
+}: { cx: number; neckY: number; tipY: number; nw: number; id: string; p: string }) => {
+  const dir = tipY < neckY ? -1 : 1;            // -1: ponta para cima (superior); 1: para baixo (inferior)
+  const y0 = neckY - dir * 2;                   // começa um pouco dentro do colo
+  const y1 = tipY + dir * 2;                    // ponta
+  const wTopo = nw * 0.55;
+  const wPonta = nw * 0.32;
+  const largura = (t: number) => wTopo + (wPonta - wTopo) * t;
+  const yTip = y1 - dir * wPonta;               // onde a lateral reta termina e começa a ponta arredondada
+  const contorno = `M ${cx - wTopo},${y0} L ${cx + wTopo},${y0} L ${cx + wPonta},${yTip} Q ${cx},${y1 + dir * wPonta * 0.5} ${cx - wPonta},${yTip} Z`;
+  const clip = `${p}impl-${id}`;
+  const n = 6;
+  return (
+    <g pointerEvents="none">
+      <defs>
+        <clipPath id={clip}><path d={contorno} /></clipPath>
+      </defs>
+      <path d={contorno} fill={`url(#${p}implante-grad)`} stroke="#64748B" strokeWidth="0.7" strokeLinejoin="round" />
+      <g clipPath={`url(#${clip})`}>
+        {Array.from({ length: n }, (_, i) => {
+          const t = (i + 1) / (n + 1);
+          const y = y0 + (yTip - y0) * t;
+          const w = largura(t) + 1;
+          return (
+            <g key={i}>
+              <line x1={cx - w} y1={y + 1.2} x2={cx + w} y2={y - 1.2} stroke="#475569" strokeOpacity="0.5" strokeWidth="0.8" />
+              <line x1={cx - w} y1={y + 2.2} x2={cx + w} y2={y - 0.2} stroke="#FFFFFF" strokeOpacity="0.4" strokeWidth="0.6" />
+            </g>
+          );
+        })}
+      </g>
+    </g>
+  );
+};
+
 const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelectFace }: UpperToothProps) => {
   const cx = toothCx(index);
   const cfg = CFG[toothPos(numero)];
+  const { p, neutro, teclado, roving, aoTeclar } = useContext(OdoCtx);
+  const selCor = neutro ? 'var(--color-bokka-ink)' : 'var(--odo-sel)';
   const condicao = mark?.condicao;
   const faces = mark?.faces ?? [];
   const isAusente = condicao === 'AUSENTE';
   const isDenteIncluso = condicao === 'DENTE_INCLUSO';
   const isExtrair = condicao === 'EXTRAIR' || condicao === 'EXTRACAO_INDICADA';
   const isImplante = condicao === 'IMPLANTE';
-  const isCoroa = condicao === 'COROA' || condicao === 'PROTESE_FIXA' || condicao === 'PROTESE_REMOVIVEL';
   const isEndodontia = condicao === 'EM_TRATAMENTO' || condicao === 'ENDODONTIA';
-  const isHigido = condicao === 'HIGIDO' || condicao === 'SAUDAVEL';
   const { fill, stroke } = condicaoColor(condicao);
 
   // Face marcada (CARIE/RESTAURACAO_*/FRATURA/SELANTE) pinta só a face; senão a coroa inteira
   const hasFaceMark = faces.length > 0 && condicao && CONDICOES_COM_FACE.includes(condicao);
-  const crownFillMode = isAusente ? 'ausente'
-    : isDenteIncluso ? 'incluso'
-    : isImplante ? 'coroa-implante'
-    : isCoroa ? 'coroa-total'
-    : hasFaceMark ? 'natural-com-faces'
-    : condicao && !CONDICOES_COM_FACE.includes(condicao) && !isHigido ? 'total'
-    : 'natural';
+  const crownFillMode = resolveCrownFillMode(condicao, faces);
 
-  const crownFill = crownFillMode === 'ausente' ? '#E8ECF0'
-    : crownFillMode === 'incluso' ? '#E8ECF0'
-    : crownFillMode === 'coroa-implante' ? '#CBD5E1'
-    : crownFillMode === 'coroa-total' ? fill
-    : crownFillMode === 'total' ? fill
-    : 'var(--odo-dente)';
+  const crownFill = crownFillColor(crownFillMode, fill);
 
-  const opacity = isAusente ? 0.4 : isDenteIncluso ? 0.5 : 1;
+  const opacity = crownOpacity(condicao);
 
   const tipY = UPPER_CROWN_TIP;
   const rootTipY = UPPER_ROOT_TOP + (UPPER_NECK - UPPER_ROOT_TOP) * (1 - cfg.rootLen);
@@ -642,10 +288,32 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
 
   return (
     <g
-      className={cn(!readOnly && 'cursor-pointer group')}
+      className={cn(
+        !readOnly && 'cursor-pointer group',
+        teclado && 'outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-bokka-focus)]',
+      )}
       role={readOnly ? undefined : 'button'}
-      aria-label={`Dente ${numero}`}
+      aria-label={
+        teclado
+          ? [
+              `Dente ${numero}`,
+              condicao && `condição ${condicaoLabel(condicao)}`,
+              selected && 'selecionado',
+            ]
+              .filter(Boolean)
+              .join(', ')
+          : `Dente ${numero}`
+      }
+      {...(teclado && !readOnly
+        ? {
+            tabIndex: roving === numero ? 0 : -1,
+            'aria-pressed': selected,
+            'data-dente': numero,
+            onKeyDown: (e: KeyboardEvent<SVGGElement>) => aoTeclar?.(e, numero),
+          }
+        : {})}
     >
+      {selected && neutro && <rect x={cx - 11} y={8} width={22} height={16} rx={8} fill="var(--color-bokka-ink)" />}
       {/* FDI label */}
       <text
         x={cx}
@@ -653,7 +321,7 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
         textAnchor="middle"
         fontSize="11"
         fontWeight="700"
-        fill={selected ? 'var(--odo-sel)' : 'var(--odo-numero)'}
+        fill={selected ? (neutro ? 'var(--color-bokka-surface)' : 'var(--odo-sel)') : 'var(--odo-numero)'}
         fontFamily="system-ui, sans-serif"
         style={{ userSelect: 'none' }}
       >
@@ -675,8 +343,8 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
           width={(cfg.hw + 6) * 2} height={tipY - rootTipY + 6}
           rx="6"
           fill="none"
-          stroke="var(--odo-sel)" strokeWidth="1.8" strokeDasharray="4 3"
-          opacity="0.7"
+          stroke={selCor} strokeWidth={neutro ? 2.6 : 1.8} strokeDasharray={neutro ? undefined : '4 3'}
+          opacity={neutro ? 1 : 0.7}
           pointerEvents="none"
         />
       )}
@@ -686,7 +354,7 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
         <g key={ri}>
           <path
             d={d}
-            fill={isAusente || isDenteIncluso ? '#E8ECF0' : 'url(#dentin-grad)'}
+            fill={isAusente || isDenteIncluso ? '#E8ECF0' : `url(#${p}dentin-grad)`}
             stroke={isAusente || isDenteIncluso ? '#B0B8C4' : '#B08D5D'}
             strokeWidth="0.7"
             opacity={opacity}
@@ -709,27 +377,7 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
       ))}
 
       {/* Implant post */}
-      {isImplante && (
-        <g pointerEvents="none">
-          <rect
-            x={cx - cfg.nw * 0.55} y={rootTipY - 2}
-            width={cfg.nw * 1.1} height={UPPER_NECK - rootTipY + 4}
-            rx="2"
-            fill="#64748B"
-          />
-          {[0.15, 0.3, 0.45, 0.6, 0.75, 0.9].map((frac) => {
-            const y = rootTipY + (UPPER_NECK - rootTipY) * frac;
-            return (
-              <line
-                key={frac}
-                x1={cx - cfg.nw * 0.55} y1={y}
-                x2={cx + cfg.nw * 0.55} y2={y}
-                stroke="#334155" strokeWidth="0.9"
-              />
-            );
-          })}
-        </g>
-      )}
+      {isImplante && <ImplantePost cx={cx} neckY={UPPER_NECK} tipY={rootTipY} nw={cfg.nw} id={numero} p={p} />}
 
       {/* Crown base — filtro pra drop-shadow (esmalte sobre a gengiva) */}
       <path
@@ -743,7 +391,7 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
         strokeDasharray={isDenteIncluso ? '3 2' : undefined}
         strokeWidth="1.1"
         opacity={opacity}
-        filter={isAusente ? undefined : 'url(#tooth-shadow)'}
+        filter={isAusente ? undefined : `url(#${p}tooth-shadow)`}
         pointerEvents="none"
       />
 
@@ -752,20 +400,20 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
         <>
           <path
             d={crownGeom.path}
-            fill="url(#enamel-upper)"
+            fill={`url(#${p}enamel-upper)`}
             opacity="0.7"
             pointerEvents="none"
           />
-          <path
-            d={crownGeom.path}
-            fill="url(#tooth-highlight-upper)"
-            pointerEvents="none"
-          />
+          {/* Realce radial só em dente natural: coroa pintada (prótese, implante) fica sem mancha branca. */}
+          {crownFillMode !== 'coroa-total' && crownFillMode !== 'coroa-implante' && (
+            <path
+              d={crownGeom.path}
+              fill={`url(#${p}tooth-highlight-upper)`}
+              pointerEvents="none"
+            />
+          )}
         </>
       )}
-
-      {/* Face-level marks (as overlaid arcs on crown perimeter) */}
-      {hasFaceMark && faces.map((f) => renderFaceOverlayUpper(f, cx, UPPER_NECK, tipY, cfg, fill, stroke))}
 
       {/* Fossae/fissures */}
       {!isAusente && !isDenteIncluso && crownGeom.fossae.map((fd, fi) => (
@@ -782,7 +430,7 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
       ))}
 
       {/* Cusp tips (small light dots) */}
-      {!isAusente && !isDenteIncluso && crownGeom.cusps.map((cp, ci) => (
+      {!isAusente && !isDenteIncluso && crownFillMode === 'natural' && crownGeom.cusps.map((cp, ci) => (
         <circle
           key={ci}
           cx={cp.x} cy={cp.y}
@@ -792,6 +440,9 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
           pointerEvents="none"
         />
       ))}
+
+      {/* Face-level marks (as overlaid arcs on crown perimeter) (desenhada DEPOIS das fossas e cúspides: a marca da face cobre os pontinhos brancos em vez de ficar salpicada por eles) */}
+      {hasFaceMark && faces.map((f) => renderFaceOverlayUpper(f, cx, UPPER_NECK, tipY, cfg, fill, stroke))}
 
       {/* Ausente / Extrair X */}
       {(isAusente || isExtrair) && (
@@ -825,6 +476,8 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
           readOnly={readOnly}
           onSelectFace={onSelectFace}
           parentSelected={selected}
+          selCor={selCor}
+          acessivel={!teclado}
         />
       )}
     </g>
@@ -834,34 +487,23 @@ const UpperTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
 const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelectFace }: UpperToothProps) => {
   const cx = toothCx(index);
   const cfg = CFG[toothPos(numero)];
+  const { p, neutro, teclado, roving, aoTeclar } = useContext(OdoCtx);
+  const selCor = neutro ? 'var(--color-bokka-ink)' : 'var(--odo-sel)';
   const condicao = mark?.condicao;
   const faces = mark?.faces ?? [];
   const isAusente = condicao === 'AUSENTE';
   const isDenteIncluso = condicao === 'DENTE_INCLUSO';
   const isExtrair = condicao === 'EXTRAIR' || condicao === 'EXTRACAO_INDICADA';
   const isImplante = condicao === 'IMPLANTE';
-  const isCoroa = condicao === 'COROA' || condicao === 'PROTESE_FIXA' || condicao === 'PROTESE_REMOVIVEL';
   const isEndodontia = condicao === 'EM_TRATAMENTO' || condicao === 'ENDODONTIA';
-  const isHigido = condicao === 'HIGIDO' || condicao === 'SAUDAVEL';
   const { fill, stroke } = condicaoColor(condicao);
 
   const hasFaceMark = faces.length > 0 && condicao && CONDICOES_COM_FACE.includes(condicao);
-  const crownFillMode = isAusente ? 'ausente'
-    : isDenteIncluso ? 'incluso'
-    : isImplante ? 'coroa-implante'
-    : isCoroa ? 'coroa-total'
-    : hasFaceMark ? 'natural-com-faces'
-    : condicao && !CONDICOES_COM_FACE.includes(condicao) && !isHigido ? 'total'
-    : 'natural';
+  const crownFillMode = resolveCrownFillMode(condicao, faces);
 
-  const crownFill = crownFillMode === 'ausente' ? '#E8ECF0'
-    : crownFillMode === 'incluso' ? '#E8ECF0'
-    : crownFillMode === 'coroa-implante' ? '#CBD5E1'
-    : crownFillMode === 'coroa-total' ? fill
-    : crownFillMode === 'total' ? fill
-    : 'var(--odo-dente)';
+  const crownFill = crownFillColor(crownFillMode, fill);
 
-  const opacity = isAusente ? 0.4 : isDenteIncluso ? 0.5 : 1;
+  const opacity = crownOpacity(condicao);
 
   const tipY = LOWER_CROWN_TOP;
   const rootTipY = LOWER_NECK + (LOWER_ROOT_TIP - LOWER_NECK) * cfg.rootLen;
@@ -871,9 +513,30 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
 
   return (
     <g
-      className={cn(!readOnly && 'cursor-pointer group')}
+      className={cn(
+        !readOnly && 'cursor-pointer group',
+        teclado && 'outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-bokka-focus)]',
+      )}
       role={readOnly ? undefined : 'button'}
-      aria-label={`Dente ${numero}`}
+      aria-label={
+        teclado
+          ? [
+              `Dente ${numero}`,
+              condicao && `condição ${condicaoLabel(condicao)}`,
+              selected && 'selecionado',
+            ]
+              .filter(Boolean)
+              .join(', ')
+          : `Dente ${numero}`
+      }
+      {...(teclado && !readOnly
+        ? {
+            tabIndex: roving === numero ? 0 : -1,
+            'aria-pressed': selected,
+            'data-dente': numero,
+            onKeyDown: (e: KeyboardEvent<SVGGElement>) => aoTeclar?.(e, numero),
+          }
+        : {})}
     >
       {/* Face grid box (above crown) */}
       {!isAusente && !isDenteIncluso && (
@@ -889,6 +552,8 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
           readOnly={readOnly}
           onSelectFace={onSelectFace}
           parentSelected={selected}
+          selCor={selCor}
+          acessivel={!teclado}
         />
       )}
 
@@ -907,8 +572,8 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
           width={(cfg.hw + 6) * 2} height={rootTipY - tipY + 6}
           rx="6"
           fill="none"
-          stroke="var(--odo-sel)" strokeWidth="1.8" strokeDasharray="4 3"
-          opacity="0.7"
+          stroke={selCor} strokeWidth={neutro ? 2.6 : 1.8} strokeDasharray={neutro ? undefined : '4 3'}
+          opacity={neutro ? 1 : 0.7}
           pointerEvents="none"
         />
       )}
@@ -918,7 +583,7 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
         <g key={ri}>
           <path
             d={d}
-            fill={isAusente || isDenteIncluso ? '#E8ECF0' : 'url(#dentin-grad)'}
+            fill={isAusente || isDenteIncluso ? '#E8ECF0' : `url(#${p}dentin-grad)`}
             stroke={isAusente || isDenteIncluso ? '#B0B8C4' : '#B08D5D'}
             strokeWidth="0.7"
             opacity={opacity}
@@ -941,27 +606,7 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
       ))}
 
       {/* Implant post */}
-      {isImplante && (
-        <g pointerEvents="none">
-          <rect
-            x={cx - cfg.nw * 0.55} y={LOWER_NECK - 2}
-            width={cfg.nw * 1.1} height={rootTipY - LOWER_NECK + 4}
-            rx="2"
-            fill="#64748B"
-          />
-          {[0.15, 0.3, 0.45, 0.6, 0.75, 0.9].map((frac) => {
-            const y = LOWER_NECK + (rootTipY - LOWER_NECK) * frac;
-            return (
-              <line
-                key={frac}
-                x1={cx - cfg.nw * 0.55} y1={y}
-                x2={cx + cfg.nw * 0.55} y2={y}
-                stroke="#334155" strokeWidth="0.9"
-              />
-            );
-          })}
-        </g>
-      )}
+      {isImplante && <ImplantePost cx={cx} neckY={LOWER_NECK} tipY={rootTipY} nw={cfg.nw} id={numero} p={p} />}
 
       {/* Crown */}
       <path
@@ -975,7 +620,7 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
         strokeDasharray={isDenteIncluso ? '3 2' : undefined}
         strokeWidth="1.1"
         opacity={opacity}
-        filter={isAusente ? undefined : 'url(#tooth-shadow)'}
+        filter={isAusente ? undefined : `url(#${p}tooth-shadow)`}
         pointerEvents="none"
       />
 
@@ -984,20 +629,20 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
         <>
           <path
             d={crownGeom.path}
-            fill="url(#enamel-lower)"
+            fill={`url(#${p}enamel-lower)`}
             opacity="0.7"
             pointerEvents="none"
           />
-          <path
-            d={crownGeom.path}
-            fill="url(#tooth-highlight-lower)"
-            pointerEvents="none"
-          />
+          {/* Realce radial só em dente natural: coroa pintada (prótese, implante) fica sem mancha branca. */}
+          {crownFillMode !== 'coroa-total' && crownFillMode !== 'coroa-implante' && (
+            <path
+              d={crownGeom.path}
+              fill={`url(#${p}tooth-highlight-lower)`}
+              pointerEvents="none"
+            />
+          )}
         </>
       )}
-
-      {/* Face-level overlays */}
-      {hasFaceMark && faces.map((f) => renderFaceOverlayLower(f, cx, LOWER_NECK, tipY, cfg, fill, stroke))}
 
       {/* Fossae */}
       {!isAusente && !isDenteIncluso && crownGeom.fossae.map((fd, fi) => (
@@ -1014,7 +659,7 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
       ))}
 
       {/* Cusp tips */}
-      {!isAusente && !isDenteIncluso && crownGeom.cusps.map((cp, ci) => (
+      {!isAusente && !isDenteIncluso && crownFillMode === 'natural' && crownGeom.cusps.map((cp, ci) => (
         <circle
           key={ci}
           cx={cp.x} cy={cp.y} r="0.9"
@@ -1022,6 +667,9 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
           pointerEvents="none"
         />
       ))}
+
+      {/* Face-level overlays (desenhada DEPOIS das fossas e cúspides: a marca da face cobre os pontinhos brancos em vez de ficar salpicada por eles) */}
+      {hasFaceMark && faces.map((f) => renderFaceOverlayLower(f, cx, LOWER_NECK, tipY, cfg, fill, stroke))}
 
       {/* Ausente/extrair X */}
       {(isAusente || isExtrair) && (
@@ -1041,6 +689,7 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
         </g>
       )}
 
+      {selected && neutro && <rect x={cx - 11} y={SVG_H - 22} width={22} height={16} rx={8} fill="var(--color-bokka-ink)" />}
       {/* FDI label */}
       <text
         x={cx}
@@ -1048,7 +697,7 @@ const LowerTooth = ({ index, numero, mark, selected, readOnly, onClick, onSelect
         textAnchor="middle"
         fontSize="11"
         fontWeight="700"
-        fill={selected ? 'var(--odo-sel)' : 'var(--odo-numero)'}
+        fill={selected ? (neutro ? 'var(--color-bokka-surface)' : 'var(--odo-sel)') : 'var(--odo-numero)'}
         fontFamily="system-ui, sans-serif"
         style={{ userSelect: 'none' }}
       >
@@ -1176,10 +825,42 @@ export const Odontograma3D = ({
   onSelect,
   onSelectFace,
   readOnly,
+  legenda = true,
+  estiloSelecao = 'padrao',
+  teclado = false,
+  escalaMinima,
 }: Odontograma3DProps) => {
   const upperGum = buildUpperGum(superior);
   const lowerGum = buildLowerGum(inferior);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const p = `${useId()}-`;
+  const ajustavel = escalaMinima !== undefined;
+
+  // Teclado (só com `teclado`): um tab stop só no dente "roving"; setas andam pelo arco, Enter/Espaço selecionam.
+  const [rovingManual, setRoving] = useState<string | undefined>(undefined);
+  const roving = rovingManual ?? selected ?? superior[0];
+  const aoTeclar = (e: KeyboardEvent<SVGGElement>, numero: string) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onSelect?.(numero);
+      return;
+    }
+    const emCima = superior.includes(numero);
+    const arco = emCima ? superior : inferior;
+    const i = arco.indexOf(numero);
+    let destino: string | undefined;
+    if (e.key === 'ArrowRight') destino = arco[Math.min(i + 1, arco.length - 1)];
+    else if (e.key === 'ArrowLeft') destino = arco[Math.max(i - 1, 0)];
+    else if (e.key === 'ArrowDown') destino = emCima ? inferior[i] : undefined;
+    else if (e.key === 'ArrowUp') destino = emCima ? undefined : superior[i];
+    else if (e.key === 'Home') destino = arco[0];
+    else if (e.key === 'End') destino = arco[arco.length - 1];
+    if (!destino) return;
+    e.preventDefault();
+    setRoving(destino);
+    svgRef.current?.querySelector<SVGGElement>(`[data-dente="${destino}"]`)?.focus();
+  };
 
   // Abaixo de md, a área do SVG (altura fixa de SVG_H) fica mais alta que a viewport visível,
   // então a arcada oposta exige scroll vertical além do arrasto horizontal de sempre — os botões
@@ -1195,8 +876,9 @@ export const Odontograma3D = ({
   };
 
   return (
+    <OdoCtx.Provider value={{ p, neutro: estiloSelecao === 'neutro', teclado, roving, aoTeclar }}>
     <div>
-      <div className="flex gap-2 mb-3 md:hidden">
+      <div className={cn('flex gap-2 mb-3 md:hidden', ajustavel && 'hidden')}>
         <button
           type="button"
           onClick={() => jumpTo('superior')}
@@ -1215,65 +897,77 @@ export const Odontograma3D = ({
 
       <div
         ref={scrollRef}
-        className="overflow-x-auto overflow-y-auto max-h-[280px] md:max-h-none md:overflow-y-visible"
+        className={
+          ajustavel
+            ? 'overflow-x-auto'
+            : 'overflow-x-auto overflow-y-auto max-h-[280px] md:max-h-none md:overflow-y-visible'
+        }
       >
-      <div style={{ minWidth: TOTAL_W }}>
+      <div style={{ minWidth: ajustavel ? TOTAL_W * escalaMinima : TOTAL_W }}>
       <svg
+        ref={svgRef}
         viewBox={`0 0 ${TOTAL_W} ${SVG_H}`}
         width="100%"
-        height={SVG_H}
+        height={ajustavel ? undefined : SVG_H}
+        style={ajustavel ? { display: 'block', height: 'auto', aspectRatio: `${TOTAL_W} / ${SVG_H}` } : undefined}
         xmlns="http://www.w3.org/2000/svg"
-        role="img"
+        role={teclado ? 'group' : 'img'}
         aria-label="Odontograma anatômico"
       >
         <defs>
-          <linearGradient id="dentin-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <linearGradient id={`${p}dentin-grad`} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" style={{ stopColor: 'var(--odo-dentina-a)' }} />
             <stop offset="55%" style={{ stopColor: 'var(--odo-dentina-b)' }} />
             <stop offset="100%" style={{ stopColor: 'var(--odo-dentina-c)' }} />
           </linearGradient>
+          {/* Metal do parafuso do implante */}
+          <linearGradient id={`${p}implante-grad`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#8794A8" />
+            <stop offset="38%" stopColor="#C3CBD7" />
+            <stop offset="100%" stopColor="#64748B" />
+          </linearGradient>
           {/* Enamel upper: highlight brilhante no topo + sombra profunda embaixo */}
-          <linearGradient id="enamel-upper" x1="0%" y1="0%" x2="0%" y2="100%">
+          <linearGradient id={`${p}enamel-upper`} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="1" />
             <stop offset="25%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="0.5" />
             <stop offset="60%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="0.05" />
             <stop offset="100%" stopColor="#5C4A2E" stopOpacity="0.28" />
           </linearGradient>
-          <linearGradient id="enamel-lower" x1="0%" y1="100%" x2="0%" y2="0%">
+          <linearGradient id={`${p}enamel-lower`} x1="0%" y1="100%" x2="0%" y2="0%">
             <stop offset="0%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="1" />
             <stop offset="25%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="0.5" />
             <stop offset="60%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="0.05" />
             <stop offset="100%" stopColor="#5C4A2E" stopOpacity="0.28" />
           </linearGradient>
           {/* Radial specular highlight — dá o volume 3D esférico */}
-          <radialGradient id="tooth-highlight-upper" cx="35%" cy="30%" r="70%">
+          <radialGradient id={`${p}tooth-highlight-upper`} cx="35%" cy="30%" r="70%">
             <stop offset="0%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="0.85" />
             <stop offset="35%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="0.15" />
             <stop offset="100%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="0" />
           </radialGradient>
-          <radialGradient id="tooth-highlight-lower" cx="35%" cy="70%" r="70%">
+          <radialGradient id={`${p}tooth-highlight-lower`} cx="35%" cy="70%" r="70%">
             <stop offset="0%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="0.85" />
             <stop offset="35%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="0.15" />
             <stop offset="100%" style={{ stopColor: 'var(--odo-brilho)' }} stopOpacity="0" />
           </radialGradient>
-          <linearGradient id="gum-upper" x1="0%" y1="0%" x2="0%" y2="100%">
+          <linearGradient id={`${p}gum-upper`} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" style={{ stopColor: 'var(--odo-gengiva-a)' }} stopOpacity="0.35" />
             <stop offset="55%" style={{ stopColor: 'var(--odo-gengiva-b)' }} stopOpacity="0.8" />
             <stop offset="100%" style={{ stopColor: 'var(--odo-gengiva-c)' }} stopOpacity="0.95" />
           </linearGradient>
-          <linearGradient id="gum-lower" x1="0%" y1="100%" x2="0%" y2="0%">
+          <linearGradient id={`${p}gum-lower`} x1="0%" y1="100%" x2="0%" y2="0%">
             <stop offset="0%" style={{ stopColor: 'var(--odo-gengiva-a)' }} stopOpacity="0.35" />
             <stop offset="55%" style={{ stopColor: 'var(--odo-gengiva-b)' }} stopOpacity="0.8" />
             <stop offset="100%" style={{ stopColor: 'var(--odo-gengiva-c)' }} stopOpacity="0.95" />
           </linearGradient>
           {/* Sombra vermelha suave sob a linha das coroas (papila gengival) */}
-          <linearGradient id="gum-shine-upper" x1="0%" y1="0%" x2="0%" y2="100%">
+          <linearGradient id={`${p}gum-shine-upper`} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" style={{ stopColor: 'var(--odo-gengiva-brilho)' }} stopOpacity="0.5" />
             <stop offset="40%" style={{ stopColor: 'var(--odo-gengiva-brilho)' }} stopOpacity="0.1" />
             <stop offset="100%" style={{ stopColor: 'var(--odo-gengiva-brilho)' }} stopOpacity="0" />
           </linearGradient>
           {/* Drop-shadow do arco — ilumina "de cima" */}
-          <filter id="tooth-shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <filter id={`${p}tooth-shadow`} x="-20%" y="-20%" width="140%" height="140%">
             <feGaussianBlur in="SourceAlpha" stdDeviation="1.4" />
             <feOffset dx="0" dy="1.6" result="offsetblur" />
             <feComponentTransfer>
@@ -1287,10 +981,10 @@ export const Odontograma3D = ({
         </defs>
 
         {/* Gums — camada de cor + brilho superior pra dar volume */}
-        <path d={upperGum} fill="url(#gum-upper)" />
-        <path d={upperGum} fill="url(#gum-shine-upper)" opacity="0.85" />
-        <path d={lowerGum} fill="url(#gum-lower)" />
-        <path d={lowerGum} fill="url(#gum-shine-upper)" opacity="0.85" transform={`translate(0 ${SVG_H}) scale(1 -1)`} />
+        <path d={upperGum} fill={`url(#${p}gum-upper)`} />
+        <path d={upperGum} fill={`url(#${p}gum-shine-upper)`} opacity="0.85" />
+        <path d={lowerGum} fill={`url(#${p}gum-lower)`} />
+        <path d={lowerGum} fill={`url(#${p}gum-shine-upper)`} opacity="0.85" transform={`translate(0 ${SVG_H}) scale(1 -1)`} />
 
         {/* Quadrant divider (vertical midline) */}
         <line
@@ -1346,7 +1040,7 @@ export const Odontograma3D = ({
       </div>
 
       {/* Legend — fora da faixa de scroll horizontal/vertical, sempre visível por inteiro */}
-      <div className="flex flex-wrap gap-x-4 gap-y-2 pt-4 mt-3 border-t border-bokka-border text-xs">
+      <div className={cn('flex flex-wrap gap-x-4 gap-y-2 pt-4 mt-3 border-t border-bokka-border text-xs', !legenda && 'hidden')}>
         {(
           [
             'HIGIDO',
@@ -1367,10 +1061,7 @@ export const Odontograma3D = ({
           const { fill } = condicaoColor(c);
           return (
             <span key={c} className="inline-flex items-center gap-1.5 text-bokka-ink-2">
-              <span
-                className="w-3 h-3 rounded-sm shadow-[inset_0_0_0_1px_var(--color-bokka-swatch)] shrink-0"
-                style={{ background: fill }}
-              />
+              <AmostraCor cor={fill} forma="quadrado" tamanho={12} />
               {condicaoLabel(c)}
             </span>
           );
@@ -1381,5 +1072,6 @@ export const Odontograma3D = ({
         </span>
       </div>
     </div>
+    </OdoCtx.Provider>
   );
 };

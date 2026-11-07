@@ -1,8 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import type { Procedimento } from '../types';
+import { odontogramaKeys } from './odontogramaService';
+import type { Procedimento, VincularOdontogramaRequest, VincularOdontogramaResponse } from '../types';
 
 export const procedimentoService = {
+  vincularOdontograma: async (id: string, req: VincularOdontogramaRequest) =>
+    (await api.post<VincularOdontogramaResponse>(`/api/procedimentos/${id}/vincular-odontograma`, req)).data,
   listarPorPaciente: async (pacienteId: string) =>
     (await api.get<Procedimento[]>(`/api/procedimentos/paciente/${pacienteId}`)).data,
   buscarPorId: async (id: string) => (await api.get<Procedimento>(`/api/procedimentos/${id}`)).data,
@@ -45,6 +48,18 @@ export const useAtualizarProcedimento = () => {
     mutationFn: ({ id, procedimento }: { id: string; procedimento: Procedimento }) =>
       procedimentoService.atualizar(id, procedimento),
     onSuccess: () => qc.invalidateQueries({ queryKey: procedimentoKeys.all }),
+  });
+};
+
+export const useVincularOdontograma = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, req }: { id: string; req: VincularOdontogramaRequest }) =>
+      procedimentoService.vincularOdontograma(id, req),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: procedimentoKeys.all });
+      qc.invalidateQueries({ queryKey: odontogramaKeys.all });
+    },
   });
 };
 

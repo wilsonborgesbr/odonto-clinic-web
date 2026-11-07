@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '../lib/api';
+import { api, ApiError } from '../lib/api';
 import type { Odontograma } from '../types';
 
 export const odontogramaService = {
@@ -24,14 +24,25 @@ export const useOdontogramasPorPaciente = (pacienteId: string | undefined) =>
     enabled: !!pacienteId,
   });
 
-/** Devolve o odontograma mais recente da paciente ou undefined se ainda não houver. */
-export const useOdontogramaRecente = (pacienteId: string | undefined) => {
-  const q = useOdontogramasPorPaciente(pacienteId);
-  return {
-    ...q,
-    data: q.data && q.data.length > 0 ? q.data[0] : undefined,
-  };
-};
+/**
+ * O odontograma mais recente da paciente, como o BACKEND decide (createdAt decrescente), ou null se não houver
+ * nenhum (a API responde 404). A listagem não é ordenada, então o primeiro da lista NÃO é o mais recente; é o mesmo
+ * critério que o vincular-odontograma usa quando o frontend não manda `odontogramaId`.
+ */
+export const useOdontogramaRecente = (pacienteId: string | undefined) =>
+  useQuery({
+    queryKey: [...odontogramaKeys.all, 'recente', pacienteId ?? ''] as const,
+    queryFn: async () => {
+      try {
+        return await odontogramaService.buscarRecentePorPaciente(pacienteId!);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 404) return null;
+        throw err;
+      }
+    },
+    enabled: !!pacienteId,
+    retry: false,
+  });
 
 export const useCriarOdontograma = () => {
   const qc = useQueryClient();
