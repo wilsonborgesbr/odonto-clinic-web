@@ -10,6 +10,7 @@ import {
   Shield,
   Check,
   X,
+  Calendar,
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -27,9 +28,14 @@ import {
   useUsuarios,
 } from '../services/usuarioService';
 import { useAuth } from '../context/AuthContext';
+import {
+  useGoogleCalendarConexoes,
+  useGoogleCalendarStatus,
+} from '../services/googleCalendarService';
+import { ESCOPO, SYNC_STATUS, explicacaoSync } from '../lib/googleCalendar';
 import { ApiError } from '../lib/api';
 import { cn, normalizeEmail } from '../lib/utils';
-import type { PermissaoEnum, RoleEnum, UsuarioDTO } from '../types';
+import type { ConexaoGoogleCalendar, EscopoGoogleCalendar, PermissaoEnum, RoleEnum, UsuarioDTO } from '../types';
 
 // Rótulos exibidos ao usuário
 const roleLabel: Record<RoleEnum, string> = {
@@ -69,6 +75,7 @@ const permissaoLabel: Record<PermissaoEnum, string> = {
   AUDITORIA_FINANCEIRA: 'Auditoria Financeira',
   USUARIOS_E_PERMISSOES: 'Usuários & Permissões',
   CONFIGURACOES: 'Configurações',
+  INTEGRACAO_GOOGLE_CALENDAR: 'Google Calendar (agenda externa)',
 };
 
 const permissoesOrdenadas: PermissaoEnum[] = [
@@ -86,6 +93,7 @@ const permissoesOrdenadas: PermissaoEnum[] = [
   'AUDITORIA_FINANCEIRA',
   'USUARIOS_E_PERMISSOES',
   'CONFIGURACOES',
+  'INTEGRACAO_GOOGLE_CALENDAR',
 ];
 
 // Permissões padrão por role — espelha o backend em RoleEnum.java
@@ -138,6 +146,18 @@ export const Usuarios = () => {
   const atualizarM = useAtualizarUsuario();
   const inativarM = useInativarUsuario();
   const reativarM = useReativarUsuario();
+  // Status de sincronização com o Google por usuário. Se a consulta falhar, os indicadores só não aparecem.
+  const conexoesQ = useGoogleCalendarConexoes();
+  const googleStatusQ = useGoogleCalendarStatus();
+  const conexaoPorUsuario = useMemo(() => {
+    const mapa = new Map<string, ConexaoGoogleCalendar>();
+    for (const c of conexoesQ.data ?? []) {
+      const atual = mapa.get(c.userId);
+      if (!atual || (atual.syncStatus !== 'ATIVO' && c.syncStatus === 'ATIVO')) mapa.set(c.userId, c);
+    }
+    return mapa;
+  }, [conexoesQ.data]);
+  const googleConfigurada = googleStatusQ.data?.configurada ?? false;
 
   const users = usuariosQ.data ?? [];
 
@@ -253,6 +273,12 @@ export const Usuarios = () => {
                         {u.ativo ? 'Ativo' : 'Inativo'}
                       </Badge>
                       <Badge tone={roleTone[u.role]}>{roleLabel[u.role]}</Badge>
+                      <IndicadorGoogle
+                        conexao={conexaoPorUsuario.get(u.id)}
+                        temPermissao={u.permissoes.includes('INTEGRACAO_GOOGLE_CALENDAR')}
+                        configurada={googleConfigurada}
+                        carregado={conexoesQ.isSuccess}
+                      />
                     </div>
                     <p className="text-xs text-bokka-ink-3 mt-1 flex items-center gap-1.5">
                       <Mail className="w-3.5 h-3.5" strokeWidth={2} />
@@ -341,6 +367,7 @@ export const Usuarios = () => {
                   password: payload.novaSenha ?? '',
                   role: payload.role,
                   permissoes: payload.permissoes,
+                  escopoGoogleCalendar: payload.escopoGoogleCalendar,
                 });
                 bokkaToast.success('Usuário criado.');
               }
@@ -364,6 +391,43 @@ export const Usuarios = () => {
   );
 };
 
+/** Indicador pequeno do status de sincronização com o Google Calendar ao lado do usuário. */
+const IndicadorGoogle = ({
+  conexao,
+  temPermissao,
+  configurada,
+  carregado,
+}: {
+  conexao?: ConexaoGoogleCalendar;
+  temPermissao: boolean;
+  configurada: boolean;
+  carregado: boolean;
+}) => {
+  if (!carregado) return null;
+  if (conexao) {
+    const st = SYNC_STATUS[conexao.syncStatus] ?? SYNC_STATUS.ERRO_AUTENTICACAO;
+    const escopo = ESCOPO[conexao.escopo]?.titulo ?? conexao.escopo;
+    return (
+      <span title={`${escopo}${conexao.googleEmail ? ` · ${conexao.googleEmail}` : ''}. ${explicacaoSync(conexao, true)}`}>
+        <Badge tone={st.tom} dot>
+          <Calendar className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
+          Google: {st.curto}
+        </Badge>
+      </span>
+    );
+  }
+  // Sem conexão: só vale lembrar quando o usuário pode conectar e o ambiente já está configurado.
+  if (!temPermissao || !configurada) return null;
+  return (
+    <span title="Tem permissão para o Google Calendar, mas ainda não conectou.">
+      <Badge tone="neutral">
+        <Calendar className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
+        Google: não conectado
+      </Badge>
+    </span>
+  );
+};
+
 // ============ Formulário ============
 
 interface FormPayload {
@@ -371,6 +435,8 @@ interface FormPayload {
   email: string;
   role: RoleEnum;
   permissoes: PermissaoEnum[];
+  /** Só vai no payload quando quem edita é proprietário/sócio (os outros não podem mudar; omitir mantém o atual). */
+  escopoGoogleCalendar?: EscopoGoogleCalendar;
   novaSenha?: string;
 }
 
@@ -389,6 +455,10 @@ const UsuarioForm = ({
   const [permissoes, setPermissoes] = useState<Set<PermissaoEnum>>(
     () => new Set(initial?.permissoes ?? permissoesPadrao[initial?.role ?? 'DENTISTA']),
   );
+  const { user: atual } = useAuth();
+  // Só proprietário e sócio concedem a integração com o Google (o backend também exige).
+  const ehDono = atual?.role === 'PROPRIETARIO' || atual?.role === 'SOCIO';
+  const [escopo, setEscopo] = useState<EscopoGoogleCalendar>(initial?.escopoGoogleCalendar ?? 'SOMENTE_PROPRIO');
   const [novaSenha, setNovaSenha] = useState('');
   const [customizando, setCustomizando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -431,6 +501,7 @@ const UsuarioForm = ({
           email: normalizeEmail(email),
           role,
           permissoes: Array.from(permissoes),
+          escopoGoogleCalendar: ehDono ? escopo : undefined,
           novaSenha: novaSenha || undefined,
         },
         initial?.id,
@@ -517,13 +588,17 @@ const UsuarioForm = ({
         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
           {permissoesOrdenadas.map((p) => {
             const enabled = permissoes.has(p);
+            const bloqueada = p === 'INTEGRACAO_GOOGLE_CALENDAR' && !ehDono && !enabled;
             return (
               <li key={p}>
                 <button
                   type="button"
                   onClick={() => togglePermissao(p)}
+                  disabled={bloqueada}
+                  aria-pressed={enabled}
+                  title={bloqueada ? 'Só o proprietário ou sócio pode conceder esta integração.' : undefined}
                   className={cn(
-                    'w-full flex items-center gap-3 px-3 py-2 rounded-lg border text-left transition-colors',
+                    'w-full flex items-center gap-3 px-3 py-2 rounded-lg border text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
                     enabled
                       ? 'bg-bokka-primary-soft border-bokka-primary/30 text-bokka-ink'
                       : 'bg-bokka-surface border-bokka-border text-bokka-ink-3 hover:border-bokka-border-strong',
@@ -549,6 +624,54 @@ const UsuarioForm = ({
             );
           })}
         </ul>
+        {permissoes.has('INTEGRACAO_GOOGLE_CALENDAR') && (
+          <div className="mt-3 space-y-2">
+            <fieldset disabled={!ehDono} aria-describedby="escopo-google-dica">
+              <legend className="text-xs font-semibold text-bokka-ink mb-1.5">Google Calendar: quais consultas enviar</legend>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                {(Object.keys(ESCOPO) as EscopoGoogleCalendar[]).map((e) => {
+                  const ativo = e === escopo;
+                  return (
+                    <label
+                      key={e}
+                      title={!ehDono ? 'Só o proprietário ou sócio pode mudar o escopo do Google Calendar.' : undefined}
+                      className={cn(
+                        'flex items-start gap-3 rounded-lg border px-3 py-2 transition-colors',
+                        ehDono ? 'cursor-pointer' : 'cursor-not-allowed opacity-60',
+                        ativo
+                          ? 'bg-bokka-primary-soft border-bokka-primary/30'
+                          : 'bg-bokka-surface border-bokka-border hover:border-bokka-border-strong',
+                      )}
+                    >
+                      <input
+                        type="radio"
+                        name="escopo-google-calendar"
+                        value={e}
+                        checked={ativo}
+                        onChange={() => setEscopo(e)}
+                        className="mt-1 accent-[var(--color-bokka-primary)]"
+                      />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-medium text-bokka-ink">{ESCOPO[e].titulo}</span>
+                        <span className="block text-xs text-bokka-ink-3 mt-0.5">{ESCOPO[e].descricao}</span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+            <p id="escopo-google-dica" className="text-xs text-bokka-ink-3">
+              Google Calendar: esta pessoa poderá enviar{' '}
+              {escopo === 'TODOS_DA_CLINICA'
+                ? 'todas as consultas da clínica'
+                : 'as consultas do dentista vinculado a ela'}
+              , com o nome dos pacientes, para uma conta Google. O escopo acima define quais consultas ela recebe
+              {ehDono ? ' e é escolhido aqui, pelo proprietário ou sócio' : ' e só o proprietário ou sócio muda'}. Ela
+              conecta em Configurações. Retirar a permissão pausa a sincronização, mas os eventos que já estão no Google
+              continuam lá.
+            </p>
+          </div>
+        )}
       </section>
 
       <div className="flex justify-end gap-3 pt-4 border-t border-bokka-border -mx-6 px-6">

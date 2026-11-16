@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Settings,
   Bell,
@@ -17,7 +19,10 @@ import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Field';
 import { bokkaToast } from '../components/ui/Toast';
+import { GoogleCalendarCard } from '../components/integracoes/GoogleCalendarCard';
 import { useAuth } from '../context/AuthContext';
+import { googleCalendarKeys } from '../services/googleCalendarService';
+import { mensagemRetornoGoogle } from '../lib/googleCalendar';
 import { cn } from '../lib/utils';
 
 type Prefs = {
@@ -42,14 +47,12 @@ const PREFS_KEY = 'bokka:preferences';
 const WEBHOOKS_KEY = 'bokka:webhooks';
 
 type Webhooks = {
-  googleCalendarUrl: string;
   asaasApiKey: string;
   infinityPayApiKey: string;
   genericWebhookUrl: string;
 };
 
 const EMPTY_WEBHOOKS: Webhooks = {
-  googleCalendarUrl: '',
   asaasApiKey: '',
   infinityPayApiKey: '',
   genericWebhookUrl: '',
@@ -69,7 +72,10 @@ const readWebhooks = (): Webhooks => {
   try {
     const raw = localStorage.getItem(WEBHOOKS_KEY);
     if (!raw) return EMPTY_WEBHOOKS;
-    return { ...EMPTY_WEBHOOKS, ...(JSON.parse(raw) as Partial<Webhooks>) };
+    // googleCalendarUrl é de antes da integração real: descarta o campo antigo guardado no navegador.
+    const { googleCalendarUrl: _antigo, ...resto } = JSON.parse(raw) as Partial<Webhooks> & { googleCalendarUrl?: string };
+    void _antigo;
+    return { ...EMPTY_WEBHOOKS, ...resto };
   } catch {
     return EMPTY_WEBHOOKS;
   }
@@ -83,6 +89,7 @@ export const Configuracoes = () => {
 
   const [prefs, setPrefs] = useState<Prefs>(readPrefs);
   const [webhooks, setWebhooks] = useState<Webhooks>(readWebhooks);
+  useRetornoGoogleCalendar();
 
   useEffect(() => {
     localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
@@ -177,6 +184,9 @@ export const Configuracoes = () => {
         </ul>
       </Card>
 
+      {/* ============ Google Calendar (integração real) ============ */}
+      <GoogleCalendarCard />
+
       {/* ============ Integrações / Webhooks ============ */}
       <Card>
         <CardHeader
@@ -201,25 +211,6 @@ export const Configuracoes = () => {
         </div>
 
         <div className="space-y-5">
-          <IntegrationRow
-            icon={<Calendar className="w-5 h-5" strokeWidth={1.75} />}
-            title="Google Calendar"
-            description="Sincroniza a agenda da clínica com o Google Calendar do proprietário."
-            tag="Agenda"
-            tone="primary"
-            docsHref="https://developers.google.com/calendar/api/guides/overview"
-          >
-            <Input
-              label="URL de webhook / autorização OAuth"
-              placeholder="https://accounts.google.com/o/oauth2/v2/auth?..."
-              value={webhooks.googleCalendarUrl}
-              onChange={(e) =>
-                setWebhooks((w) => ({ ...w, googleCalendarUrl: e.target.value }))
-              }
-              hint="No fluxo real, um botão 'Conectar' iniciará o OAuth e o token virá para o backend."
-            />
-          </IntegrationRow>
-
           <IntegrationRow
             icon={<Wallet className="w-5 h-5" strokeWidth={1.75} />}
             title="Asaas"
@@ -306,6 +297,34 @@ export const Configuracoes = () => {
       </Card>
     </div>
   );
+};
+
+/**
+ * Lê `?googleCalendar=conectado` ou `?googleCalendar=erro&motivo=...` (o backend devolve o navegador para cá depois do
+ * Google), avisa o usuário, atualiza o estado da integração e limpa a URL para um F5 não repetir o aviso.
+ */
+const useRetornoGoogleCalendar = () => {
+  const [params, setParams] = useSearchParams();
+  const qc = useQueryClient();
+  const tratado = useRef(false);
+
+  useEffect(() => {
+    const resultado = params.get('googleCalendar');
+    if (!resultado || tratado.current) return;
+    tratado.current = true;
+    if (resultado === 'conectado') {
+      bokkaToast.success('Google Calendar conectado.');
+    } else {
+      const m = mensagemRetornoGoogle(params.get('motivo'));
+      if (m.tom === 'warning') bokkaToast.warning(m.texto, { duration: 9000 });
+      else bokkaToast.error(m.texto, { duration: 9000 });
+    }
+    void qc.invalidateQueries({ queryKey: googleCalendarKeys.all });
+    const proximo = new URLSearchParams(params);
+    proximo.delete('googleCalendar');
+    proximo.delete('motivo');
+    setParams(proximo, { replace: true });
+  }, [params, setParams, qc]);
 };
 
 // ============ Sub-components ============

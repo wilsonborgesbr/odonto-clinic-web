@@ -268,7 +268,8 @@ export type PermissaoEnum =
   | 'CONVENIOS'
   | 'AUDITORIA_FINANCEIRA'
   | 'USUARIOS_E_PERMISSOES'
-  | 'CONFIGURACOES';
+  | 'CONFIGURACOES'
+  | 'INTEGRACAO_GOOGLE_CALENDAR';
 
 export interface User {
   id?: string;
@@ -309,6 +310,8 @@ export interface UsuarioDTO {
   email: string;
   role: RoleEnum;
   permissoes: PermissaoEnum[];
+  /** Quais consultas esta pessoa envia ao Google (só proprietário/sócio mudam). Padrão SOMENTE_PROPRIO. */
+  escopoGoogleCalendar?: EscopoGoogleCalendar;
   ativo: boolean;
   /** Só o proprietário precisa confirmar o e-mail; ausente = nada a confirmar. */
   emailConfirmado?: boolean;
@@ -808,4 +811,64 @@ export interface ProdutividadeDTO {
   pontos: PontoProdutividade[];
   anosDisponiveis: number[];
   metricasPermitidas: MetricaProdutividade[];
+}
+
+// ============ Google Calendar ============
+
+/**
+ * Quais consultas vão para o Google. Definido pelo proprietário/sócio em Usuários & Permissões (não se escolhe ao
+ * conectar). SOMENTE_PROPRIO exige usuário vinculado a um dentista ativo.
+ */
+export type EscopoGoogleCalendar = 'TODOS_DA_CLINICA' | 'SOMENTE_PROPRIO';
+
+/** Por que o usuário não pode iniciar a conexão agora (`null` quando pode). */
+export type MotivoBloqueioGoogle = 'SEM_PERMISSAO' | 'SEM_DENTISTA_VINCULADO' | 'DENTISTA_INATIVO' | 'JA_CONECTADO';
+
+export type SyncStatusGoogle = 'ATIVO' | 'PAUSADO_PELO_DONO' | 'REVOGADO_PELO_GOOGLE' | 'ERRO_AUTENTICACAO';
+
+/** Conexão da clínica com o Google Calendar. O backend nunca devolve tokens. */
+export interface ConexaoGoogleCalendar {
+  id: string;
+  userId: string;
+  userNome?: string;
+  escopo: EscopoGoogleCalendar;
+  googleEmail?: string;
+  googleCalendarId?: string;
+  dentistaId?: string | null;
+  syncStatus: SyncStatusGoogle;
+  webhookAtivo: boolean;
+  webhookExpiracao?: string | null;
+  criadaEm?: string;
+  atualizadaEm?: string;
+  /** LocalDateTime ISO (sem fuso) da última sincronização concluída; null = nunca sincronizou. */
+  ultimaSincronizacaoEm?: string | null;
+  /** Há uma sincronização rodando agora. */
+  sincronizando?: boolean;
+  /** A última sincronização terminou com falha (pode tentar de novo). */
+  ultimaSincronizacaoFalhou?: boolean;
+}
+
+/** Resposta (202) de POST /api/google-calendar/sincronizar. `jaEmAndamento` conta como sucesso. */
+export interface GoogleCalendarSincronizacao {
+  iniciada: boolean;
+  jaEmAndamento: boolean;
+  iniciadaEm?: string;
+}
+
+export interface GoogleCalendarStatus {
+  /** O usuário logado tem a permissão INTEGRACAO_GOOGLE_CALENDAR. */
+  permitido: boolean;
+  /** false enquanto o backend usa credenciais de desenvolvimento (integração indisponível no ambiente). */
+  configurada: boolean;
+  conectado: boolean;
+  conexao: ConexaoGoogleCalendar | null;
+  /** O usuário pode iniciar a conexão agora. */
+  podeConectar: boolean;
+  motivoBloqueio: MotivoBloqueioGoogle | null;
+}
+
+export interface GoogleCalendarAuthUrl {
+  url: string;
+  escopo: EscopoGoogleCalendar;
+  expiraEm: string;
 }

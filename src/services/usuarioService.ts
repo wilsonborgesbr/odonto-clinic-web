@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import type { Tema } from '../lib/tema';
-import type { PermissaoEnum, RoleEnum, UsuarioDTO } from '../types';
+import type { EscopoGoogleCalendar, PermissaoEnum, RoleEnum, UsuarioDTO } from '../types';
 
 export interface CriarUsuarioPayload {
   name: string;
@@ -9,6 +9,8 @@ export interface CriarUsuarioPayload {
   password: string;
   role: RoleEnum;
   permissoes?: PermissaoEnum[];
+  /** Só proprietário/sócio podem enviar; ausente = SOMENTE_PROPRIO. */
+  escopoGoogleCalendar?: EscopoGoogleCalendar;
 }
 
 export interface AtualizarUsuarioPayload {
@@ -16,6 +18,8 @@ export interface AtualizarUsuarioPayload {
   email: string;
   role: RoleEnum;
   permissoes?: PermissaoEnum[];
+  /** Ausente mantém o atual; para quem não é proprietário/sócio, mudar o valor dá 403. */
+  escopoGoogleCalendar?: EscopoGoogleCalendar;
   novaSenha?: string;
 }
 
