@@ -12,6 +12,8 @@ const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login }
 const RecuperarSenha = lazy(() => import('./pages/RecuperarSenha').then(m => ({ default: m.RecuperarSenha })));
 const RedefinirSenha = lazy(() => import('./pages/RedefinirSenha').then(m => ({ default: m.RedefinirSenha })));
 const ConfirmarEmail = lazy(() => import('./pages/ConfirmarEmail').then(m => ({ default: m.ConfirmarEmail })));
+const Privacidade = lazy(() => import('./pages/Privacidade').then(m => ({ default: m.Privacidade })));
+const Termos = lazy(() => import('./pages/Termos').then(m => ({ default: m.Termos })));
 const Registro = lazy(() => import('./pages/Registro').then(m => ({ default: m.Registro })));
 const PacientesPage = lazy(() => import('./pages/pacientes/PacientesPage').then(m => ({ default: m.PacientesPage })));
 const PacienteDetalhePage = lazy(() => import('./pages/pacientes/PacienteDetalhePage').then(m => ({ default: m.PacienteDetalhePage })));
@@ -54,6 +56,9 @@ const AppRoutes = () => (
       <Route path="/recuperar-senha" element={<RecuperarSenha />} />
       <Route path="/redefinir-senha" element={<RedefinirSenha />} />
       <Route path="/confirmar-email" element={<ConfirmarEmail />} />
+      {/* Textos legais públicos (exigidos pelo Google para publicar o app OAuth do Calendar) */}
+      <Route path="/privacidade" element={<Privacidade />} />
+      <Route path="/termos" element={<Termos />} />
       <Route
         path="/registro"
         element={
